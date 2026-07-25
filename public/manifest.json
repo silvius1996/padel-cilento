@@ -1,0 +1,27 @@
+{
+  "name": "Padel Cilento — Trova la tua partita",
+  "short_name": "Padel Cilento",
+  "description": "Organizza e trova partite di Padel nel Cilento: Paestum, Capaccio, Agropoli e dintorni.",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "lang": "it",
+  "background_color": "#0B0F0E",
+  "theme_color": "#0B0F0E",
+  "icons": [
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

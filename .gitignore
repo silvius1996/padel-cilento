@@ -1,0 +1,14 @@
+# Segreti: la stringa di connessione contiene la password del database
+.env
+.env.local
+
+# Dipendenze
+node_modules/
+
+# File di lavoro di Supabase e Wrangler
+supabase/.temp/
+supabase/.branches/
+.wrangler/
+
+# Impostazioni locali di Claude Code (contengono percorsi di questo computer)
+.claude/settings.local.json

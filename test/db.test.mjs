@@ -1,0 +1,532 @@
+/* =========================================================
+   PADEL CILENTO — Test automatici della logica di database
+   Esecuzione:  npm test
+=========================================================
+
+   Non serve Docker ne' un progetto Supabase: le migrazioni vengono
+   applicate a un PostgreSQL reale compilato in WebAssembly (PGlite).
+   Cio' che Supabase fornisce di suo (i ruoli anon/authenticated, lo
+   schema auth con auth.uid(), lo schema storage) viene ricreato qui
+   in modo fedele, cosi' i permessi e le policy RLS si comportano
+   come in produzione.
+
+   ATTENZIONE: questo file non tocca in alcun modo il database di
+   produzione. Ogni esecuzione parte da un database vuoto in memoria.
+========================================================= */
+
+import { PGlite } from '@electric-sql/pglite';
+import fs from 'node:fs';
+import path from 'node:path';
+
+const CARTELLA_MIGRAZIONI = path.join(process.cwd(), 'supabase', 'migrations');
+
+// Identita' usate nei test
+const U = {
+  aldo:  '11111111-1111-1111-1111-111111111111', // Squadra A, posto 0, organizzatore
+  bea:   '22222222-2222-2222-2222-222222222222', // Squadra A, posto 1
+  carlo: '33333333-3333-3333-3333-333333333333', // Squadra B, posto 2
+  dina:  '44444444-4444-4444-4444-444444444444', // Squadra B, posto 3
+  ester: '55555555-5555-5555-5555-555555555555', // non gioca: serve ai test negativi
+};
+
+const PARTITA = 'aaaaaaaa-0000-0000-0000-000000000001';
+const PARTITA_FUTURA = 'aaaaaaaa-0000-0000-0000-000000000002';
+
+let db;
+let passati = 0;
+const falliti = [];
+
+// ---------------------------------------------------------
+// Utilita' di test
+// ---------------------------------------------------------
+function esito(nome, condizione, dettaglio = '') {
+  if (condizione) {
+    passati++;
+    console.log(`  OK   ${nome}`);
+  } else {
+    falliti.push(`${nome}${dettaglio ? ` — ${dettaglio}` : ''}`);
+    console.log(`  FAIL ${nome}${dettaglio ? ` — ${dettaglio}` : ''}`);
+  }
+}
+
+function uguale(nome, atteso, ottenuto) {
+  esito(nome, String(atteso) === String(ottenuto), `atteso ${atteso}, ottenuto ${ottenuto}`);
+}
+
+/** Verifica che un'operazione venga RIFIUTATA dal database. */
+async function deveFallire(nome, fn, frammentoAtteso) {
+  try {
+    await fn();
+    esito(nome, false, 'l\'operazione e\' stata accettata invece di essere rifiutata');
+  } catch (e) {
+    const msg = String(e.message || e);
+    const combacia = !frammentoAtteso ||
+      msg.toLowerCase().includes(frammentoAtteso.toLowerCase());
+    esito(nome, combacia, combacia ? '' : `messaggio inatteso: ${msg}`);
+  }
+}
+
+async function deveRiuscire(nome, fn) {
+  try {
+    const r = await fn();
+    esito(nome, true);
+    return r;
+  } catch (e) {
+    esito(nome, false, String(e.message || e));
+    return null;
+  }
+}
+
+/** Esegue le query successive come se fosse l'utente indicato. */
+async function come(uid) {
+  await db.query(`select set_config('test.uid', $1, false)`, [uid || '']);
+}
+
+// ---------------------------------------------------------
+// 1. Ambiente: cio' che Supabase mette a disposizione
+// ---------------------------------------------------------
+const IMPALCATURA = `
+  create role anon nologin;
+  create role authenticated nologin;
+  create role service_role nologin;
+
+  grant usage on schema public to anon, authenticated, service_role;
+
+  -- Supabase concede per impostazione predefinita l'accesso alle tabelle
+  -- del cosiddetto schema pubblico: e' proprio questa concessione a
+  -- livello di TABELLA che rendeva inefficace la revoca sulla colonna
+  -- "telefono", e va quindi riprodotta fedelmente.
+  alter default privileges in schema public grant all on tables to anon, authenticated, service_role;
+  alter default privileges in schema public grant all on functions to anon, authenticated, service_role;
+  alter default privileges in schema public grant all on sequences to anon, authenticated, service_role;
+
+  -- Schema di autenticazione
+  create schema auth;
+  create table auth.users (
+    id uuid primary key,
+    email text unique
+  );
+  grant usage on schema auth to anon, authenticated;
+
+  -- auth.uid() restituisce l'utente "collegato". Nei test si cambia
+  -- identita' impostando la variabile di sessione test.uid.
+  create function auth.uid() returns uuid
+  language sql stable as $fn$
+    select nullif(current_setting('test.uid', true), '')::uuid
+  $fn$;
+
+  -- Schema di archiviazione file (usato dalle policy sugli avatar)
+  create schema storage;
+  create table storage.buckets (
+    id text primary key,
+    name text,
+    public boolean default false
+  );
+  create table storage.objects (
+    id uuid primary key default gen_random_uuid(),
+    bucket_id text,
+    owner uuid,
+    name text
+  );
+  alter table storage.objects enable row level security;
+`;
+
+// ---------------------------------------------------------
+// 2. Applicazione delle migrazioni
+// ---------------------------------------------------------
+async function applicaMigrazioni() {
+  const file = fs.readdirSync(CARTELLA_MIGRAZIONI)
+    .filter((f) => f.endsWith('.sql'))
+    .sort();
+
+  console.log(`\nMigrazioni trovate: ${file.length}`);
+
+  for (const f of file) {
+    const sql = fs.readFileSync(path.join(CARTELLA_MIGRAZIONI, f), 'utf8');
+    try {
+      await db.exec(sql);
+      console.log(`  OK   ${f}`);
+      passati++;
+    } catch (e) {
+      falliti.push(`migrazione ${f}: ${e.message}`);
+      console.log(`  FAIL ${f}\n       ${e.message}`);
+      throw new Error(`Migrazione interrotta su ${f}`);
+    }
+  }
+}
+
+// ---------------------------------------------------------
+// 3. Dati di prova
+// ---------------------------------------------------------
+async function seed() {
+  const utenti = [
+    [U.aldo, 'aldo@test.it', 'Aldo', 'Rossi', '3330000001'],
+    [U.bea, 'bea@test.it', 'Bea', 'Bianchi', '3330000002'],
+    [U.carlo, 'carlo@test.it', 'Carlo', 'Verdi', '3330000003'],
+    [U.dina, 'dina@test.it', 'Dina', 'Neri', '3330000004'],
+    [U.ester, 'ester@test.it', 'Ester', 'Gialli', '3330000005'],
+  ];
+
+  for (const [id, email, nome, cognome, tel] of utenti) {
+    await db.query('insert into auth.users (id, email) values ($1, $2)', [id, email]);
+    await db.query(
+      `insert into public.profiles (id, nome, cognome, telefono, full_name, level)
+       values ($1, $2, $3, $4, $5, 'intermedio')`,
+      [id, nome, cognome, tel, `${nome} ${cognome}`],
+    );
+  }
+
+  // Partita giocata due giorni fa
+  await db.query(
+    `insert into public.matches (id, club, zona, match_date, match_time, level, total_slots, filled_slots, created_by)
+     values ($1, 'Padel Village', 'paestum', current_date - 2, '20:00', 'intermedio', 4, 0, $2)`,
+    [PARTITA, U.aldo],
+  );
+
+  // Partita ancora da giocare, per i test sul divieto di anticipare il risultato
+  await db.query(
+    `insert into public.matches (id, club, zona, match_date, match_time, level, total_slots, filled_slots, created_by)
+     values ($1, 'Padel Village', 'paestum', current_date + 3, '20:00', 'intermedio', 4, 0, $2)`,
+    [PARTITA_FUTURA, U.aldo],
+  );
+}
+
+// ---------------------------------------------------------
+// 4. I test
+// ---------------------------------------------------------
+async function testFormazione() {
+  console.log('\nFORMAZIONE E POSTI IN CAMPO');
+
+  await deveRiuscire('quattro giocatori occupano i quattro posti', async () => {
+    const coppie = [[U.aldo, 0], [U.bea, 1], [U.carlo, 2], [U.dina, 3]];
+    for (const [uid, spot] of coppie) {
+      await db.query(
+        'insert into public.match_players (match_id, user_id, spot) values ($1, $2, $3)',
+        [PARTITA, uid, spot],
+      );
+    }
+  });
+
+  const { rows } = await db.query(
+    'select filled_slots from public.matches where id = $1', [PARTITA],
+  );
+  uguale('i posti occupati si aggiornano da soli', 4, rows[0].filled_slots);
+
+  await deveFallire(
+    'un quinto giocatore viene rifiutato',
+    () => db.query(
+      'insert into public.match_players (match_id, user_id, spot) values ($1, $2, 0)',
+      [PARTITA, U.ester],
+    ),
+    'completo',
+  );
+
+  // Su una partita non piena, due giocatori non possono condividere il posto
+  await db.query(
+    'insert into public.match_players (match_id, user_id, spot) values ($1, $2, 1)',
+    [PARTITA_FUTURA, U.bea],
+  );
+  await deveFallire(
+    'due giocatori non possono occupare lo stesso posto',
+    () => db.query(
+      'insert into public.match_players (match_id, user_id, spot) values ($1, $2, 1)',
+      [PARTITA_FUTURA, U.carlo],
+    ),
+    'duplicate key',
+  );
+
+  await deveFallire(
+    'un posto fuori dal campo viene rifiutato',
+    () => db.query(
+      'insert into public.match_players (match_id, user_id, spot) values ($1, $2, 7)',
+      [PARTITA_FUTURA, U.dina],
+    ),
+    'spot_check',
+  );
+}
+
+async function testRegistrazioneRisultato() {
+  console.log('\nREGISTRAZIONE DEL RISULTATO');
+
+  await come(U.ester);
+  await deveFallire(
+    'chi non ha giocato non puo registrare il risultato',
+    () => db.query('select public.registra_risultato($1, $2::jsonb)', [PARTITA, '[[6,4],[6,3]]']),
+    'ha giocato',
+  );
+
+  // Bea e' iscritta alla partita futura: il controllo sulla data viene
+  // valutato dopo quello sulla partecipazione, quindi serve un iscritto.
+  await come(U.bea);
+  await deveFallire(
+    'non si registra il risultato di una partita non ancora giocata',
+    () => db.query('select public.registra_risultato($1, $2::jsonb)', [PARTITA_FUTURA, '[[6,4],[6,3]]']),
+    'ancora iniziata',
+  );
+
+  await come(U.aldo);
+  await deveFallire(
+    'un set finito in parita viene rifiutato',
+    () => db.query('select public.registra_risultato($1, $2::jsonb)', [PARTITA, '[[6,6],[6,3]]']),
+    'parit',
+  );
+
+  await deveFallire(
+    'un solo set non basta',
+    () => db.query('select public.registra_risultato($1, $2::jsonb)', [PARTITA, '[[6,4]]']),
+    '2 o 3 set',
+  );
+
+  await deveFallire(
+    'un punteggio senza vincitore viene rifiutato',
+    () => db.query('select public.registra_risultato($1, $2::jsonb)', [PARTITA, '[[6,4],[3,6]]']),
+    'vincitore',
+  );
+
+  // Aldo (Squadra A) registra: A vince il primo set, B il secondo e il terzo
+  await come(U.carlo);
+  await deveRiuscire('un giocatore registra il risultato', () => db.query(
+    'select public.registra_risultato($1, $2::jsonb)', [PARTITA, '[[6,4],[3,6],[5,7]]'],
+  ));
+
+  const { rows } = await db.query(
+    'select winner_team, stato, registrato_da from public.match_results where match_id = $1',
+    [PARTITA],
+  );
+  uguale('il vincitore viene calcolato dal database', 'B', rows[0].winner_team);
+  uguale('il risultato nasce in attesa di conferma', 'in_attesa', rows[0].stato);
+
+  await deveFallire(
+    'non si registra due volte lo stesso risultato',
+    () => db.query('select public.registra_risultato($1, $2::jsonb)', [PARTITA, '[[6,0],[6,0]]']),
+    'duplicate key',
+  );
+}
+
+async function testFormazioneCongelata() {
+  console.log('\nFORMAZIONE CONGELATA DOPO IL RISULTATO');
+
+  await deveFallire(
+    'con un risultato registrato non si puo uscire dalla partita',
+    () => db.query(
+      'delete from public.match_players where match_id = $1 and user_id = $2',
+      [PARTITA, U.aldo],
+    ),
+    'risultato registrato',
+  );
+}
+
+async function testConferma() {
+  console.log('\nCONFERMA DEL RISULTATO');
+
+  // Carlo ha registrato: Carlo e Dina sono la Squadra B
+  await come(U.dina);
+  await deveFallire(
+    'un compagno di squadra non puo confermare',
+    () => db.query('select public.conferma_risultato($1)', [PARTITA]),
+    'avversario',
+  );
+
+  await come(U.ester);
+  await deveFallire(
+    'un estraneo non puo confermare',
+    () => db.query('select public.conferma_risultato($1)', [PARTITA]),
+    'non hai giocato',
+  );
+
+  await come(U.aldo);
+  await deveRiuscire('un avversario conferma il risultato', () => db.query(
+    'select public.conferma_risultato($1)', [PARTITA],
+  ));
+
+  const { rows } = await db.query(
+    'select stato, confermato_da from public.match_results where match_id = $1', [PARTITA],
+  );
+  uguale('il risultato risulta confermato', 'confermato', rows[0].stato);
+  uguale('viene registrato chi ha confermato', U.aldo, rows[0].confermato_da);
+
+  await deveFallire(
+    'non si conferma due volte',
+    () => db.query('select public.conferma_risultato($1)', [PARTITA]),
+    'gia',
+  );
+}
+
+async function testStatistiche() {
+  console.log('\nSTATISTICHE');
+
+  const stat = async (uid) => {
+    const { rows } = await db.query(
+      'select * from public.statistiche_giocatore($1)', [uid],
+    );
+    return rows[0];
+  };
+
+  const carlo = await stat(U.carlo);
+  uguale('il vincitore ha 1 partita', 1, carlo.partite);
+  uguale('il vincitore ha 1 vittoria', 1, carlo.vittorie);
+  uguale('il vincitore ha 0 sconfitte', 0, carlo.sconfitte);
+  uguale('la percentuale del vincitore e 100', 100, carlo.percentuale_vittorie);
+
+  const aldo = await stat(U.aldo);
+  uguale('lo sconfitto ha 1 partita', 1, aldo.partite);
+  uguale('lo sconfitto ha 0 vittorie', 0, aldo.vittorie);
+  uguale('lo sconfitto ha 1 sconfitta', 1, aldo.sconfitte);
+
+  const ester = await stat(U.ester);
+  uguale('chi non ha giocato ha 0 partite', 0, ester.partite);
+
+  // Il nome arriva dal profilo
+  uguale('le statistiche includono il nome', 'Carlo', carlo.nome);
+}
+
+async function testStatisticheContestate() {
+  console.log('\nUN RISULTATO CONTESTATO NON CONTA');
+
+  await come(U.aldo);
+  await deveRiuscire('un giocatore contesta il risultato', () => db.query(
+    'select public.contesta_risultato($1, $2)', [PARTITA, 'il terzo set non e mai stato giocato'],
+  ));
+
+  const { rows } = await db.query(
+    'select * from public.statistiche_giocatore($1)', [U.carlo],
+  );
+  uguale('la partita contestata sparisce dalle statistiche', 0, rows[0].partite);
+
+  // Si ripristina lo stato confermato per i test successivi
+  await db.query(
+    `update public.match_results set stato = 'confermato' where match_id = $1`, [PARTITA],
+  );
+  const dopo = await db.query('select * from public.statistiche_giocatore($1)', [U.carlo]);
+  uguale('tornando confermata, la partita riappare', 1, dopo.rows[0].partite);
+}
+
+async function testClassifica() {
+  console.log('\nCLASSIFICA');
+
+  const { rows: conMinimo3 } = await db.query('select * from public.classifica(3)');
+  uguale('con meno partite del minimo la classifica e vuota', 0, conMinimo3.length);
+
+  const { rows } = await db.query('select * from public.classifica(1)');
+  uguale('abbassando il minimo compaiono i 4 giocatori', 4, rows.length);
+  uguale('in testa c e un vincitore', 100, rows[0].percentuale_vittorie);
+  esito(
+    'i vincitori precedono gli sconfitti',
+    [U.carlo, U.dina].includes(rows[0].user_id),
+    `primo in classifica: ${rows[0].user_id}`,
+  );
+  uguale('la classifica riporta il nome', true, Boolean(rows[0].nome));
+}
+
+async function testContatti() {
+  console.log('\nCONTATTI DEI GIOCATORI');
+
+  await come(U.ester);
+  await deveFallire(
+    'chi non gioca la partita non vede i contatti',
+    () => db.query('select * from public.contatti_partita($1)', [PARTITA]),
+    'solo ai giocatori',
+  );
+
+  await come(null);
+  await deveFallire(
+    'senza autenticazione i contatti non sono accessibili',
+    () => db.query('select * from public.contatti_partita($1)', [PARTITA]),
+    'autenticato',
+  );
+
+  await come(U.aldo);
+  const { rows } = await db.query('select * from public.contatti_partita($1)', [PARTITA]);
+  uguale('chi gioca vede i 4 compagni di partita', 4, rows.length);
+  uguale('i contatti includono il telefono', '3330000001', rows[0].telefono);
+  uguale('i contatti sono ordinati per posto', 0, rows[0].spot);
+  uguale('la squadra viene calcolata dal posto', 'A', rows[0].squadra);
+  uguale('il posto 2 appartiene alla squadra B', 'B', rows[2].squadra);
+}
+
+async function testPrivacyTelefono() {
+  console.log('\nPROTEZIONE DELLA COLONNA TELEFONO');
+
+  await come(U.aldo);
+  await db.exec('set role authenticated');
+
+  await deveFallire(
+    'un utente registrato non puo leggere i telefoni altrui',
+    () => db.query('select telefono from public.profiles'),
+    'permission denied',
+  );
+
+  await deveRiuscire('le altre colonne restano leggibili', () => db.query(
+    'select id, nome, cognome, level from public.profiles',
+  ));
+
+  const { rows } = await db.query('select * from public.mio_profilo()');
+  uguale('ognuno vede il proprio numero', '3330000001', rows[0].telefono);
+
+  await db.exec('reset role');
+}
+
+async function testPrivacyAnonimi() {
+  console.log('\nACCESSO SENZA AUTENTICAZIONE');
+
+  await come(null);
+  await db.exec('set role anon');
+
+  await deveFallire(
+    'un anonimo non legge l anagrafica',
+    () => db.query('select nome from public.profiles'),
+    'permission denied',
+  );
+
+  const { rows: partite } = await db.query('select id from public.matches');
+  esito('le partite restano pubbliche', partite.length >= 2, `trovate ${partite.length}`);
+
+  const { rows: iscrizioni } = await db.query('select match_id from public.match_players');
+  uguale('le iscrizioni non sono visibili agli anonimi', 0, iscrizioni.length);
+
+  await db.exec('reset role');
+}
+
+// ---------------------------------------------------------
+// Avvio
+// ---------------------------------------------------------
+async function main() {
+  console.log('='.repeat(60));
+  console.log('PADEL CILENTO — test della logica di database (PGlite)');
+  console.log('='.repeat(60));
+
+  db = await PGlite.create();
+  await db.exec(IMPALCATURA);
+
+  await applicaMigrazioni();
+  await seed();
+
+  await testFormazione();
+  await testRegistrazioneRisultato();
+  await testFormazioneCongelata();
+  await testConferma();
+  await testStatistiche();
+  await testStatisticheContestate();
+  await testClassifica();
+  await testContatti();
+  await testPrivacyTelefono();
+  await testPrivacyAnonimi();
+
+  console.log('\n' + '='.repeat(60));
+  if (falliti.length === 0) {
+    console.log(`TUTTO A POSTO — ${passati} verifiche superate`);
+  } else {
+    console.log(`${passati} superate, ${falliti.length} FALLITE:`);
+    falliti.forEach((f) => console.log(`  - ${f}`));
+  }
+  console.log('='.repeat(60));
+
+  await db.close();
+  process.exit(falliti.length ? 1 : 0);
+}
+
+main().catch((e) => {
+  console.error('\nERRORE FATALE:', e.message);
+  if (falliti.length) falliti.forEach((f) => console.error(`  - ${f}`));
+  process.exit(1);
+});

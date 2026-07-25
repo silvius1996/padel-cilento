@@ -1,0 +1,21 @@
+{
+  "name": "padel-cilento",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Trova e organizza partite di Padel nel Cilento",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "test": "node test/db.test.mjs",
+    "db:baseline": "node scripts/db.mjs baseline",
+    "db:push": "node scripts/db.mjs push",
+    "db:status": "node scripts/db.mjs status",
+    "db:verify": "node scripts/verifica.mjs"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.5.4",
+    "pg": "^8.22.0",
+    "supabase": "^2.109.1",
+    "wrangler": "^4.0.0"
+  }
+}

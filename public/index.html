@@ -1,0 +1,3016 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Padel Cilento — Trova la tua partita</title>
+<meta name="description" content="Organizza e trova partite di Padel nel Cilento: Paestum, Capaccio, Agropoli e dintorni." />
+
+<!-- Anteprima quando il link viene condiviso (WhatsApp, Instagram, Facebook, Telegram) -->
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="Padel Cilento" />
+<meta property="og:title" content="Padel Cilento — Trova la tua partita" />
+<meta property="og:description" content="Cerchi il 4° per una partita di Padel nel Cilento? Organizza o unisciti a una partita a Paestum, Capaccio, Agropoli e dintorni." />
+<meta property="og:locale" content="it_IT" />
+<meta property="og:url" content="https://padelcilento.silvius13-bet.workers.dev/" />
+<meta name="twitter:card" content="summary" />
+
+<!-- Icona dell'app (racchetta da padel), incorporata nel file -->
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512' width='512' height='512'%3E%3Crect width='512' height='512' rx='112' fill='%230B0F0E'/%3E%3Cg transform='rotate(-38 256 256)'%3E%3Cpath d='M256 84c-63 0-114 47-114 112 0 48 27 84 66 100l12 34h72l12-34c39-16 66-52 66-100 0-65-51-112-114-112z' fill='%23C6FF3D'/%3E%3Cg fill='%230B0F0E'%3E%3Ccircle cx='256' cy='150' r='15'/%3E%3Ccircle cx='208' cy='186' r='15'/%3E%3Ccircle cx='304' cy='186' r='15'/%3E%3Ccircle cx='256' cy='222' r='15'/%3E%3Ccircle cx='208' cy='258' r='15'/%3E%3Ccircle cx='304' cy='258' r='15'/%3E%3Ccircle cx='256' cy='294' r='15'/%3E%3C/g%3E%3Crect x='236' y='330' width='40' height='92' rx='20' fill='%23C6FF3D'/%3E%3Crect x='222' y='404' width='68' height='26' rx='13' fill='%23C6FF3D'/%3E%3C/g%3E%3Ccircle cx='376' cy='372' r='46' fill='%233D7FFF'/%3E%3Cpath d='M376 326c-14 14-14 32 0 46s14 32 0 46' stroke='%230B0F0E' stroke-width='7' fill='none' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512' width='512' height='512'%3E%3Crect width='512' height='512' rx='112' fill='%230B0F0E'/%3E%3Cg transform='rotate(-38 256 256)'%3E%3Cpath d='M256 84c-63 0-114 47-114 112 0 48 27 84 66 100l12 34h72l12-34c39-16 66-52 66-100 0-65-51-112-114-112z' fill='%23C6FF3D'/%3E%3Cg fill='%230B0F0E'%3E%3Ccircle cx='256' cy='150' r='15'/%3E%3Ccircle cx='208' cy='186' r='15'/%3E%3Ccircle cx='304' cy='186' r='15'/%3E%3Ccircle cx='256' cy='222' r='15'/%3E%3Ccircle cx='208' cy='258' r='15'/%3E%3Ccircle cx='304' cy='258' r='15'/%3E%3Ccircle cx='256' cy='294' r='15'/%3E%3C/g%3E%3Crect x='236' y='330' width='40' height='92' rx='20' fill='%23C6FF3D'/%3E%3Crect x='222' y='404' width='68' height='26' rx='13' fill='%23C6FF3D'/%3E%3C/g%3E%3Ccircle cx='376' cy='372' r='46' fill='%233D7FFF'/%3E%3Cpath d='M376 326c-14 14-14 32 0 46s14 32 0 46' stroke='%230B0F0E' stroke-width='7' fill='none' stroke-linecap='round'/%3E%3C/svg%3E">
+<meta name="theme-color" content="#0B0F0E">
+
+<!-- PWA: manifest + meta per installazione su home screen -->
+<link rel="manifest" href="/manifest.json">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Padel Cilento">
+
+<!-- Error tracking (Sentry, piano gratuito) — caricato per primo cosi'
+     cattura anche eventuali errori dagli script successivi.
+     Per attivarlo: crea un account gratuito su https://sentry.io, crea un
+     progetto "Browser JavaScript", copia il DSN dalla pagina di setup e
+     incollalo qui sotto al posto della stringa vuota. Finche' SENTRY_DSN
+     resta vuoto, questo blocco non fa nulla: nessun impatto sull'app. -->
+<script src="https://browser.sentry-cdn.com/10.68.0/bundle.min.js" crossorigin="anonymous"></script>
+<script>
+  const SENTRY_DSN = 'https://07b0fc44107043257e17c0321c8a5246@o4511798245916672.ingest.de.sentry.io/4511798265905232'; // <-- incolla qui il DSN del progetto Sentry
+
+  if (window.Sentry && SENTRY_DSN) {
+    Sentry.init({
+      dsn: SENTRY_DSN,
+      environment: ['localhost', '127.0.0.1'].includes(location.hostname) ? 'sviluppo' : 'produzione',
+    });
+
+    // Inoltra a Sentry anche gli errori che l'app registra con console.error,
+    // senza modificare i punti in cui vengono chiamati in tutto il resto
+    // del codice: si intercetta solo la funzione console.error una volta.
+    const consoleErrorOriginale = console.error.bind(console);
+    const serializzaPerSentry = (valore) => {
+      if (valore instanceof Error) return valore.message;
+      if (typeof valore === 'object' && valore !== null) {
+        try { return JSON.stringify(valore); } catch { return String(valore); }
+      }
+      return String(valore);
+    };
+    console.error = (...args) => {
+      consoleErrorOriginale(...args);
+      const errore = args.find((a) => a instanceof Error);
+      if (errore) {
+        Sentry.captureException(errore);
+      } else {
+        Sentry.captureMessage(args.map(serializzaPerSentry).join(' '), 'error');
+      }
+    };
+  }
+</script>
+
+<!-- Tailwind CSS via CDN -->
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          lime: { neon: '#C6FF3D' },
+          electric: { DEFAULT: '#3D7FFF' },
+          court: {
+            900: '#0B0F0E',
+            800: '#111613',
+            700: '#171D19',
+            600: '#222A25',
+            500: '#333D36',
+          },
+        },
+        fontFamily: {
+          display: ['"Space Grotesk"', 'sans-serif'],
+          body: ['Inter', 'sans-serif'],
+        },
+        boxShadow: {
+          'neon': '0 0 0 1px rgba(198,255,61,0.4), 0 0 24px -4px rgba(198,255,61,0.35)',
+          'neon-sm': '0 0 0 1px rgba(198,255,61,0.5)',
+        },
+        animation: {
+          'pulse-slot': 'pulseSlot 1.8s ease-in-out infinite',
+        },
+        keyframes: {
+          pulseSlot: {
+            '0%, 100%': { opacity: 1 },
+            '50%': { opacity: 0.35 },
+          }
+        }
+      }
+    }
+  }
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+  html { -webkit-tap-highlight-color: transparent; }
+  body { font-family: 'Inter', sans-serif; background-color: #0B0F0E; }
+  /* PWA su iOS (standalone, status bar black-translucent): senza questo
+     l'header finisce sotto la notch/status bar. env() vale 0 su browser
+     che non supportano la safe area, quindi non ha effetto altrove. */
+  header { padding-top: env(safe-area-inset-top); }
+  .font-display { font-family: 'Space Grotesk', sans-serif; }
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-thumb { background: #333D36; border-radius: 999px; }
+  .modal-backdrop { backdrop-filter: blur(6px); }
+  a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible {
+    outline: 2px solid #C6FF3D;
+    outline-offset: 2px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; }
+  }
+  .tab-btn[data-active="true"] {
+    background-color: #C6FF3D;
+    color: #0B0F0E;
+  }
+  .tab-btn[data-active="false"] {
+    color: rgba(255,255,255,0.6);
+  }
+
+  .filter-chip[data-active="true"] {
+    background-color: #C6FF3D;
+    color: #0B0F0E;
+    border-color: #C6FF3D;
+  }
+  .ball-icon.filled { color: #C6FF3D; }
+  .ball-icon.empty { color: #333D36; }
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+</style>
+</head>
+
+<body class="bg-court-900 text-white antialiased min-h-screen">
+
+  <!-- ============ HEADER / NAVBAR ============ -->
+  <header class="sticky top-0 z-40 bg-court-900/90 backdrop-blur border-b border-court-600">
+    <div class="max-w-2xl mx-auto px-4 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <div class="w-9 h-9 rounded-lg bg-lime-neon flex items-center justify-center shadow-neon">
+          <svg viewBox="0 0 24 24" class="w-5 h-5 text-court-900" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+            <circle cx="12" cy="12" r="6"></circle>
+            <path d="M12 6v12M6 12h12"></path>
+          </svg>
+        </div>
+        <span class="font-display font-700 text-lg tracking-tight">Padel <span class="text-lime-neon">Cilento</span></span>
+      </div>
+
+      <div id="auth-area" class="flex items-center gap-2">
+        <button id="btn-open-ranking" title="Classifica" aria-label="Classifica"
+                class="w-9 h-9 rounded-full bg-court-700 border border-court-500 flex items-center justify-center text-white/70 hover:border-lime-neon hover:text-lime-neon transition-colors shrink-0">
+          <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M8 21h8M12 17v4M7 4h10v4a5 5 0 01-10 0V4z"/><path d="M17 5h2a2 2 0 01-2 3M7 5H5a2 2 0 002 3"/>
+          </svg>
+        </button>
+        <button id="btn-login" class="px-4 py-2 rounded-full bg-court-700 border border-court-500 text-sm font-semibold hover:border-lime-neon hover:text-lime-neon transition-colors">
+          Accedi
+        </button>
+        <div id="user-chip" class="hidden items-center gap-2">
+          <div class="text-right leading-tight hidden sm:block">
+            <p id="user-name" class="text-sm font-semibold">—</p>
+            <p id="user-level" class="text-xs text-lime-neon">Livello —</p>
+          </div>
+          <button id="btn-avatar" class="w-9 h-9 rounded-full bg-electric flex items-center justify-center font-display font-700 text-sm overflow-hidden shrink-0">
+            <img id="avatar-img" class="hidden w-full h-full object-cover" alt="" />
+            <span id="avatar-initial">?</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-2xl mx-auto px-4 pb-28">
+
+    <!-- ============ HERO / CTA ============ -->
+    <section class="pt-6 pb-4">
+      <p class="text-court-500 text-sm font-medium mb-1">Paestum · Capaccio · Agropoli e dintorni</p>
+      <h1 class="font-display text-3xl font-700 leading-tight mb-4">
+        Gioca a <span class="text-lime-neon">Padel</span> nel Cilento, quando vuoi.
+      </h1>
+
+      <button id="btn-open-create" class="w-full flex items-center justify-center gap-2 bg-lime-neon text-court-900 font-display font-700 text-base py-4 rounded-2xl shadow-neon active:scale-[0.98] transition-transform">
+        <svg viewBox="0 0 24 24" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        Organizza una Partita
+      </button>
+
+      <!-- Tab principali: partite ancora aperte vs gia complete -->
+      <div class="grid grid-cols-3 gap-1 mt-5 p-1 bg-court-700 rounded-xl" id="tabs">
+        <button class="tab-btn py-2.5 rounded-lg text-xs sm:text-sm font-display font-700 transition-colors" data-tab="aperte" data-active="true">
+          Aperte <span id="tab-count-aperte" class="opacity-60"></span>
+        </button>
+        <button class="tab-btn py-2.5 rounded-lg text-xs sm:text-sm font-display font-700 transition-colors" data-tab="complete" data-active="false">
+          Complete <span id="tab-count-complete" class="opacity-60"></span>
+        </button>
+        <button class="tab-btn py-2.5 rounded-lg text-xs sm:text-sm font-display font-700 transition-colors" data-tab="concluse" data-active="false">
+          Concluse <span id="tab-count-concluse" class="opacity-60"></span>
+        </button>
+      </div>
+
+      <!-- Filtri secondari: chi ha organizzato -->
+      <div class="flex gap-2 mt-3 overflow-x-auto no-scrollbar pb-1" id="filters">
+        <button class="filter-chip shrink-0 px-4 py-2 rounded-full border border-court-500 text-sm font-semibold text-white/80 transition-colors" data-filter="all" data-active="true">
+          Tutte
+        </button>
+        <button class="filter-chip shrink-0 px-4 py-2 rounded-full border border-court-500 text-sm font-semibold text-white/80 transition-colors" data-filter="circolo" data-active="false">
+          Dai circoli
+        </button>
+        <button class="filter-chip shrink-0 px-4 py-2 rounded-full border border-court-500 text-sm font-semibold text-white/80 transition-colors" data-filter="giocatore" data-active="false">
+          Dai giocatori
+        </button>
+      </div>
+    </section>
+
+    <!-- ============ LISTA PARTITE ============ -->
+    <section class="mt-4">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="font-display font-700 text-sm uppercase tracking-wide text-court-500">Prossime partite</h2>
+        <button id="btn-refresh" class="text-xs font-semibold text-electric hover:text-lime-neon transition-colors flex items-center gap-1">
+          <svg viewBox="0 0 24 24" class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M4 4v5h5M20 20v-5h-5M4 9a8 8 0 0114-5.3M20 15a8 8 0 01-14 5.3"/></svg>
+          Aggiorna
+        </button>
+      </div>
+
+      <div id="matches-loading" class="space-y-3">
+        <div class="h-32 rounded-2xl bg-court-700 animate-pulse"></div>
+        <div class="h-32 rounded-2xl bg-court-700 animate-pulse"></div>
+      </div>
+
+      <div id="matches-empty" class="hidden text-center py-16 px-4 rounded-2xl border border-dashed border-court-500">
+        <p class="font-display font-700 text-lg mb-1">Nessuna partita in programma</p>
+        <p class="text-court-500 text-sm mb-4">Sii il primo a organizzarne una in zona.</p>
+        <button class="btn-open-create-empty px-5 py-2.5 rounded-full bg-lime-neon text-court-900 font-semibold text-sm">
+          + Crea la prima partita
+        </button>
+      </div>
+
+      <div id="matches-list" class="space-y-3"></div>
+    </section>
+  </main>
+
+  <!-- ============ TEMPLATE CARD PARTITA ============ -->
+  <template id="match-card-template">
+    <article class="match-card cursor-pointer rounded-2xl bg-court-700 border border-court-600 p-4 hover:border-lime-neon/50 transition-colors">
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <p class="match-datetime font-display font-700 text-xl leading-none">18:30</p>
+          <p class="match-date text-xs text-court-500 mt-1 font-medium">Gio 24 Lug</p>
+        </div>
+        <span class="match-level shrink-0 text-xs font-bold px-2.5 py-1 rounded-full bg-electric/15 text-electric border border-electric/30">
+          Intermedio · 2.5-3.5
+        </span>
+      </div>
+
+      <div class="mt-3 flex items-center gap-1.5 text-sm text-white/70">
+        <svg viewBox="0 0 24 24" class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 0114 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
+        <span class="match-club font-medium truncate">Padel Club</span>
+      </div>
+
+      <div class="mt-2">
+        <span class="match-origin inline-flex items-center gap-1 text-[11px] font-bold px-2 py-1 rounded-md"></span>
+      </div>
+
+      <div class="mt-4 flex items-center justify-between">
+        <div class="match-slots flex items-center gap-1.5"></div>
+        <span class="match-cta shrink-0 text-sm font-display font-700 px-4 py-2 rounded-xl bg-court-600 text-white/80">
+          Dettagli
+        </span>
+      </div>
+    </article>
+  </template>
+
+  <!-- ============ MODALE: CREA PARTITA ============ -->
+  <div id="modal-create" class="hidden fixed inset-0 z-50 items-end sm:items-center justify-center">
+    <div id="modal-create-backdrop" class="absolute inset-0 bg-black/70 modal-backdrop"></div>
+    <div class="relative w-full sm:max-w-md bg-court-800 border border-court-600 rounded-t-3xl sm:rounded-3xl p-6 pb-8 max-h-[92vh] overflow-y-auto">
+      <div class="flex items-center justify-between mb-5">
+        <h3 id="create-title" class="font-display font-700 text-xl">Organizza una Partita</h3>
+        <button id="btn-close-create" class="w-8 h-8 rounded-full bg-court-700 flex items-center justify-center text-white/60 hover:text-white">
+          <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <form id="form-create-match" class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-court-500 uppercase tracking-wide mb-1.5" for="input-club">Circolo / Campo</label>
+          <input id="input-club" name="club" type="text" required placeholder="Es. Padel Club Paestum"
+                 class="w-full bg-court-700 border border-court-500 rounded-xl px-4 py-3 text-sm text-white placeholder-court-500 focus:border-lime-neon outline-none" />
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-court-500 uppercase tracking-wide mb-1.5" for="input-zona">Zona</label>
+          <select id="input-zona" name="zona" required
+                  class="w-full bg-court-700 border border-court-500 rounded-xl px-4 py-3 text-sm text-white focus:border-lime-neon outline-none">
+            <option value="paestum">Paestum</option>
+            <option value="capaccio">Capaccio</option>
+            <option value="agropoli">Agropoli</option>
+            <option value="altro">Altro / dintorni</option>
+          </select>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-court-500 uppercase tracking-wide mb-1.5" for="input-date">Data</label>
+            <input id="input-date" name="date" type="date" required
+                   class="w-full bg-court-700 border border-court-500 rounded-xl px-4 py-3 text-sm text-white focus:border-lime-neon outline-none" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-court-500 uppercase tracking-wide mb-1.5" for="input-time">Ora</label>
+            <select id="input-time" name="time" required
+                    class="w-full bg-court-700 border border-court-500 rounded-xl px-4 py-3 text-sm text-white focus:border-lime-neon outline-none">
+              <!-- opzioni generate via JS: slot di 30 minuti -->
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-court-500 uppercase tracking-wide mb-1.5" for="input-level">Livello richiesto</label>
+          <select id="input-level" name="level" required
+                  class="w-full bg-court-700 border border-court-500 rounded-xl px-4 py-3 text-sm text-white focus:border-lime-neon outline-none">
+            <option value="principiante">Principiante · 1.0-2.0</option>
+            <option value="intermedio" selected>Intermedio · 2.5-3.5</option>
+            <option value="avanzato">Avanzato · 4.0+</option>
+            <option value="open">Open · tutti i livelli</option>
+          </select>
+        </div>
+
+        <div id="slots-section">
+          <label class="block text-xs font-semibold text-court-500 uppercase tracking-wide mb-1.5">Il tuo posto in campo</label>
+          <div class="grid grid-cols-2 gap-2">
+            <button type="button" data-slots="0" class="slots-btn py-2.5 rounded-xl border border-court-500 text-xs font-display font-700">Squadra A · sinistra</button>
+            <button type="button" data-slots="1" class="slots-btn py-2.5 rounded-xl border border-court-500 text-xs font-display font-700">Squadra A · destra</button>
+            <button type="button" data-slots="2" class="slots-btn py-2.5 rounded-xl border border-court-500 text-xs font-display font-700">Squadra B · sinistra</button>
+            <button type="button" data-slots="3" class="slots-btn py-2.5 rounded-xl border border-court-500 text-xs font-display font-700">Squadra B · destra</button>
+          </div>
+          <p class="text-[11px] text-court-500 mt-1.5">Gli altri giocatori scelgono il proprio posto iscrivendosi: le squadre sono reali e servono per registrare il risultato.</p>
+          <input type="hidden" id="input-missing" name="missing" value="0" />
+        </div>
+
+        <p id="create-error" class="hidden text-sm text-red-400 font-medium"></p>
+
+        <button type="submit" id="btn-submit-create"
+                class="w-full bg-lime-neon text-court-900 font-display font-700 py-3.5 rounded-xl shadow-neon mt-2">
+          Pubblica Partita
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ============ MODALE: AUTH (Login / Registrati) ============ -->
+  <div id="modal-auth" class="hidden fixed inset-0 z-50 items-end sm:items-center justify-center">
+    <div id="modal-auth-backdrop" class="absolute inset-0 bg-black/70 modal-backdrop"></div>
+    <div class="relative w-full sm:max-w-sm bg-court-800 border border-court-600 rounded-t-3xl sm:rounded-3xl p-6 pb-8 max-h-[92vh] overflow-y-auto">
+      <div class="flex items-center justify-between mb-5">
+        <h3 id="auth-title" class="font-display font-700 text-xl">Accedi</h3>
+        <button id="btn-close-auth" class="w-8 h-8 rounded-full bg-court-700 flex items-center justify-center text-white/60 hover:text-white">
+          <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <form id="form-auth" class="space-y-4">
+        <div id="auth-signup-fields" class="hidden space-y-4">
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-semibold text-court-500 uppercase tracking-wide mb-1.5" for="auth-nome">Nome</label>
+              <input id="auth-nome" type="text" placeholder="Mario"
+                     class="w-full bg-court-700 border border-court-500 rounded-xl px-4 py-3 text-sm text-white placeholder-court-500 focus:border-lime-neon outline-none" />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-court-500 uppercase tracking-wide mb-1.5" for="auth-cognome">Cognome</label>
+              <input id="auth-cognome" type="text" placeholder="Rossi"
+                     class="w-full bg-court-700 border border-court-500 rounded-xl px-4 py-3 text-sm text-white placeholder-court-500 focus:border-lime-neon outline-none" />
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-court-500 uppercase tracking-wide mb-1.5" for="auth-telefono">Numero di telefono</label>
+            <input id="auth-telefono" type="tel" placeholder="333 1234567"
+                   class="w-full bg-court-700 border border-court-500 rounded-xl px-4 py-3 text-sm text-white placeholder-court-500 focus:border-lime-neon outline-none" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-court-500 uppercase tracking-wide mb-1.5" for="auth-level">Il tuo livello</label>
+            <select id="auth-level" class="w-full bg-court-700 border border-court-500 rounded-xl px-4 py-3 text-sm text-white focus:border-lime-neon outline-none">
+              <option value="principiante">Principiante · 1.0-2.0</option>
+              <option value="intermedio" selected>Intermedio · 2.5-3.5</option>
+              <option value="avanzato">Avanzato · 4.0+</option>
+            </select>
+          </div>
+
+          <div class="pt-1 border-t border-court-600">
+            <label class="block text-xs font-semibold text-court-500 uppercase tracking-wide mb-1.5 mt-3" for="auth-codice">
+              Codice circolo <span class="normal-case font-normal">(solo per i gestori)</span>
+            </label>
+            <input id="auth-codice" type="text" placeholder="Lascia vuoto se sei un giocatore"
+                   class="w-full bg-court-700 border border-court-500 rounded-xl px-4 py-3 text-sm text-white placeholder-court-500 focus:border-lime-neon outline-none uppercase" />
+          </div>
+
+          <p class="text-[11px] text-court-500 leading-relaxed">
+            Registrandoti accetti la
+            <a href="/privacy.html" target="_blank" rel="noopener" class="text-lime-neon hover:underline">Privacy Policy</a>.
+          </p>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-court-500 uppercase tracking-wide mb-1.5" for="auth-email">Email</label>
+          <input id="auth-email" type="email" required placeholder="nome@email.com"
+                 class="w-full bg-court-700 border border-court-500 rounded-xl px-4 py-3 text-sm text-white placeholder-court-500 focus:border-lime-neon outline-none" />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-court-500 uppercase tracking-wide mb-1.5" for="auth-password">Password</label>
+          <input id="auth-password" type="password" required minlength="6" placeholder="••••••••"
+                 class="w-full bg-court-700 border border-court-500 rounded-xl px-4 py-3 text-sm text-white placeholder-court-500 focus:border-lime-neon outline-none" />
+        </div>
+
+        <div class="text-right -mt-2">
+          <button type="button" id="btn-forgot-password" class="text-xs text-court-500 hover:text-lime-neon font-medium">
+            Password dimenticata?
+          </button>
+        </div>
+
+        <p id="auth-error" class="hidden text-sm text-red-400 font-medium"></p>
+
+        <button type="submit" id="btn-submit-auth"
+                class="w-full bg-lime-neon text-court-900 font-display font-700 py-3.5 rounded-xl shadow-neon">
+          Accedi
+        </button>
+
+        <button type="button" id="btn-toggle-auth-mode" class="w-full text-center text-sm text-court-500 hover:text-white font-medium">
+          Non hai un account? <span class="text-lime-neon">Registrati</span>
+        </button>
+      </form>
+
+      <!-- Vista "recupera password": stesso modale, form separato -->
+      <form id="form-auth-forgot" class="hidden space-y-4">
+        <p class="text-sm text-court-500">Inserisci la tua email: se esiste un account associato, riceverai un link per reimpostare la password.</p>
+        <div>
+          <label class="block text-xs font-semibold text-court-500 uppercase tracking-wide mb-1.5" for="forgot-email">Email</label>
+          <input id="forgot-email" type="email" required placeholder="nome@email.com"
+                 class="w-full bg-court-700 border border-court-500 rounded-xl px-4 py-3 text-sm text-white placeholder-court-500 focus:border-lime-neon outline-none" />
+        </div>
+
+        <p id="forgot-error" class="hidden text-sm text-red-400 font-medium"></p>
+        <p id="forgot-success" class="hidden text-sm text-lime-neon font-medium"></p>
+
+        <button type="submit" id="btn-submit-forgot"
+                class="w-full bg-lime-neon text-court-900 font-display font-700 py-3.5 rounded-xl shadow-neon">
+          Invia link di recupero
+        </button>
+
+        <button type="button" id="btn-back-to-login" class="w-full text-center text-sm text-court-500 hover:text-white font-medium">
+          Torna al login
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ============ MODALE: IMPOSTA NUOVA PASSWORD (dopo il link di recupero) ============ -->
+  <div id="modal-reset-password" class="hidden fixed inset-0 z-50 items-end sm:items-center justify-center">
+    <div class="relative w-full sm:max-w-sm bg-court-800 border border-court-600 rounded-t-3xl sm:rounded-3xl p-6 pb-8 max-h-[92vh] overflow-y-auto">
+      <div class="flex items-center justify-between mb-5">
+        <h3 class="font-display font-700 text-xl">Imposta nuova password</h3>
+      </div>
+
+      <form id="form-reset-password" class="space-y-4">
+        <p class="text-sm text-court-500">Hai seguito un link di recupero. Scegli una nuova password per il tuo account.</p>
+        <div>
+          <label class="block text-xs font-semibold text-court-500 uppercase tracking-wide mb-1.5" for="reset-password-new">Nuova password</label>
+          <input id="reset-password-new" type="password" required minlength="6" placeholder="••••••••"
+                 class="w-full bg-court-700 border border-court-500 rounded-xl px-4 py-3 text-sm text-white placeholder-court-500 focus:border-lime-neon outline-none" />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-court-500 uppercase tracking-wide mb-1.5" for="reset-password-confirm">Conferma password</label>
+          <input id="reset-password-confirm" type="password" required minlength="6" placeholder="••••••••"
+                 class="w-full bg-court-700 border border-court-500 rounded-xl px-4 py-3 text-sm text-white placeholder-court-500 focus:border-lime-neon outline-none" />
+        </div>
+
+        <p id="reset-password-error" class="hidden text-sm text-red-400 font-medium"></p>
+
+        <button type="submit" id="btn-submit-reset-password"
+                class="w-full bg-lime-neon text-court-900 font-display font-700 py-3.5 rounded-xl shadow-neon">
+          Salva nuova password
+        </button>
+
+        <button type="button" id="btn-cancel-reset-password" class="w-full text-center text-sm text-court-500 hover:text-white font-medium">
+          Annulla
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ============ MODALE: PROFILO ============ -->
+  <div id="modal-profile" class="hidden fixed inset-0 z-50 items-end sm:items-center justify-center">
+    <div id="modal-profile-backdrop" class="absolute inset-0 bg-black/70 modal-backdrop"></div>
+    <div class="relative w-full sm:max-w-sm bg-court-800 border border-court-600 rounded-t-3xl sm:rounded-3xl p-6 pb-8 max-h-[92vh] overflow-y-auto">
+      <div class="flex items-center justify-between mb-5">
+        <h3 class="font-display font-700 text-xl">Il tuo profilo</h3>
+        <button id="btn-close-profile" class="w-8 h-8 rounded-full bg-court-700 flex items-center justify-center text-white/60 hover:text-white">
+          <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <form id="form-profile" class="space-y-4">
+        <div class="flex flex-col items-center gap-3">
+          <div id="profile-avatar-preview" class="w-20 h-20 rounded-full bg-electric flex items-center justify-center font-display font-700 text-2xl overflow-hidden">
+            <img id="profile-avatar-img" class="hidden w-full h-full object-cover" alt="" />
+            <span id="profile-avatar-initial">?</span>
+          </div>
+          <label for="profile-avatar-file" class="text-xs font-semibold text-lime-neon cursor-pointer">
+            Cambia foto profilo
+          </label>
+          <input id="profile-avatar-file" type="file" accept="image/*" class="hidden" />
+        </div>
+
+        <!-- Statistiche: calcolate dai risultati confermati, non memorizzate -->
+        <div id="profile-stats" class="hidden">
+          <div class="grid grid-cols-4 gap-1.5 text-center">
+            <div class="bg-court-700 rounded-xl py-2.5">
+              <p id="stat-partite" class="font-display font-700 text-lg leading-none">0</p>
+              <p class="text-[9px] text-court-500 font-semibold uppercase tracking-wide mt-1">Partite</p>
+            </div>
+            <div class="bg-court-700 rounded-xl py-2.5">
+              <p id="stat-vittorie" class="font-display font-700 text-lg leading-none text-lime-neon">0</p>
+              <p class="text-[9px] text-court-500 font-semibold uppercase tracking-wide mt-1">Vinte</p>
+            </div>
+            <div class="bg-court-700 rounded-xl py-2.5">
+              <p id="stat-sconfitte" class="font-display font-700 text-lg leading-none text-white/70">0</p>
+              <p class="text-[9px] text-court-500 font-semibold uppercase tracking-wide mt-1">Perse</p>
+            </div>
+            <div class="bg-court-700 rounded-xl py-2.5">
+              <p id="stat-percentuale" class="font-display font-700 text-lg leading-none text-electric">0%</p>
+              <p class="text-[9px] text-court-500 font-semibold uppercase tracking-wide mt-1">Vittorie</p>
+            </div>
+          </div>
+          <p id="stat-vuoto" class="hidden text-[11px] text-court-500 text-center mt-2">
+            Le statistiche compaiono dopo la prima partita con un risultato confermato.
+          </p>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-court-500 uppercase tracking-wide mb-1.5" for="profile-nome">Nome</label>
+            <input id="profile-nome" type="text" required
+                   class="w-full bg-court-700 border border-court-500 rounded-xl px-4 py-3 text-sm text-white focus:border-lime-neon outline-none" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-court-500 uppercase tracking-wide mb-1.5" for="profile-cognome">Cognome</label>
+            <input id="profile-cognome" type="text" required
+                   class="w-full bg-court-700 border border-court-500 rounded-xl px-4 py-3 text-sm text-white focus:border-lime-neon outline-none" />
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-court-500 uppercase tracking-wide mb-1.5" for="profile-phone">Numero di telefono</label>
+          <input id="profile-phone" type="tel"
+                 class="w-full bg-court-700 border border-court-500 rounded-xl px-4 py-3 text-sm text-white focus:border-lime-neon outline-none" />
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-court-500 uppercase tracking-wide mb-1.5" for="profile-level">Livello</label>
+          <select id="profile-level"
+                  class="w-full bg-court-700 border border-court-500 rounded-xl px-4 py-3 text-sm text-white focus:border-lime-neon outline-none">
+            <option value="principiante">Principiante · 1.0-2.0</option>
+            <option value="intermedio">Intermedio · 2.5-3.5</option>
+            <option value="avanzato">Avanzato · 4.0+</option>
+          </select>
+        </div>
+
+        <p id="profile-error" class="hidden text-sm text-red-400 font-medium"></p>
+
+        <button type="submit" id="btn-submit-profile"
+                class="w-full bg-lime-neon text-court-900 font-display font-700 py-3.5 rounded-xl shadow-neon">
+          Salva Modifiche
+        </button>
+
+        <button type="button" id="btn-logout"
+                class="w-full text-center text-sm text-red-400 hover:text-red-300 font-semibold py-2">
+          Disconnetti
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ============ MODALE: DETTAGLIO PARTITA ============ -->
+  <div id="modal-match" class="hidden fixed inset-0 z-50 items-end sm:items-center justify-center">
+    <div id="modal-match-backdrop" class="absolute inset-0 bg-black/70 modal-backdrop"></div>
+    <div class="relative w-full sm:max-w-md bg-court-800 border border-court-600 rounded-t-3xl sm:rounded-3xl p-6 pb-8 max-h-[92vh] overflow-y-auto">
+      <div class="flex items-center justify-between mb-5">
+        <h3 class="font-display font-700 text-xl">Dettaglio Partita</h3>
+        <button id="btn-close-match" class="w-8 h-8 rounded-full bg-court-700 flex items-center justify-center text-white/60 hover:text-white">
+          <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <div class="flex items-start justify-between gap-3 mb-3">
+        <div>
+          <p id="match-detail-time" class="font-display font-700 text-2xl leading-none">18:30</p>
+          <p id="match-detail-date" class="text-xs text-court-500 mt-1 font-medium">Gio 24 Lug</p>
+        </div>
+        <span id="match-detail-level" class="shrink-0 text-xs font-bold px-2.5 py-1 rounded-full bg-electric/15 text-electric border border-electric/30">
+          Intermedio · 2.5-3.5
+        </span>
+      </div>
+
+      <div class="flex items-center gap-1.5 text-sm text-white/70 mb-2">
+        <svg viewBox="0 0 24 24" class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 0114 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
+        <span id="match-detail-club" class="font-medium">Padel Club</span>
+      </div>
+
+      <div class="mb-4">
+        <span id="match-detail-origin" class="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-1 rounded-md"></span>
+      </div>
+
+      <p class="text-xs font-semibold text-court-500 uppercase tracking-wide mb-2">In campo (<span id="match-detail-count">0/4</span>)</p>
+
+      <!-- Mini campo da padel: 4 posizioni, 2 per lato -->
+      <div id="match-court" class="relative rounded-2xl border border-court-500 bg-court-900 p-3 mb-6 overflow-hidden">
+        <!-- linee del campo -->
+        <div class="absolute inset-3 rounded-xl border-2 border-lime-neon/20 pointer-events-none"></div>
+        <!-- rete centrale -->
+        <div class="absolute left-3 right-3 top-1/2 -translate-y-1/2 h-[2px] bg-lime-neon/40 pointer-events-none"></div>
+        <div class="absolute left-3 right-3 top-1/2 -translate-y-1/2 flex justify-center pointer-events-none">
+          <span class="bg-court-900 px-2 text-[9px] font-display font-700 text-lime-neon/50 tracking-widest">RETE</span>
+        </div>
+
+        <div class="relative grid grid-rows-2 gap-3">
+          <!-- Squadra A: posti 0 e 1 -->
+          <div class="pb-2">
+            <p class="text-[9px] font-display font-700 text-lime-neon/60 tracking-[0.15em] mb-1.5">SQUADRA A</p>
+            <div class="grid grid-cols-2 gap-2">
+              <div class="court-spot" data-spot="0"></div>
+              <div class="court-spot" data-spot="1"></div>
+            </div>
+          </div>
+          <!-- Squadra B: posti 2 e 3 -->
+          <div class="pt-2">
+            <div class="grid grid-cols-2 gap-2">
+              <div class="court-spot" data-spot="2"></div>
+              <div class="court-spot" data-spot="3"></div>
+            </div>
+            <p class="text-[9px] font-display font-700 text-electric/60 tracking-[0.15em] mt-1.5 text-right">SQUADRA B</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Contatti: visibili solo a chi gioca questa partita -->
+      <div id="match-contacts" class="hidden mb-4">
+        <button type="button" id="btn-show-contacts"
+                class="w-full text-xs font-semibold text-electric hover:text-lime-neon py-2.5 rounded-xl border border-court-600 transition-colors">
+          Mostra i contatti dei giocatori
+        </button>
+        <div id="contacts-list" class="hidden mt-2 space-y-1.5"></div>
+      </div>
+
+      <!-- Risultato: registrazione, conferma, punteggio finale -->
+      <div id="match-result" class="hidden mb-4"></div>
+
+      <p id="match-detail-error" class="hidden text-sm text-red-400 font-medium mb-3"></p>
+      <p id="match-detail-hint" class="hidden text-xs text-court-500 mb-3"></p>
+
+      <button id="btn-match-detail-action"
+              class="w-full font-display font-700 py-3.5 rounded-xl transition-colors">
+        Iscriviti alla Partita
+      </button>
+
+      <!-- Gestione: visibile solo a chi ha creato la partita -->
+      <div id="match-owner-actions" class="hidden grid-cols-2 gap-2 mt-3 pt-3 border-t border-court-600">
+        <button id="btn-edit-match" class="py-2.5 rounded-xl border border-court-500 text-sm font-semibold text-white/80 hover:border-lime-neon hover:text-lime-neon transition-colors">
+          Modifica
+        </button>
+        <button id="btn-delete-match" class="py-2.5 rounded-xl border border-red-500/40 text-sm font-semibold text-red-400 hover:bg-red-500/10 transition-colors">
+          Elimina
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ MODALE: CLASSIFICA ============ -->
+  <div id="modal-ranking" class="hidden fixed inset-0 z-50 items-end sm:items-center justify-center">
+    <div id="modal-ranking-backdrop" class="absolute inset-0 bg-black/70 modal-backdrop"></div>
+    <div class="relative w-full sm:max-w-md bg-court-800 border border-court-600 rounded-t-3xl sm:rounded-3xl p-6 pb-8 max-h-[92vh] overflow-y-auto">
+      <div class="flex items-center justify-between mb-1">
+        <h3 class="font-display font-700 text-xl">Classifica</h3>
+        <button id="btn-close-ranking" class="w-8 h-8 rounded-full bg-court-700 flex items-center justify-center text-white/60 hover:text-white">
+          <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <p id="ranking-subtitle" class="text-xs text-court-500 mb-4">Solo risultati confermati dagli avversari.</p>
+
+      <div id="ranking-loading" class="space-y-2">
+        <div class="h-14 rounded-xl bg-court-700 animate-pulse"></div>
+        <div class="h-14 rounded-xl bg-court-700 animate-pulse"></div>
+        <div class="h-14 rounded-xl bg-court-700 animate-pulse"></div>
+      </div>
+
+      <div id="ranking-empty" class="hidden text-center py-10 px-2 rounded-2xl border border-dashed border-court-500">
+        <p id="ranking-empty-title" class="font-display font-700 text-base mb-1">Classifica ancora vuota</p>
+        <p id="ranking-empty-text" class="text-court-500 text-sm">Servono almeno 3 partite con risultato confermato.</p>
+      </div>
+
+      <div id="ranking-list" class="space-y-2"></div>
+
+      <button type="button" id="btn-toggle-ranking-min"
+              class="hidden w-full mt-4 text-xs font-semibold text-electric hover:text-lime-neon py-2.5 rounded-xl border border-court-600 transition-colors">
+        Mostra anche chi ha giocato meno di 3 partite
+      </button>
+    </div>
+  </div>
+
+  <!-- ============ TOAST ============ -->
+  <div id="toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] bg-court-700 border border-lime-neon text-white text-sm font-semibold px-5 py-3 rounded-full shadow-neon-sm max-w-[90vw] text-center"></div>
+
+  <!-- Supabase JS Client v2 -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+/* =========================================================
+   PADEL CILENTO — Logica applicativa
+   Supabase JS Client v2
+   ========================================================= */
+
+// ---------------------------------------------------------
+// 1. CONFIGURAZIONE SUPABASE
+// ---------------------------------------------------------
+const SUPABASE_URL = 'https://eyxvgowdxcyxegktrgxp.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV5eHZnb3dkeGN5eGVna3RyZ3hwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ4Nzc3MjcsImV4cCI6MjEwMDQ1MzcyN30.StKEZE4GyTDYca9CLKP8hi8XAjrpgTw9BlCOBFoteWU';
+
+// Nota: la nostra variabile si chiama "supabaseClient" (non "supabase")
+// per non entrare in conflitto con l'oggetto globale creato dalla libreria CDN.
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// Il listener va registrato SUBITO dopo la creazione del client, non dopo:
+// supabase-js elabora il token di recovery presente nell'URL (se c'e')
+// in modo automatico e quasi immediato, e l'evento PASSWORD_RECOVERY
+// scatta una volta sola. Se il listener venisse registrato piu' tardi
+// (es. dentro initAuth, chiamata solo alla fine dello script), l'evento
+// verrebbe perso: getSession() restituirebbe gia' la sessione di recovery
+// come se fosse un login normale, senza mai proporre il cambio password.
+supabaseClient.auth.onAuthStateChange(async (event, session) => {
+  if (session?.user) {
+    currentUser = session.user;
+    currentProfile = await loadProfile(currentUser);
+  } else {
+    currentUser = null;
+    currentProfile = null;
+  }
+  renderAuthState();
+
+  // Link di recupero password cliccato: Supabase ha creato una sessione
+  // temporanea. Si chiede subito la nuova password invece di lasciare
+  // l'utente semplicemente "loggato".
+  if (event === 'PASSWORD_RECOVERY') {
+    closeModal(el.modalAuth);
+    openModal(el.modalResetPassword);
+    // Rimuove il token dalla barra indirizzi/cronologia: non deve restare
+    // visibile ne' essere ri-processato se la pagina viene ricaricata.
+    history.replaceState(null, '', window.location.pathname);
+  }
+});
+
+// ---------------------------------------------------------
+// 2. STATO GLOBALE
+// ---------------------------------------------------------
+let currentUser = null;
+let currentProfile = null;
+let allMatches = [];
+let mieIscrizioni = new Set();
+let risultatiPerPartita = new Map();
+let activeFilter = 'all';
+let activeTab = 'aperte';
+let editingMatchId = null;
+let selectedSpot = 0;
+let authMode = 'login';
+let currentDetailMatch = null;
+let currentDetailParticipants = [];
+let currentDetailResult = null;
+let profileAvatarFile = null;
+
+const LEVEL_LABELS = {
+  principiante: 'Principiante · 1.0-2.0',
+  intermedio: 'Intermedio · 2.5-3.5',
+  avanzato: 'Avanzato · 4.0+',
+  open: 'Open · tutti i livelli',
+};
+
+const UN_ORA_MS = 60 * 60 * 1000;
+
+// ---------------------------------------------------------
+// 3. RIFERIMENTI DOM
+// ---------------------------------------------------------
+const el = {
+  btnLogin: document.getElementById('btn-login'),
+  userChip: document.getElementById('user-chip'),
+  userName: document.getElementById('user-name'),
+  userLevel: document.getElementById('user-level'),
+  avatarInitial: document.getElementById('avatar-initial'),
+  avatarImg: document.getElementById('avatar-img'),
+  btnAvatar: document.getElementById('btn-avatar'),
+
+  filters: document.getElementById('filters'),
+  tabs: document.getElementById('tabs'),
+  tabCountAperte: document.getElementById('tab-count-aperte'),
+  tabCountComplete: document.getElementById('tab-count-complete'),
+  tabCountConcluse: document.getElementById('tab-count-concluse'),
+  createTitle: document.getElementById('create-title'),
+  authCodice: document.getElementById('auth-codice'),
+  matchOwnerActions: document.getElementById('match-owner-actions'),
+  btnEditMatch: document.getElementById('btn-edit-match'),
+  btnDeleteMatch: document.getElementById('btn-delete-match'),
+
+  matchesLoading: document.getElementById('matches-loading'),
+  matchesEmpty: document.getElementById('matches-empty'),
+  matchesList: document.getElementById('matches-list'),
+  cardTemplate: document.getElementById('match-card-template'),
+  btnRefresh: document.getElementById('btn-refresh'),
+
+  btnOpenCreate: document.getElementById('btn-open-create'),
+  modalCreate: document.getElementById('modal-create'),
+  modalCreateBackdrop: document.getElementById('modal-create-backdrop'),
+  btnCloseCreate: document.getElementById('btn-close-create'),
+  formCreateMatch: document.getElementById('form-create-match'),
+  createError: document.getElementById('create-error'),
+  slotsButtons: document.querySelectorAll('.slots-btn'),
+  inputMissing: document.getElementById('input-missing'),
+
+  modalAuth: document.getElementById('modal-auth'),
+  modalAuthBackdrop: document.getElementById('modal-auth-backdrop'),
+  btnCloseAuth: document.getElementById('btn-close-auth'),
+  authTitle: document.getElementById('auth-title'),
+  authSignupFields: document.getElementById('auth-signup-fields'),
+  authNome: document.getElementById('auth-nome'),
+  authCognome: document.getElementById('auth-cognome'),
+  authTelefono: document.getElementById('auth-telefono'),
+  authLevel: document.getElementById('auth-level'),
+  authEmail: document.getElementById('auth-email'),
+  authPassword: document.getElementById('auth-password'),
+  formAuth: document.getElementById('form-auth'),
+  authError: document.getElementById('auth-error'),
+  btnSubmitAuth: document.getElementById('btn-submit-auth'),
+  btnToggleAuthMode: document.getElementById('btn-toggle-auth-mode'),
+
+  btnForgotPassword: document.getElementById('btn-forgot-password'),
+  formAuthForgot: document.getElementById('form-auth-forgot'),
+  forgotEmail: document.getElementById('forgot-email'),
+  forgotError: document.getElementById('forgot-error'),
+  forgotSuccess: document.getElementById('forgot-success'),
+  btnSubmitForgot: document.getElementById('btn-submit-forgot'),
+  btnBackToLogin: document.getElementById('btn-back-to-login'),
+
+  modalResetPassword: document.getElementById('modal-reset-password'),
+  formResetPassword: document.getElementById('form-reset-password'),
+  resetPasswordNew: document.getElementById('reset-password-new'),
+  resetPasswordConfirm: document.getElementById('reset-password-confirm'),
+  resetPasswordError: document.getElementById('reset-password-error'),
+  btnSubmitResetPassword: document.getElementById('btn-submit-reset-password'),
+  btnCancelResetPassword: document.getElementById('btn-cancel-reset-password'),
+
+  modalProfile: document.getElementById('modal-profile'),
+  modalProfileBackdrop: document.getElementById('modal-profile-backdrop'),
+  btnCloseProfile: document.getElementById('btn-close-profile'),
+  profileAvatarPreview: document.getElementById('profile-avatar-preview'),
+  profileAvatarImg: document.getElementById('profile-avatar-img'),
+  profileAvatarInitial: document.getElementById('profile-avatar-initial'),
+  profileAvatarFile: document.getElementById('profile-avatar-file'),
+  profileNome: document.getElementById('profile-nome'),
+  profileCognome: document.getElementById('profile-cognome'),
+  profilePhone: document.getElementById('profile-phone'),
+  profileLevel: document.getElementById('profile-level'),
+  formProfile: document.getElementById('form-profile'),
+  profileError: document.getElementById('profile-error'),
+  btnSubmitProfile: document.getElementById('btn-submit-profile'),
+  btnLogout: document.getElementById('btn-logout'),
+
+  modalMatch: document.getElementById('modal-match'),
+  modalMatchBackdrop: document.getElementById('modal-match-backdrop'),
+  btnCloseMatch: document.getElementById('btn-close-match'),
+  matchDetailTime: document.getElementById('match-detail-time'),
+  matchDetailDate: document.getElementById('match-detail-date'),
+  matchDetailLevel: document.getElementById('match-detail-level'),
+  matchDetailClub: document.getElementById('match-detail-club'),
+  matchDetailOrigin: document.getElementById('match-detail-origin'),
+  matchDetailCount: document.getElementById('match-detail-count'),
+  matchCourt: document.getElementById('match-court'),
+  inputTime: document.getElementById('input-time'),
+  inputDate: document.getElementById('input-date'),
+  matchDetailError: document.getElementById('match-detail-error'),
+  matchDetailHint: document.getElementById('match-detail-hint'),
+  btnMatchDetailAction: document.getElementById('btn-match-detail-action'),
+
+  matchContacts: document.getElementById('match-contacts'),
+  btnShowContacts: document.getElementById('btn-show-contacts'),
+  contactsList: document.getElementById('contacts-list'),
+  matchResult: document.getElementById('match-result'),
+  profileStats: document.getElementById('profile-stats'),
+
+  modalRanking: document.getElementById('modal-ranking'),
+  modalRankingBackdrop: document.getElementById('modal-ranking-backdrop'),
+  btnOpenRanking: document.getElementById('btn-open-ranking'),
+  btnCloseRanking: document.getElementById('btn-close-ranking'),
+  rankingSubtitle: document.getElementById('ranking-subtitle'),
+  rankingLoading: document.getElementById('ranking-loading'),
+  rankingEmpty: document.getElementById('ranking-empty'),
+  rankingEmptyTitle: document.getElementById('ranking-empty-title'),
+  rankingEmptyText: document.getElementById('ranking-empty-text'),
+  rankingList: document.getElementById('ranking-list'),
+  btnToggleRankingMin: document.getElementById('btn-toggle-ranking-min'),
+
+  toast: document.getElementById('toast'),
+};
+
+// ---------------------------------------------------------
+// 4. UTILITY UI
+// ---------------------------------------------------------
+function showToast(message) {
+  el.toast.textContent = message;
+  el.toast.classList.remove('hidden');
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(() => el.toast.classList.add('hidden'), 3000);
+}
+
+/**
+ * Traduce un errore tecnico (Postgres/Supabase) in un messaggio adatto
+ * all'utente finale, invece di mostrare testo grezzo/in inglese.
+ *
+ * Le eccezioni sollevate dalle nostre funzioni nel database (RAISE
+ * EXCEPTION nelle funzioni SQL di supabase/migrations/) arrivano sempre
+ * con codice Postgres "P0001" e sono gia' scritte in italiano apposta
+ * per essere lette dall'utente: si mostrano cosi' come sono.
+ * Tutto il resto (errori imprevisti, di rete, o testo tecnico in inglese
+ * di Supabase Auth) viene tradotto o sostituito dal messaggio di
+ * default passato da chi chiama, specifico per quel punto dell'app.
+ */
+function messaggioErrore(err, fallback) {
+  if (!err) return fallback;
+
+  if (err.code === 'P0001' && err.message) return err.message;
+
+  const messaggio = err.message || '';
+
+  if (err.name === 'AuthRetryableFetchError' || /failed to fetch/i.test(messaggio)) {
+    return 'Errore di connessione. Controlla la rete e riprova.';
+  }
+
+  const traduzioniNote = [
+    [/invalid login credentials/i, 'Email o password non corretti.'],
+    [/email not confirmed/i, 'Devi confermare l\'email prima di accedere: controlla la posta (anche lo spam).'],
+    [/user already registered/i, 'Esiste gia\' un account con questa email.'],
+    [/password should be at least/i, 'La password deve avere almeno 6 caratteri.'],
+    [/unable to validate email address/i, 'L\'indirizzo email non e\' valido.'],
+    [/email rate limit exceeded/i, 'Troppe richieste in poco tempo. Riprova tra qualche minuto.'],
+    [/you can only request this after/i, 'Hai gia\' richiesto un\'email da poco: attendi qualche minuto prima di riprovare.'],
+    [/should be different from the old password/i, 'La nuova password deve essere diversa da quella attuale.'],
+    [/auth session missing/i, 'La sessione e\' scaduta: chiudi e riprova.'],
+  ];
+
+  for (const [pattern, testo] of traduzioniNote) {
+    if (pattern.test(messaggio)) return testo;
+  }
+
+  return fallback;
+}
+
+function openModal(modalEl) {
+  modalEl.classList.remove('hidden');
+  modalEl.classList.add('flex');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeModal(modalEl) {
+  modalEl.classList.add('hidden');
+  modalEl.classList.remove('flex');
+  document.body.style.overflow = '';
+}
+
+function formatDateLabel(dateStr) {
+  const d = new Date(dateStr + 'T00:00:00');
+  const giorni = ['Dom', 'Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab'];
+  const mesi = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'];
+  return `${giorni[d.getDay()]} ${d.getDate()} ${mesi[d.getMonth()]}`;
+}
+
+function getMatchDateTime(match) {
+  return new Date(`${match.match_date}T${match.match_time}`);
+}
+
+function displayName(profile) {
+  if (!profile) return 'Giocatore';
+  const nome = profile.nome || '';
+  const cognome = profile.cognome || '';
+  const composed = `${nome} ${cognome}`.trim();
+  return composed || profile.full_name || 'Giocatore';
+}
+
+// ---------------------------------------------------------
+// 5. AUTENTICAZIONE
+// ---------------------------------------------------------
+function renderAuthState() {
+  if (currentUser && currentProfile) {
+    el.btnLogin.classList.add('hidden');
+    el.userChip.classList.remove('hidden');
+    el.userChip.classList.add('flex');
+    el.userName.textContent = displayName(currentProfile);
+    el.userLevel.textContent = LEVEL_LABELS[currentProfile.level]?.split(' · ')[0] || 'Livello —';
+
+    if (currentProfile.avatar_url) {
+      el.avatarImg.src = currentProfile.avatar_url;
+      el.avatarImg.classList.remove('hidden');
+      el.avatarInitial.classList.add('hidden');
+    } else {
+      el.avatarImg.classList.add('hidden');
+      el.avatarInitial.classList.remove('hidden');
+      el.avatarInitial.textContent = displayName(currentProfile).charAt(0).toUpperCase();
+    }
+  } else {
+    el.btnLogin.classList.remove('hidden');
+    el.userChip.classList.add('hidden');
+    el.userChip.classList.remove('flex');
+  }
+}
+
+async function loadProfile(user, tentaCreazione = true) {
+  // Il proprio profilo arriva da una funzione dedicata invece che da una
+  // select diretta: il telefono e' protetto da permessi di colonna, quindi
+  // leggibile solo dal titolare (vedi schema_update_4.sql).
+  const { data, error } = await supabaseClient.rpc('mio_profilo');
+
+  if (error) {
+    console.error('Errore caricamento profilo:', error);
+    return null;
+  }
+
+  if (data) return data;
+
+  // Profilo assente: succede al primo accesso dopo la conferma via email.
+  // Lo si crea ora, che la sessione e' attiva, e lo si rilegge.
+  if (tentaCreazione) {
+    await creaProfiloDaMetadati(user);
+    return await loadProfile(user, false);
+  }
+
+  return null;
+}
+
+async function loginUtente(email, password) {
+  const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+  if (error) throw error;
+  return data.user;
+}
+
+/**
+ * Registrazione: crea l'utente Auth e subito dopo il profilo pubblico
+ * con nome, cognome, telefono e livello.
+ */
+async function registraUtente({ email, password, nome, cognome, telefono, level, codice }) {
+  // I dati vengono salvati nei metadati dell'account.
+  // Servono perche' con la conferma via email attiva non esiste ancora
+  // una sessione: il profilo non sarebbe scrivibile in questo momento.
+  const { data, error } = await supabaseClient.auth.signUp({
+    email,
+    password,
+    options: {
+      data: { nome, cognome, telefono, level, codice: codice || null },
+    },
+  });
+  if (error) throw error;
+
+  const user = data.user;
+
+  // Se la sessione e' gia' attiva (conferma email disattivata),
+  // il profilo viene creato subito.
+  if (user && data.session) {
+    await creaProfiloDaMetadati(user);
+  }
+  return { user, session: data.session };
+}
+
+/**
+ * Crea il profilo pubblico a partire dai metadati dell'account.
+ * Viene richiamata anche al primo login, cosi' il profilo esiste
+ * sempre, indipendentemente dalla conferma via email.
+ */
+async function creaProfiloDaMetadati(user) {
+  const meta = user.user_metadata || {};
+  const nome = meta.nome || (user.email || '').split('@')[0];
+  const cognome = meta.cognome || '';
+
+  const { error } = await supabaseClient.from('profiles').insert({
+    id: user.id,
+    nome,
+    cognome,
+    telefono: meta.telefono || null,
+    level: meta.level || 'intermedio',
+    full_name: `${nome} ${cognome}`.trim(),
+  });
+
+  if (error && error.code !== '23505') { // 23505 = profilo gia' esistente
+    console.error('Errore creazione profilo:', error);
+    return;
+  }
+
+  // Codice circolo inserito in fase di registrazione
+  if (meta.codice) {
+    try {
+      const circolo = await usaCodiceCircolo(meta.codice);
+      showToast(`Account gestore attivato per ${circolo}.`);
+    } catch (codErr) {
+      console.error('Codice circolo non applicato:', codErr);
+      showToast(`Registrato come giocatore: ${messaggioErrore(codErr, 'codice circolo non valido.')}`);
+    }
+  }
+}
+
+/**
+ * Attiva il ruolo "gestore" tramite codice circolo.
+ * La verifica avviene interamente lato database (funzione security definer):
+ * dal browser non e' possibile aggirarla.
+ */
+async function usaCodiceCircolo(codice) {
+  const { data, error } = await supabaseClient.rpc('usa_codice_circolo', { p_code: codice });
+  if (error) throw error;
+  return data; // nome del circolo
+}
+
+async function logoutUtente() {
+  await supabaseClient.auth.signOut();
+  currentUser = null;
+  currentProfile = null;
+  renderAuthState();
+  // Il feed va ricaricato: iscrizioni e risultati non sono piu' leggibili
+  await caricaPartite();
+  showToast('Disconnesso.');
+}
+
+/**
+ * Invia l'email con il link per reimpostare la password.
+ * Il redirect riporta l'utente su questa stessa app: Supabase apre
+ * automaticamente una sessione di recupero che fa scattare l'evento
+ * PASSWORD_RECOVERY, gestito dal listener registrato subito dopo
+ * la creazione di supabaseClient (vedi sezione 1).
+ */
+async function inviaLinkRecuperoPassword(email) {
+  const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
+    redirectTo: window.location.origin + '/',
+  });
+  if (error) throw error;
+}
+
+async function initAuth() {
+  // Il listener onAuthStateChange e' gia' registrato subito dopo la
+  // creazione di supabaseClient (vedi sezione 1): qui serve solo a
+  // leggere lo stato iniziale della sessione (login gia' persistito).
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if (session?.user) {
+    currentUser = session.user;
+    currentProfile = await loadProfile(currentUser);
+  }
+  renderAuthState();
+}
+
+// ---------------------------------------------------------
+// 6. PROFILO: MODIFICA
+// ---------------------------------------------------------
+function openProfileModal() {
+  if (!currentProfile) return;
+  el.profileNome.value = currentProfile.nome || '';
+  el.profileCognome.value = currentProfile.cognome || '';
+  el.profilePhone.value = currentProfile.telefono || '';
+  el.profileLevel.value = currentProfile.level || 'intermedio';
+  profileAvatarFile = null;
+  el.profileAvatarFile.value = '';
+
+  if (currentProfile.avatar_url) {
+    el.profileAvatarImg.src = currentProfile.avatar_url;
+    el.profileAvatarImg.classList.remove('hidden');
+    el.profileAvatarInitial.classList.add('hidden');
+  } else {
+    el.profileAvatarImg.classList.add('hidden');
+    el.profileAvatarInitial.classList.remove('hidden');
+    el.profileAvatarInitial.textContent = displayName(currentProfile).charAt(0).toUpperCase();
+  }
+
+  el.profileError.classList.add('hidden');
+  openModal(el.modalProfile);
+  renderProfileStats();
+}
+
+/**
+ * Le statistiche non sono un contatore salvato sul profilo: vengono
+ * ricalcolate dai risultati validi a ogni apertura, quindi non possono
+ * divergere dalle partite realmente giocate.
+ */
+async function renderProfileStats() {
+  el.profileStats.classList.add('hidden');
+
+  const s = await caricaStatistiche();
+  if (!s) return;
+
+  document.getElementById('stat-partite').textContent = s.partite;
+  document.getElementById('stat-vittorie').textContent = s.vittorie;
+  document.getElementById('stat-sconfitte').textContent = s.sconfitte;
+  document.getElementById('stat-percentuale').textContent = `${s.percentuale_vittorie}%`;
+  document.getElementById('stat-vuoto').classList.toggle('hidden', s.partite > 0);
+
+  el.profileStats.classList.remove('hidden');
+}
+
+el.btnAvatar.addEventListener('click', openProfileModal);
+el.btnCloseProfile.addEventListener('click', () => closeModal(el.modalProfile));
+el.modalProfileBackdrop.addEventListener('click', () => closeModal(el.modalProfile));
+
+el.profileAvatarFile.addEventListener('change', (e) => {
+  const file = e.target.files?.[0];
+  if (!file) return;
+  profileAvatarFile = file;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    el.profileAvatarImg.src = ev.target.result;
+    el.profileAvatarImg.classList.remove('hidden');
+    el.profileAvatarInitial.classList.add('hidden');
+  };
+  reader.readAsDataURL(file);
+});
+
+/**
+ * Carica l'avatar su Supabase Storage (bucket "avatars") e restituisce l'URL pubblico.
+ */
+async function caricaAvatar(userId, file) {
+  const ext = file.name.split('.').pop();
+  const path = `${userId}-${Date.now()}.${ext}`;
+
+  const { error: uploadErr } = await supabaseClient.storage
+    .from('avatars')
+    .upload(path, file, { upsert: true });
+
+  if (uploadErr) throw uploadErr;
+
+  const { data } = supabaseClient.storage.from('avatars').getPublicUrl(path);
+  return data.publicUrl;
+}
+
+/**
+ * Aggiorna nome, cognome, telefono, livello e (facoltativo) avatar del profilo.
+ */
+async function salvaProfilo(payload) {
+  const { error } = await supabaseClient
+    .from('profiles')
+    .update(payload)
+    .eq('id', currentUser.id);
+  if (error) throw error;
+}
+
+el.formProfile.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  el.profileError.classList.add('hidden');
+
+  const nome = el.profileNome.value.trim();
+  const cognome = el.profileCognome.value.trim();
+  if (!nome || !cognome) {
+    el.profileError.textContent = 'Nome e cognome sono obbligatori.';
+    el.profileError.classList.remove('hidden');
+    return;
+  }
+
+  el.btnSubmitProfile.disabled = true;
+  el.btnSubmitProfile.textContent = 'Salvataggio...';
+
+  try {
+    const payload = {
+      nome,
+      cognome,
+      telefono: el.profilePhone.value.trim(),
+      level: el.profileLevel.value,
+      full_name: `${nome} ${cognome}`,
+    };
+
+    if (profileAvatarFile) {
+      payload.avatar_url = await caricaAvatar(currentUser.id, profileAvatarFile);
+    }
+
+    await salvaProfilo(payload);
+    currentProfile = await loadProfile(currentUser);
+    renderAuthState();
+    closeModal(el.modalProfile);
+    showToast('Profilo aggiornato! ✅');
+  } catch (err) {
+    console.error(err);
+    el.profileError.textContent = messaggioErrore(err, 'Errore durante il salvataggio del profilo. Riprova.');
+    el.profileError.classList.remove('hidden');
+  } finally {
+    el.btnSubmitProfile.disabled = false;
+    el.btnSubmitProfile.textContent = 'Salva Modifiche';
+  }
+});
+
+el.btnLogout.addEventListener('click', async () => {
+  closeModal(el.modalProfile);
+  await logoutUtente();
+});
+
+// ---------------------------------------------------------
+// 7. PARTITE: CARICAMENTO / CREAZIONE / JOIN / LEAVE
+// ---------------------------------------------------------
+async function caricaPartite() {
+  el.matchesLoading.classList.remove('hidden');
+  el.matchesEmpty.classList.add('hidden');
+  el.matchesList.innerHTML = '';
+
+  // Si caricano anche gli ultimi giorni: le partite passate servono per
+  // registrarne o confermarne il risultato, pur restando fuori dal feed.
+  const da = new Date();
+  da.setDate(da.getDate() - 7);
+  const dataMinima = da.toISOString().slice(0, 10);
+
+  const { data, error } = await supabaseClient
+    .from('matches')
+    .select('*')
+    .gte('match_date', dataMinima)
+    .order('match_date', { ascending: true })
+    .order('match_time', { ascending: true });
+
+  el.matchesLoading.classList.add('hidden');
+
+  if (error) {
+    console.error('Errore caricamento partite:', error);
+    showToast('Errore nel caricamento delle partite.');
+    return;
+  }
+
+  allMatches = data || [];
+  await caricaMieIscrizioniERisultati();
+  renderMatches();
+}
+
+/**
+ * Due sole richieste per sapere a quali partite partecipo e quali hanno
+ * un risultato: servono alla scheda "Concluse" senza interrogare il
+ * database una volta per partita.
+ */
+async function caricaMieIscrizioniERisultati() {
+  mieIscrizioni = new Set();
+  risultatiPerPartita = new Map();
+
+  if (!currentUser || allMatches.length === 0) return;
+
+  const ids = allMatches.map((m) => m.id);
+
+  const [iscrizioni, risultati] = await Promise.all([
+    supabaseClient.from('match_players').select('match_id').eq('user_id', currentUser.id),
+    supabaseClient.from('match_results').select('*').in('match_id', ids),
+  ]);
+
+  if (iscrizioni.error) console.error('Errore iscrizioni:', iscrizioni.error);
+  else (iscrizioni.data || []).forEach((r) => mieIscrizioni.add(r.match_id));
+
+  if (risultati.error) console.error('Errore risultati:', risultati.error);
+  else (risultati.data || []).forEach((r) => risultatiPerPartita.set(r.match_id, r));
+}
+
+async function creaPartita(payload) {
+  if (!currentUser) throw new Error('Devi accedere per creare una partita.');
+
+  const { data, error } = await supabaseClient
+    .from('matches')
+    .insert({
+      club: payload.club,
+      zona: payload.zona,
+      match_date: payload.match_date,
+      match_time: payload.match_time,
+      level: payload.level,
+      total_slots: 4,
+      filled_slots: 0, // lo calcola il database contando gli iscritti
+      created_by: currentUser.id,
+    })
+    .select()
+    .single();
+
+  if (error) throw error;
+
+  // Il creatore occupa il posto che ha scelto in fase di creazione
+  const { error: iscrizioneErr } = await supabaseClient.from('match_players').insert({
+    match_id: data.id,
+    user_id: currentUser.id,
+    spot: payload.spot,
+  });
+
+  // Senza organizzatore in campo la partita non ha senso: se l'iscrizione
+  // non riesce, si annulla anche la partita per non lasciarne una vuota.
+  if (iscrizioneErr) {
+    await supabaseClient.from('matches').delete().eq('id', data.id);
+    throw iscrizioneErr;
+  }
+
+  return data;
+}
+
+/**
+ * Iscrizione a un posto preciso del campo.
+ * I posti 0-1 formano la Squadra A, i posti 2-3 la Squadra B: la coppia
+ * non e' piu' decisa dall'ordine di arrivo ma scelta dal giocatore.
+ */
+async function uniscitiPartita(matchId, spot) {
+  if (!currentUser) throw new Error('Devi accedere per unirti a una partita.');
+
+  // I posti occupati li ricalcola il database a ogni iscrizione (trigger),
+  // quindi non esiste piu' nessun contatore da tenere allineato a mano.
+  const { error } = await supabaseClient.from('match_players').insert({
+    match_id: matchId,
+    user_id: currentUser.id,
+    spot,
+  });
+
+  if (error) {
+    // Due indici univoci proteggono la formazione: un posto per partita,
+    // e un solo posto per giocatore.
+    if (error.code === '23505') {
+      throw new Error('Posto appena occupato da un altro giocatore, oppure sei gia iscritto.');
+    }
+    throw error;
+  }
+}
+
+/**
+ * Disiscrizione: consentita solo fino a un'ora prima dell'inizio della partita.
+ */
+async function lasciaPartita(matchId, match) {
+  if (!currentUser) return;
+
+  const inizio = getMatchDateTime(match);
+  if (inizio - new Date() < UN_ORA_MS) {
+    throw new Error('Non puoi disiscriverti a meno di un\'ora dall\'inizio della partita.');
+  }
+
+  // Anche in uscita i posti occupati si aggiornano da soli (trigger).
+  const { error: deleteErr } = await supabaseClient
+    .from('match_players')
+    .delete()
+    .eq('match_id', matchId)
+    .eq('user_id', currentUser.id);
+  if (deleteErr) throw deleteErr;
+}
+
+/**
+ * Carica i partecipanti di una partita, con i relativi dati profilo.
+ */
+async function caricaPartecipanti(matchId) {
+  // Senza accesso la formazione non e' leggibile (policy RLS): si evita
+  // una richiesta destinata a tornare vuota.
+  if (!currentUser) return [];
+
+  const { data, error } = await supabaseClient
+    .from('match_players')
+    .select('user_id, spot, joined_at, profiles ( nome, cognome, full_name, level, avatar_url )')
+    .eq('match_id', matchId)
+    .order('spot', { ascending: true });
+
+  if (error) {
+    console.error('Errore caricamento partecipanti:', error);
+    return [];
+  }
+  return data || [];
+}
+
+// ---------------------------------------------------------
+// 7-bis. RISULTATI, STATISTICHE E CONTATTI
+// Tutte le regole (chi puo' registrare, chi puo' confermare, chi
+// vede i telefoni) sono applicate dal database: qui si chiamano
+// solo le funzioni, senza poterle aggirare dalla console.
+// ---------------------------------------------------------
+
+/** Squadra A = posti 0-1, Squadra B = posti 2-3. */
+function squadraDiSpot(spot) {
+  return spot < 2 ? 'A' : 'B';
+}
+
+async function caricaRisultato(matchId) {
+  if (!currentUser) return null;
+
+  const { data, error } = await supabaseClient
+    .from('match_results')
+    .select('*')
+    .eq('match_id', matchId)
+    .maybeSingle();
+
+  if (error) {
+    console.error('Errore caricamento risultato:', error);
+    return null;
+  }
+  return data;
+}
+
+async function registraRisultato(matchId, sets) {
+  const { data, error } = await supabaseClient.rpc('registra_risultato', {
+    p_match_id: matchId,
+    p_sets: sets,
+  });
+  if (error) throw error;
+  return data;
+}
+
+async function confermaRisultato(matchId) {
+  const { error } = await supabaseClient.rpc('conferma_risultato', { p_match_id: matchId });
+  if (error) throw error;
+}
+
+async function contestaRisultato(matchId, nota) {
+  const { error } = await supabaseClient.rpc('contesta_risultato', {
+    p_match_id: matchId,
+    p_nota: nota || null,
+  });
+  if (error) throw error;
+}
+
+async function caricaContatti(matchId) {
+  const { data, error } = await supabaseClient.rpc('contatti_partita', { p_match_id: matchId });
+  if (error) throw error;
+  return data || [];
+}
+
+async function caricaStatistiche(userId = null) {
+  const { data, error } = await supabaseClient.rpc('statistiche_giocatore', {
+    p_user_id: userId,
+  });
+  if (error) {
+    console.error('Errore caricamento statistiche:', error);
+    return null;
+  }
+  return Array.isArray(data) ? data[0] : data;
+}
+
+/**
+ * Un risultato conta nelle statistiche se confermato da un avversario,
+ * oppure se sono passate 48 ore senza contestazioni.
+ * Stessa regola applicata dalla vista SQL: qui serve solo a spiegarlo
+ * all'utente nell'interfaccia.
+ */
+function risultatoValido(risultato) {
+  if (!risultato) return false;
+  if (risultato.stato === 'confermato') return true;
+  if (risultato.stato === 'contestato') return false;
+  return (new Date() - new Date(risultato.registrato_il)) > 48 * UN_ORA_MS;
+}
+
+function formattaSet(sets) {
+  if (!Array.isArray(sets)) return '';
+  return sets.map((s) => `${s[0]}-${s[1]}`).join('  ');
+}
+
+// ---------------------------------------------------------
+// 8. RENDER LISTA PARTITE
+// ---------------------------------------------------------
+
+/**
+ * Applica a un elemento il badge che indica chi ha organizzato la partita.
+ * - "circolo"   -> campo pubblicato direttamente dal circolo
+ * - "giocatore" -> campo prenotato da un giocatore che cerca compagni
+ */
+function applicaBadgeOrigine(element, origin) {
+  if (origin === 'circolo') {
+    element.className = 'match-origin inline-flex items-center gap-1 text-[11px] font-bold px-2 py-1 rounded-md bg-lime-neon/15 text-lime-neon border border-lime-neon/40';
+    element.innerHTML = '<svg viewBox="0 0 24 24" class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V8l7-5 7 5v13"/></svg> CAMPO DEL CIRCOLO';
+  } else {
+    element.className = 'match-origin inline-flex items-center gap-1 text-[11px] font-bold px-2 py-1 rounded-md bg-electric/15 text-electric border border-electric/40';
+    element.innerHTML = '<svg viewBox="0 0 24 24" class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c0-3.5 3.1-5.5 7-5.5s7 2 7 5.5"/></svg> PRENOTATO DA UN GIOCATORE';
+  }
+}
+
+/**
+ * Una partita esce dal feed un'ora dopo l'orario di inizio.
+ * I dati restano nel database: viene nascosta, non cancellata.
+ */
+function isInFeed(match) {
+  const inizio = getMatchDateTime(match);
+  return (new Date() - inizio) < UN_ORA_MS;
+}
+
+function isCompleta(match) {
+  return (match.filled_slots || 0) >= (match.total_slots || 4);
+}
+
+/**
+ * Partite ancora visibili nel feed, gia' ripulite da quelle scadute.
+ */
+function getMatchesInFeed() {
+  return allMatches.filter(isInFeed);
+}
+
+/**
+ * Le mie partite gia' giocate, dalla piu' recente: e' da qui che si
+ * registra o si conferma un risultato.
+ */
+function getMatchesConcluse() {
+  return allMatches
+    .filter((m) => !isInFeed(m) && mieIscrizioni.has(m.id))
+    .sort((a, b) => getMatchDateTime(b) - getMatchDateTime(a));
+}
+
+/** Una partita conclusa richiede attenzione se manca il risultato o se e' in attesa. */
+function daValutare(match) {
+  const r = risultatiPerPartita.get(match.id);
+  return !r || r.stato === 'in_attesa';
+}
+
+function getFilteredMatches() {
+  // Le partite concluse non seguono i filtri del feed: sono un archivio personale.
+  if (activeTab === 'concluse') return getMatchesConcluse();
+
+  return getMatchesInFeed().filter((m) => {
+    // tab: aperte (con posti liberi) vs complete (4 su 4)
+    if (activeTab === 'complete' && !isCompleta(m)) return false;
+    if (activeTab === 'aperte' && isCompleta(m)) return false;
+
+    // chip: chi ha organizzato
+    if (activeFilter === 'circolo') return m.origin === 'circolo';
+    if (activeFilter === 'giocatore') return (m.origin || 'giocatore') === 'giocatore';
+    return true;
+  });
+}
+
+/**
+ * Aggiorna i contatori mostrati sui due tab.
+ */
+function aggiornaContatoriTab() {
+  const feed = getMatchesInFeed();
+  const complete = feed.filter(isCompleta).length;
+  const aperte = feed.length - complete;
+  el.tabCountAperte.textContent = aperte ? `(${aperte})` : '';
+  el.tabCountComplete.textContent = complete ? `(${complete})` : '';
+
+  // Sulla scheda "Concluse" si contano solo le partite che aspettano
+  // qualcosa da te: e' un promemoria, non un totale.
+  const inSospeso = getMatchesConcluse().filter(daValutare).length;
+  el.tabCountConcluse.textContent = inSospeso ? `(${inSospeso})` : '';
+}
+
+function renderMatches() {
+  aggiornaContatoriTab();
+  const filtered = getFilteredMatches();
+  el.matchesList.innerHTML = '';
+
+  if (filtered.length === 0) {
+    el.matchesEmpty.classList.remove('hidden');
+    const titolo = el.matchesEmpty.querySelector('p');
+    if (activeTab === 'complete') {
+      titolo.textContent = 'Nessuna partita completa';
+    } else if (activeTab === 'concluse') {
+      titolo.textContent = currentUser
+        ? 'Non hai ancora partite concluse'
+        : 'Accedi per vedere le tue partite';
+    } else {
+      titolo.textContent = 'Nessuna partita in programma';
+    }
+    return;
+  }
+  el.matchesEmpty.classList.add('hidden');
+
+  filtered.forEach((match) => {
+    const node = el.cardTemplate.content.cloneNode(true);
+
+    node.querySelector('.match-datetime').textContent = match.match_time?.slice(0, 5) || '--:--';
+    node.querySelector('.match-date').textContent = formatDateLabel(match.match_date);
+    node.querySelector('.match-club').textContent = match.club;
+    node.querySelector('.match-level').textContent = LEVEL_LABELS[match.level] || match.level;
+    applicaBadgeOrigine(node.querySelector('.match-origin'), match.origin || 'giocatore');
+
+    const slotsWrap = node.querySelector('.match-slots');
+    const total = match.total_slots || 4;
+    const filledCount = match.filled_slots || 0;
+    for (let i = 0; i < total; i++) {
+      const dot = document.createElement('span');
+      const isFilled = i < filledCount;
+      dot.className = isFilled
+        ? 'ball-icon filled w-4 h-4 rounded-full bg-lime-neon inline-block'
+        : 'ball-icon empty w-4 h-4 rounded-full border-2 border-court-500 inline-block animate-pulse-slot';
+      slotsWrap.appendChild(dot);
+    }
+
+    const ctaLabel = node.querySelector('.match-cta');
+    const postiLiberi = total - filledCount;
+
+    if (activeTab === 'concluse') {
+      // Nell'archivio conta il punteggio, non i posti liberi
+      const r = risultatiPerPartita.get(match.id);
+      if (!r) {
+        ctaLabel.textContent = 'Registra risultato';
+        ctaLabel.className = 'shrink-0 text-sm font-display font-700 px-4 py-2 rounded-xl bg-lime-neon text-court-900';
+      } else if (r.stato === 'in_attesa') {
+        ctaLabel.textContent = `${formattaSet(r.sets)} · da confermare`;
+        ctaLabel.className = 'shrink-0 text-xs font-display font-700 px-3 py-2 rounded-xl bg-electric text-white';
+      } else if (r.stato === 'contestato') {
+        ctaLabel.textContent = 'Contestato';
+        ctaLabel.className = 'shrink-0 text-sm font-display font-700 px-4 py-2 rounded-xl bg-red-500/15 text-red-400 border border-red-500/40';
+      } else {
+        ctaLabel.textContent = formattaSet(r.sets);
+        ctaLabel.className = 'shrink-0 text-sm font-display font-700 px-4 py-2 rounded-xl bg-court-600 text-lime-neon';
+      }
+
+      const article = node.querySelector('.match-card');
+      article.addEventListener('click', () => apriDettaglioPartita(match.id));
+      el.matchesList.appendChild(node);
+      return;
+    }
+
+    if (postiLiberi <= 0) {
+      ctaLabel.textContent = 'Al completo';
+      ctaLabel.className = 'shrink-0 text-sm font-display font-700 px-4 py-2 rounded-xl bg-court-600 text-court-500';
+    } else if (postiLiberi === 1) {
+      ctaLabel.textContent = 'SOS 4° · Dettagli';
+      ctaLabel.className = 'shrink-0 text-sm font-display font-700 px-4 py-2 rounded-xl bg-electric text-white';
+    } else {
+      ctaLabel.textContent = 'Vedi Dettagli';
+      ctaLabel.className = 'shrink-0 text-sm font-display font-700 px-4 py-2 rounded-xl bg-lime-neon text-court-900';
+    }
+
+    const article = node.querySelector('.match-card');
+    article.addEventListener('click', () => apriDettaglioPartita(match.id));
+
+    el.matchesList.appendChild(node);
+  });
+}
+
+// ---------------------------------------------------------
+// 9. MODALE DETTAGLIO PARTITA
+// ---------------------------------------------------------
+async function apriDettaglioPartita(matchId) {
+  const match = allMatches.find((m) => m.id === matchId);
+  if (!match) return;
+
+  currentDetailMatch = match;
+  el.matchDetailError.classList.add('hidden');
+  el.matchDetailHint.classList.add('hidden');
+
+  el.matchDetailTime.textContent = match.match_time?.slice(0, 5) || '--:--';
+  el.matchDetailDate.textContent = formatDateLabel(match.match_date);
+  el.matchDetailLevel.textContent = LEVEL_LABELS[match.level] || match.level;
+  el.matchDetailClub.textContent = match.club;
+  applicaBadgeOrigine(el.matchDetailOrigin, match.origin || 'giocatore');
+  el.matchDetailCount.textContent = `${match.filled_slots}/${match.total_slots}`;
+
+  openModal(el.modalMatch);
+
+  const [partecipanti, risultato] = await Promise.all([
+    caricaPartecipanti(matchId),
+    caricaRisultato(matchId),
+  ]);
+  currentDetailParticipants = partecipanti;
+  currentDetailResult = risultato;
+
+  // Coerenza: i posti occupati non possono essere meno dei giocatori realmente iscritti
+  if (currentDetailParticipants.length > match.filled_slots) {
+    match.filled_slots = currentDetailParticipants.length;
+  }
+
+  renderMatchCourt();
+  renderMatchDetailAction();
+  renderMatchContacts();
+  renderMatchResult();
+}
+
+/**
+ * Iscrizione al posto toccato sul campo.
+ */
+async function iscrivitiAlPosto(spot) {
+  if (!currentUser || !currentDetailMatch) return;
+
+  el.matchDetailError.classList.add('hidden');
+  const matchId = currentDetailMatch.id;
+
+  try {
+    await uniscitiPartita(matchId, spot);
+    showToast(`Sei in campo con la Squadra ${squadraDiSpot(spot)}! 🎾`);
+    await caricaPartite();
+    await apriDettaglioPartita(matchId);
+  } catch (err) {
+    console.error(err);
+    el.matchDetailError.textContent = messaggioErrore(err, 'Impossibile iscriversi a questa partita. Riprova.');
+    el.matchDetailError.classList.remove('hidden');
+    // La formazione potrebbe essere cambiata nel frattempo: si ricarica
+    currentDetailParticipants = await caricaPartecipanti(matchId);
+    renderMatchCourt();
+  }
+}
+
+/**
+ * Disegna il mini campo da padel con le 4 posizioni.
+ * - Giocatori iscritti nell'app: foto (o iniziale) + nome
+ * - Posti occupati ma senza account (amici portati dall'organizzatore): "Ospite"
+ * - Posti liberi: cerchio tratteggiato lampeggiante
+ */
+function renderMatchCourt() {
+  const match = currentDetailMatch;
+  const total = match.total_slots || 4;
+  const occupati = match.filled_slots || 0;
+
+  // Ogni giocatore viene collocato nel posto che ha scelto, non nell'ordine
+  // in cui si e' iscritto: le coppie mostrate sono quelle vere.
+  const perPosto = new Map();
+  currentDetailParticipants.forEach((p) => perPosto.set(p.spot, p));
+
+  const giaIscritto = Boolean(currentUser) &&
+    currentDetailParticipants.some((p) => p.user_id === currentUser.id);
+  const formazioneChiusa = Boolean(currentDetailResult);
+
+  const spots = el.matchCourt.querySelectorAll('.court-spot');
+
+  spots.forEach((spot, i) => {
+    spot.innerHTML = '';
+    spot.className = 'court-spot flex flex-col items-center justify-center gap-1 py-2 rounded-xl';
+    spot.onclick = null;
+
+    const iscritto = perPosto.get(i);
+
+    if (iscritto) {
+      // Giocatore registrato nell'app
+      const profile = iscritto.profiles;
+      const avatar = document.createElement('div');
+      avatar.className = 'w-11 h-11 rounded-full bg-lime-neon flex items-center justify-center font-display font-700 text-sm text-court-900 overflow-hidden shadow-neon-sm';
+      if (profile?.avatar_url) {
+        const img = document.createElement('img');
+        img.src = profile.avatar_url;
+        img.className = 'w-full h-full object-cover';
+        img.alt = '';
+        avatar.appendChild(img);
+      } else {
+        avatar.textContent = displayName(profile).charAt(0).toUpperCase();
+      }
+
+      const name = document.createElement('p');
+      name.className = 'text-[11px] font-semibold text-white text-center leading-tight max-w-[80px] truncate';
+      name.textContent = displayName(profile);
+
+      const lvl = document.createElement('p');
+      lvl.className = 'text-[9px] text-court-500 leading-none';
+      lvl.textContent = LEVEL_LABELS[profile?.level]?.split(' · ')[0] || '';
+
+      spot.appendChild(avatar);
+      spot.appendChild(name);
+      spot.appendChild(lvl);
+
+      // Il proprio posto viene evidenziato
+      if (currentUser && iscritto.user_id === currentUser.id) {
+        spot.className += ' bg-lime-neon/5 ring-1 ring-lime-neon/30';
+      }
+
+    } else if (i < occupati) {
+      // Posto occupato. Chi non ha effettuato l'accesso vede che il posto e'
+      // preso, ma non chi lo occupa: i nomi dei giocatori non sono pubblici.
+      const anonimo = !currentUser;
+
+      const avatar = document.createElement('div');
+      avatar.className = 'w-11 h-11 rounded-full bg-court-600 border border-court-500 flex items-center justify-center';
+      avatar.innerHTML = anonimo
+        ? '<svg viewBox="0 0 24 24" class="w-5 h-5 text-court-500" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="11" width="16" height="9" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/></svg>'
+        : '<svg viewBox="0 0 24 24" class="w-5 h-5 text-court-500" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c0-3.5 3.1-5.5 7-5.5s7 2 7 5.5"/></svg>';
+
+      const name = document.createElement('p');
+      name.className = 'text-[11px] font-semibold text-court-500 leading-tight';
+      name.textContent = anonimo ? 'Occupato' : 'Ospite';
+
+      spot.appendChild(avatar);
+      spot.appendChild(name);
+
+    } else {
+      // Posto libero: si occupa toccandolo, scegliendo cosi' la propria squadra
+      const selezionabile = Boolean(currentUser) && !giaIscritto && !formazioneChiusa;
+
+      const avatar = document.createElement('div');
+      avatar.className = 'w-11 h-11 rounded-full border-2 border-dashed border-lime-neon/50 flex items-center justify-center animate-pulse-slot';
+      avatar.innerHTML = '<svg viewBox="0 0 24 24" class="w-4 h-4 text-lime-neon/70" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>';
+
+      const name = document.createElement('p');
+      name.className = 'text-[11px] font-semibold text-lime-neon/70 leading-tight';
+      name.textContent = selezionabile ? 'Gioca qui' : 'Libero';
+
+      spot.appendChild(avatar);
+      spot.appendChild(name);
+
+      if (selezionabile) {
+        spot.className += ' cursor-pointer hover:bg-lime-neon/5 transition-colors';
+        spot.onclick = () => iscrivitiAlPosto(i);
+      }
+    }
+  });
+
+  el.matchDetailCount.textContent = `${occupati}/${total}`;
+}
+
+function renderMatchDetailAction() {
+  const match = currentDetailMatch;
+  const btn = el.btnMatchDetailAction;
+  el.matchDetailHint.classList.add('hidden');
+  el.matchDetailError.classList.add('hidden');
+  btn.style.display = '';
+
+  // Pulsanti Modifica/Elimina: solo per chi ha creato la partita
+  const isOwner = currentUser && match.created_by === currentUser.id;
+  el.matchOwnerActions.classList.toggle('hidden', !isOwner);
+  el.matchOwnerActions.classList.toggle('grid', Boolean(isOwner));
+
+  if (!currentUser) {
+    el.matchDetailHint.textContent = 'Chi gioca e a che livello e\' visibile solo ai giocatori registrati.';
+    el.matchDetailHint.classList.remove('hidden');
+    btn.textContent = 'Accedi per iscriverti';
+    btn.disabled = false;
+    btn.className = 'w-full font-display font-700 py-3.5 rounded-xl bg-lime-neon text-court-900 shadow-neon';
+    btn.onclick = () => {
+      closeModal(el.modalMatch);
+      authMode = 'login';
+      updateAuthModeUI();
+      openModal(el.modalAuth);
+    };
+    return;
+  }
+
+  const isJoined = currentDetailParticipants.some((p) => p.user_id === currentUser.id);
+  const postiLiberi = match.total_slots - match.filled_slots;
+  const inizio = getMatchDateTime(match);
+  const tempoRimanente = inizio - new Date();
+
+  // Con un risultato registrato la formazione e' congelata: nessuno entra
+  // o esce, altrimenti una sconfitta si cancellerebbe disiscrivendosi.
+  if (currentDetailResult) {
+    btn.style.display = 'none';
+    return;
+  }
+
+  if (isJoined) {
+    const puoDisiscriversi = tempoRimanente >= UN_ORA_MS;
+    btn.textContent = 'Disiscriviti dalla Partita';
+    btn.disabled = !puoDisiscriversi;
+    btn.className = puoDisiscriversi
+      ? 'w-full font-display font-700 py-3.5 rounded-xl bg-red-500/15 text-red-400 border border-red-500/40'
+      : 'w-full font-display font-700 py-3.5 rounded-xl bg-court-600 text-court-500 cursor-not-allowed';
+
+    if (!puoDisiscriversi) {
+      el.matchDetailHint.textContent = 'Non è più possibile disiscriversi: manca meno di un\'ora all\'inizio.';
+      el.matchDetailHint.classList.remove('hidden');
+    }
+
+    btn.onclick = async () => {
+      btn.disabled = true;
+      btn.textContent = 'Disiscrizione...';
+      try {
+        await lasciaPartita(match.id, match);
+        showToast('Ti sei disiscritto dalla partita.');
+        closeModal(el.modalMatch);
+        await caricaPartite();
+      } catch (err) {
+        console.error(err);
+        el.matchDetailError.textContent = messaggioErrore(err, 'Impossibile disiscriverti da questa partita. Riprova.');
+        el.matchDetailError.classList.remove('hidden');
+        btn.disabled = false;
+        btn.textContent = 'Disiscriviti dalla Partita';
+      }
+    };
+  } else if (postiLiberi <= 0) {
+    btn.textContent = 'Partita al completo';
+    btn.disabled = true;
+    btn.className = 'w-full font-display font-700 py-3.5 rounded-xl bg-court-600 text-court-500 cursor-not-allowed';
+    btn.onclick = null;
+  } else {
+    // Non si entra piu' con un pulsante generico: si tocca il posto in campo,
+    // perche' la scelta della posizione determina la squadra.
+    btn.textContent = '↑ Tocca un posto libero per giocare';
+    btn.disabled = true;
+    btn.className = 'w-full font-display font-700 py-3.5 rounded-xl bg-court-700 text-lime-neon border border-lime-neon/30 cursor-default';
+    btn.onclick = null;
+  }
+}
+
+// ---------------------------------------------------------
+// 9-ter. CONTATTI DEI GIOCATORI
+// ---------------------------------------------------------
+
+/**
+ * WhatsApp vuole il numero in formato internazionale, ma i numeri
+ * vengono salvati come li scrive l'utente ("333 1234567").
+ * I cellulari italiani iniziano con 3, quindi un numero che comincia
+ * per 39 ed e' abbastanza lungo ha gia' il prefisso.
+ */
+function numeroWhatsApp(telefono) {
+  let n = (telefono || '').replace(/[^0-9+]/g, '');
+  if (n.startsWith('+')) n = n.slice(1);
+  else if (n.startsWith('00')) n = n.slice(2);
+  else if (!(n.startsWith('39') && n.length >= 11)) n = `39${n}`;
+  return n;
+}
+
+/**
+ * Il blocco contatti esiste solo per chi gioca questa partita.
+ * Anche nascondendolo dall'interfaccia i numeri resterebbero protetti:
+ * e' il database a rifiutare la richiesta di chi non e' in campo.
+ */
+function renderMatchContacts() {
+  const sonoInCampo = Boolean(currentUser) &&
+    currentDetailParticipants.some((p) => p.user_id === currentUser.id);
+
+  el.contactsList.classList.add('hidden');
+  el.contactsList.innerHTML = '';
+  el.btnShowContacts.textContent = 'Mostra i contatti dei giocatori';
+  el.btnShowContacts.disabled = false;
+  el.matchContacts.classList.toggle('hidden', !sonoInCampo);
+}
+
+el.btnShowContacts.addEventListener('click', async () => {
+  if (!currentDetailMatch) return;
+
+  // Secondo tocco: richiude l'elenco
+  if (!el.contactsList.classList.contains('hidden')) {
+    el.contactsList.classList.add('hidden');
+    el.btnShowContacts.textContent = 'Mostra i contatti dei giocatori';
+    return;
+  }
+
+  el.btnShowContacts.disabled = true;
+  el.btnShowContacts.textContent = 'Caricamento...';
+
+  try {
+    const contatti = await caricaContatti(currentDetailMatch.id);
+    el.contactsList.innerHTML = '';
+
+    contatti.forEach((c) => {
+      const riga = document.createElement('div');
+      riga.className = 'flex items-center justify-between gap-2 bg-court-700 rounded-xl px-3 py-2';
+
+      const info = document.createElement('div');
+      info.className = 'min-w-0';
+
+      const nome = document.createElement('p');
+      nome.className = 'text-sm font-semibold truncate';
+      nome.textContent = `${c.nome || ''} ${c.cognome || ''}`.trim() || 'Giocatore';
+
+      const squadra = document.createElement('p');
+      squadra.className = 'text-[10px] font-semibold ' +
+        (c.squadra === 'A' ? 'text-lime-neon/70' : 'text-electric/70');
+      squadra.textContent = `Squadra ${c.squadra}`;
+
+      info.appendChild(nome);
+      info.appendChild(squadra);
+      riga.appendChild(info);
+
+      if (c.telefono) {
+        const azioni = document.createElement('div');
+        azioni.className = 'flex items-center gap-1.5 shrink-0';
+
+        const wa = document.createElement('a');
+        wa.href = `https://wa.me/${numeroWhatsApp(c.telefono)}`;
+        wa.target = '_blank';
+        wa.rel = 'noopener noreferrer';
+        wa.className = 'text-[11px] font-bold px-2.5 py-1.5 rounded-lg bg-lime-neon/15 text-lime-neon border border-lime-neon/30';
+        wa.textContent = 'WhatsApp';
+
+        const tel = document.createElement('a');
+        tel.href = `tel:${c.telefono.replace(/[^0-9+]/g, '')}`;
+        tel.className = 'text-[11px] font-bold px-2.5 py-1.5 rounded-lg bg-court-600 text-white/80';
+        tel.textContent = 'Chiama';
+
+        azioni.appendChild(wa);
+        azioni.appendChild(tel);
+        riga.appendChild(azioni);
+      } else {
+        const nd = document.createElement('span');
+        nd.className = 'text-[10px] text-court-500 shrink-0';
+        nd.textContent = 'numero non indicato';
+        riga.appendChild(nd);
+      }
+
+      el.contactsList.appendChild(riga);
+    });
+
+    el.contactsList.classList.remove('hidden');
+    el.btnShowContacts.textContent = 'Nascondi i contatti';
+  } catch (err) {
+    console.error(err);
+    el.matchDetailError.textContent = messaggioErrore(err, 'Impossibile caricare i contatti dei giocatori. Riprova.');
+    el.matchDetailError.classList.remove('hidden');
+    el.btnShowContacts.textContent = 'Mostra i contatti dei giocatori';
+  } finally {
+    el.btnShowContacts.disabled = false;
+  }
+});
+
+
+// ---------------------------------------------------------
+// 9-quater. RISULTATO DELLA PARTITA
+// ---------------------------------------------------------
+function renderMatchResult() {
+  const match = currentDetailMatch;
+  const box = el.matchResult;
+  box.innerHTML = '';
+  box.classList.add('hidden');
+
+  if (!currentUser) return;
+
+  const iniziata = getMatchDateTime(match) <= new Date();
+  const sonoInCampo = currentDetailParticipants.some((p) => p.user_id === currentUser.id);
+
+  if (currentDetailResult) {
+    box.classList.remove('hidden');
+    box.appendChild(creaRiepilogoRisultato(currentDetailResult));
+    return;
+  }
+
+  // Prima della fine non c'e' niente da registrare
+  if (!iniziata || !sonoInCampo) return;
+
+  box.classList.remove('hidden');
+
+  if (currentDetailParticipants.length !== 4) {
+    const nota = document.createElement('p');
+    nota.className = 'text-xs text-court-500 text-center py-3 rounded-xl border border-dashed border-court-600';
+    nota.textContent = 'Il risultato si registra solo con una formazione completa di 4 giocatori.';
+    box.appendChild(nota);
+    return;
+  }
+
+  box.appendChild(creaFormRisultato());
+}
+
+/**
+ * Modulo di inserimento punteggio: 2 set obbligatori, il terzo facoltativo.
+ * Il primo numero di ogni set e' sempre della Squadra A.
+ */
+function creaFormRisultato() {
+  const wrap = document.createElement('div');
+  wrap.className = 'rounded-2xl border border-court-600 bg-court-900/60 p-3';
+  wrap.innerHTML = `
+    <p class="text-xs font-semibold text-court-500 uppercase tracking-wide mb-2">Registra il risultato</p>
+    <div class="flex items-center gap-2 mb-1.5 px-1">
+      <span class="w-16 shrink-0"></span>
+      <span class="flex-1 text-center text-[10px] font-display font-700 text-lime-neon/70 tracking-wide">SQ. A</span>
+      <span class="w-3"></span>
+      <span class="flex-1 text-center text-[10px] font-display font-700 text-electric/70 tracking-wide">SQ. B</span>
+    </div>
+    <div class="space-y-2" id="sets-inputs"></div>
+    <p class="text-[11px] text-court-500 mt-2 leading-snug">
+      Il punteggio deve essere confermato da un avversario. Se nessuno lo contesta, si convalida da solo dopo 48 ore.
+    </p>
+    <p class="hidden text-sm text-red-400 font-medium mt-2" id="result-error"></p>
+    <button type="button" id="btn-save-result"
+            class="w-full mt-2 bg-lime-neon text-court-900 font-display font-700 py-3 rounded-xl shadow-neon">
+      Salva il risultato
+    </button>
+  `;
+
+  const cont = wrap.querySelector('#sets-inputs');
+  for (let s = 1; s <= 3; s++) {
+    const riga = document.createElement('div');
+    riga.className = 'flex items-center gap-2';
+
+    const label = document.createElement('span');
+    label.className = 'text-[11px] font-semibold text-court-500 w-16 shrink-0';
+    label.textContent = s === 3 ? 'Set 3 opz.' : `Set ${s}`;
+    riga.appendChild(label);
+
+    ['a', 'b'].forEach((team, idx) => {
+      if (idx === 1) {
+        const sep = document.createElement('span');
+        sep.className = 'text-court-500 text-xs w-3 text-center';
+        sep.textContent = '-';
+        riga.appendChild(sep);
+      }
+      const input = document.createElement('input');
+      input.type = 'number';
+      input.min = '0';
+      input.max = '15';
+      input.inputMode = 'numeric';
+      input.dataset.set = String(s);
+      input.dataset.team = team;
+      input.className = 'set-input flex-1 w-full bg-court-700 border border-court-500 rounded-lg px-2 py-2 text-center text-sm text-white focus:border-lime-neon outline-none';
+      riga.appendChild(input);
+    });
+
+    cont.appendChild(riga);
+  }
+
+  wrap.querySelector('#btn-save-result').addEventListener('click', () => salvaRisultato(wrap));
+  return wrap;
+}
+
+async function salvaRisultato(wrap) {
+  const err = wrap.querySelector('#result-error');
+  const btn = wrap.querySelector('#btn-save-result');
+  err.classList.add('hidden');
+
+  const sets = [];
+  for (let s = 1; s <= 3; s++) {
+    const a = wrap.querySelector(`.set-input[data-set="${s}"][data-team="a"]`).value.trim();
+    const b = wrap.querySelector(`.set-input[data-set="${s}"][data-team="b"]`).value.trim();
+
+    if (a === '' && b === '') continue;
+    if (a === '' || b === '') {
+      err.textContent = `Set ${s}: inserisci entrambi i punteggi.`;
+      err.classList.remove('hidden');
+      return;
+    }
+    sets.push([Number(a), Number(b)]);
+  }
+
+  if (sets.length < 2) {
+    err.textContent = 'Servono almeno due set.';
+    err.classList.remove('hidden');
+    return;
+  }
+
+  const matchId = currentDetailMatch.id;
+  btn.disabled = true;
+  btn.textContent = 'Salvataggio...';
+
+  try {
+    await registraRisultato(matchId, sets);
+    showToast('Risultato registrato. In attesa di conferma.');
+    await caricaPartite();
+    await apriDettaglioPartita(matchId);
+  } catch (e) {
+    console.error(e);
+    err.textContent = e.message || 'Impossibile registrare il risultato.';
+    err.classList.remove('hidden');
+    btn.disabled = false;
+    btn.textContent = 'Salva il risultato';
+  }
+}
+
+/**
+ * Riepilogo di un risultato gia' registrato, con i pulsanti di conferma
+ * riservati alla squadra avversaria a quella di chi lo ha inserito.
+ */
+function creaRiepilogoRisultato(risultato) {
+  const wrap = document.createElement('div');
+  wrap.className = 'rounded-2xl border border-court-600 bg-court-900/60 p-3';
+
+  const valido = risultatoValido(risultato);
+  const vincitore = risultato.winner_team;
+
+  const testata = document.createElement('div');
+  testata.className = 'flex items-center justify-between gap-2 mb-2';
+
+  const titolo = document.createElement('p');
+  titolo.className = 'text-xs font-semibold text-court-500 uppercase tracking-wide';
+  titolo.textContent = 'Risultato';
+
+  const badge = document.createElement('span');
+  badge.className = 'text-[10px] font-bold px-2 py-1 rounded-md ';
+  if (risultato.stato === 'confermato') {
+    badge.className += 'bg-lime-neon/15 text-lime-neon border border-lime-neon/40';
+    badge.textContent = 'CONFERMATO';
+  } else if (risultato.stato === 'contestato') {
+    badge.className += 'bg-red-500/15 text-red-400 border border-red-500/40';
+    badge.textContent = 'CONTESTATO';
+  } else if (valido) {
+    badge.className += 'bg-lime-neon/15 text-lime-neon border border-lime-neon/40';
+    badge.textContent = 'VALIDO';
+  } else {
+    badge.className += 'bg-court-600 text-court-500 border border-court-500';
+    badge.textContent = 'IN ATTESA';
+  }
+
+  testata.appendChild(titolo);
+  testata.appendChild(badge);
+  wrap.appendChild(testata);
+
+  const punteggio = document.createElement('p');
+  punteggio.className = 'font-display font-700 text-2xl tracking-tight';
+  punteggio.textContent = formattaSet(risultato.sets);
+  wrap.appendChild(punteggio);
+
+  const esito = document.createElement('p');
+  esito.className = 'text-xs font-semibold mt-1 ' +
+    (vincitore === 'A' ? 'text-lime-neon' : 'text-electric');
+  esito.textContent = `Ha vinto la Squadra ${vincitore}`;
+  wrap.appendChild(esito);
+
+  if (risultato.stato === 'contestato') {
+    const nota = document.createElement('p');
+    nota.className = 'text-[11px] text-red-400/80 mt-2 leading-snug';
+    nota.textContent = 'Il risultato e contestato: non viene conteggiato nelle statistiche di nessun giocatore.';
+    wrap.appendChild(nota);
+    return wrap;
+  }
+
+  // Chi puo' confermare: un giocatore della squadra avversaria a quella
+  // di chi ha inserito il punteggio.
+  const mio = currentDetailParticipants.find((p) => p.user_id === currentUser?.id);
+  const autore = currentDetailParticipants.find((p) => p.user_id === risultato.registrato_da);
+  const possoConfermare = risultato.stato === 'in_attesa' && mio && autore &&
+    squadraDiSpot(mio.spot) !== squadraDiSpot(autore.spot);
+
+  if (possoConfermare) {
+    const azioni = document.createElement('div');
+    azioni.className = 'grid grid-cols-2 gap-2 mt-3';
+
+    const conferma = document.createElement('button');
+    conferma.type = 'button';
+    conferma.className = 'py-2.5 rounded-xl bg-lime-neon text-court-900 text-sm font-display font-700';
+    conferma.textContent = 'Confermo';
+
+    const contesta = document.createElement('button');
+    contesta.type = 'button';
+    contesta.className = 'py-2.5 rounded-xl border border-red-500/40 text-red-400 text-sm font-semibold';
+    contesta.textContent = 'Non e giusto';
+
+    const matchId = currentDetailMatch.id;
+
+    conferma.addEventListener('click', async () => {
+      conferma.disabled = true;
+      contesta.disabled = true;
+      conferma.textContent = 'Conferma...';
+      try {
+        await confermaRisultato(matchId);
+        showToast('Risultato confermato. Statistiche aggiornate.');
+        await apriDettaglioPartita(matchId);
+      } catch (e) {
+        console.error(e);
+        el.matchDetailError.textContent = e.message || 'Impossibile confermare.';
+        el.matchDetailError.classList.remove('hidden');
+        conferma.disabled = false;
+        contesta.disabled = false;
+        conferma.textContent = 'Confermo';
+      }
+    });
+
+    contesta.addEventListener('click', async () => {
+      const nota = prompt('Cosa non torna nel punteggio? (facoltativo)');
+      if (nota === null) return;
+      conferma.disabled = true;
+      contesta.disabled = true;
+      try {
+        await contestaRisultato(matchId, nota.trim());
+        showToast('Risultato contestato: non conta per le statistiche.');
+        await apriDettaglioPartita(matchId);
+      } catch (e) {
+        console.error(e);
+        el.matchDetailError.textContent = e.message || 'Impossibile contestare.';
+        el.matchDetailError.classList.remove('hidden');
+        conferma.disabled = false;
+        contesta.disabled = false;
+      }
+    });
+
+    azioni.appendChild(conferma);
+    azioni.appendChild(contesta);
+    wrap.appendChild(azioni);
+  } else if (risultato.stato === 'in_attesa') {
+    const nota = document.createElement('p');
+    nota.className = 'text-[11px] text-court-500 mt-2 leading-snug';
+    nota.textContent = valido
+      ? 'Nessuna contestazione entro 48 ore: il risultato e valido.'
+      : 'In attesa della conferma di un avversario. Senza contestazioni diventa valido dopo 48 ore.';
+    wrap.appendChild(nota);
+  }
+
+  return wrap;
+}
+
+el.btnCloseMatch.addEventListener('click', () => closeModal(el.modalMatch));
+el.modalMatchBackdrop.addEventListener('click', () => closeModal(el.modalMatch));
+
+// ---------------------------------------------------------
+// 9-bis. GESTIONE PARTITA (solo per chi l'ha creata)
+// ---------------------------------------------------------
+
+/**
+ * Aggiorna una partita esistente.
+ * La sicurezza e' garantita dal database: la policy RLS consente
+ * l'update solo a chi risulta created_by.
+ */
+async function modificaPartita(matchId, payload) {
+  const { error } = await supabaseClient
+    .from('matches')
+    .update({
+      club: payload.club,
+      zona: payload.zona,
+      match_date: payload.match_date,
+      match_time: payload.match_time,
+      level: payload.level,
+    })
+    .eq('id', matchId);
+  if (error) throw error;
+}
+
+/**
+ * Elimina una partita. Le iscrizioni collegate spariscono in cascata.
+ */
+async function eliminaPartita(matchId) {
+  const { error } = await supabaseClient
+    .from('matches')
+    .delete()
+    .eq('id', matchId);
+  if (error) throw error;
+}
+
+/**
+ * Apre il modale di creazione in modalita' "modifica".
+ */
+function apriModificaPartita(match) {
+  editingMatchId = match.id;
+  closeModal(el.modalMatch);
+
+  el.createTitle.textContent = 'Modifica Partita';
+  document.getElementById('btn-submit-create').textContent = 'Salva Modifiche';
+
+  impostaVincoliData();
+  el.inputDate.value = match.match_date;
+  generaSlotOrari();
+
+  document.getElementById('input-club').value = match.club;
+  document.getElementById('input-zona').value = match.zona;
+  document.getElementById('input-level').value = match.level;
+
+  // se l'orario originale non e' piu' selezionabile, lo si aggiunge
+  if (![...el.inputTime.options].some((o) => o.value === match.match_time.slice(0, 5))) {
+    const opt = document.createElement('option');
+    opt.value = match.match_time.slice(0, 5);
+    opt.textContent = match.match_time.slice(0, 5);
+    el.inputTime.insertBefore(opt, el.inputTime.firstChild);
+  }
+  el.inputTime.value = match.match_time.slice(0, 5);
+
+  // in modifica il numero di posti non si tocca: ci sono gia' iscritti
+  document.getElementById('slots-section').classList.add('hidden');
+
+  el.createError.classList.add('hidden');
+  openModal(el.modalCreate);
+}
+
+el.btnEditMatch.addEventListener('click', () => {
+  if (currentDetailMatch) apriModificaPartita(currentDetailMatch);
+});
+
+el.btnDeleteMatch.addEventListener('click', async () => {
+  if (!currentDetailMatch) return;
+
+  const iscritti = currentDetailParticipants.length;
+  const avviso = iscritti > 1
+    ? `Ci sono ${iscritti} giocatori iscritti. Eliminare comunque la partita?`
+    : 'Vuoi eliminare questa partita?';
+
+  if (!confirm(avviso)) return;
+
+  el.btnDeleteMatch.disabled = true;
+  el.btnDeleteMatch.textContent = 'Eliminazione...';
+  try {
+    await eliminaPartita(currentDetailMatch.id);
+    closeModal(el.modalMatch);
+    showToast('Partita eliminata.');
+    await caricaPartite();
+  } catch (err) {
+    console.error(err);
+    el.matchDetailError.textContent = messaggioErrore(err, 'Impossibile eliminare la partita. Riprova.');
+    el.matchDetailError.classList.remove('hidden');
+  } finally {
+    el.btnDeleteMatch.disabled = false;
+    el.btnDeleteMatch.textContent = 'Elimina';
+  }
+});
+
+// ---------------------------------------------------------
+// 9-quinquies. CLASSIFICA
+// Ordina per percentuale di vittorie, considerando solo i risultati
+// validi. Il minimo di partite evita che una singola vittoria porti
+// in testa al 100%.
+// ---------------------------------------------------------
+let rankingMinPartite = 3;
+
+async function caricaClassifica(min) {
+  const { data, error } = await supabaseClient.rpc('classifica', { p_min_partite: min });
+  if (error) throw error;
+  return data || [];
+}
+
+async function apriClassifica() {
+  rankingMinPartite = 3;
+  openModal(el.modalRanking);
+  await renderClassifica();
+}
+
+async function renderClassifica() {
+  el.rankingLoading.classList.remove('hidden');
+  el.rankingEmpty.classList.add('hidden');
+  el.rankingList.innerHTML = '';
+  el.btnToggleRankingMin.classList.add('hidden');
+
+  if (!currentUser) {
+    el.rankingLoading.classList.add('hidden');
+    el.rankingEmpty.classList.remove('hidden');
+    el.rankingEmptyTitle.textContent = 'Accedi per vedere la classifica';
+    el.rankingEmptyText.textContent = 'E\' riservata ai giocatori registrati.';
+    el.rankingSubtitle.textContent = 'Solo risultati confermati dagli avversari.';
+    return;
+  }
+
+  try {
+    const righe = await caricaClassifica(rankingMinPartite);
+    el.rankingLoading.classList.add('hidden');
+
+    if (righe.length === 0) {
+      el.rankingEmpty.classList.remove('hidden');
+      el.rankingEmptyTitle.textContent = 'Classifica ancora vuota';
+      el.rankingEmptyText.textContent = rankingMinPartite > 1
+        ? 'Nessuno ha ancora giocato 3 partite con risultato confermato.'
+        : 'Non c\'e\' ancora nessun risultato confermato.';
+    } else {
+      righe.forEach((r, i) => el.rankingList.appendChild(creaRigaClassifica(r, i + 1)));
+    }
+
+    el.btnToggleRankingMin.classList.remove('hidden');
+    el.btnToggleRankingMin.textContent = rankingMinPartite > 1
+      ? 'Mostra anche chi ha giocato meno di 3 partite'
+      : 'Mostra solo chi ha giocato almeno 3 partite';
+    el.rankingSubtitle.textContent = rankingMinPartite > 1
+      ? 'Da 3 partite in su, solo risultati confermati.'
+      : 'Tutti i giocatori con almeno un risultato confermato.';
+  } catch (e) {
+    console.error(e);
+    el.rankingLoading.classList.add('hidden');
+    el.rankingEmpty.classList.remove('hidden');
+    el.rankingEmptyTitle.textContent = 'Impossibile caricare la classifica';
+    el.rankingEmptyText.textContent = e.message || '';
+  }
+}
+
+function creaRigaClassifica(r, posizione) {
+  const sonoIo = Boolean(currentUser) && r.user_id === currentUser.id;
+
+  const riga = document.createElement('div');
+  riga.className = 'flex items-center gap-3 rounded-xl px-3 py-2.5 ' +
+    (sonoIo ? 'bg-lime-neon/10 border border-lime-neon/40' : 'bg-court-700 border border-court-600');
+
+  const pos = document.createElement('span');
+  pos.className = 'w-6 text-center font-display font-700 text-sm shrink-0 ' +
+    (posizione <= 3 ? 'text-lime-neon' : 'text-court-500');
+  pos.textContent = String(posizione);
+
+  const nomeCompleto = `${r.nome || ''} ${r.cognome || ''}`.trim() || 'Giocatore';
+
+  const avatar = document.createElement('div');
+  avatar.className = 'w-9 h-9 rounded-full bg-electric flex items-center justify-center font-display font-700 text-xs overflow-hidden shrink-0';
+  if (r.avatar_url) {
+    const img = document.createElement('img');
+    img.src = r.avatar_url;
+    img.className = 'w-full h-full object-cover';
+    img.alt = '';
+    avatar.appendChild(img);
+  } else {
+    avatar.textContent = nomeCompleto.charAt(0).toUpperCase();
+  }
+
+  const info = document.createElement('div');
+  info.className = 'min-w-0 flex-1';
+
+  const nome = document.createElement('p');
+  nome.className = 'text-sm font-semibold truncate';
+  nome.textContent = sonoIo ? `${nomeCompleto} (tu)` : nomeCompleto;
+
+  const dettaglio = document.createElement('p');
+  dettaglio.className = 'text-[10px] text-court-500';
+  dettaglio.textContent = `${r.partite} partite · ${r.vittorie} vinte`;
+
+  info.appendChild(nome);
+  info.appendChild(dettaglio);
+
+  const perc = document.createElement('span');
+  perc.className = 'font-display font-700 text-base shrink-0 ' +
+    (sonoIo ? 'text-lime-neon' : 'text-electric');
+  perc.textContent = `${r.percentuale_vittorie}%`;
+
+  riga.appendChild(pos);
+  riga.appendChild(avatar);
+  riga.appendChild(info);
+  riga.appendChild(perc);
+  return riga;
+}
+
+el.btnOpenRanking.addEventListener('click', apriClassifica);
+el.btnCloseRanking.addEventListener('click', () => closeModal(el.modalRanking));
+el.modalRankingBackdrop.addEventListener('click', () => closeModal(el.modalRanking));
+
+el.btnToggleRankingMin.addEventListener('click', async () => {
+  rankingMinPartite = rankingMinPartite > 1 ? 1 : 3;
+  await renderClassifica();
+});
+
+// ---------------------------------------------------------
+// 10. EVENTI: FILTRI
+// ---------------------------------------------------------
+el.tabs.addEventListener('click', (e) => {
+  const btn = e.target.closest('.tab-btn');
+  if (!btn) return;
+  activeTab = btn.dataset.tab;
+  el.tabs.querySelectorAll('.tab-btn').forEach((b) => {
+    b.dataset.active = (b === btn) ? 'true' : 'false';
+  });
+  renderMatches();
+});
+
+el.filters.addEventListener('click', (e) => {
+  const btn = e.target.closest('.filter-chip');
+  if (!btn) return;
+  activeFilter = btn.dataset.filter;
+  el.filters.querySelectorAll('.filter-chip').forEach((b) => {
+    b.dataset.active = (b === btn) ? 'true' : 'false';
+  });
+  renderMatches();
+});
+
+el.btnRefresh.addEventListener('click', caricaPartite);
+
+// ---------------------------------------------------------
+// 11. EVENTI: MODALE CREA PARTITA
+// ---------------------------------------------------------
+function openCreateModal() {
+  if (!currentUser) {
+    showToast('Accedi per organizzare una partita.');
+    authMode = 'login';
+    updateAuthModeUI();
+    openModal(el.modalAuth);
+    return;
+  }
+  editingMatchId = null;
+  el.createTitle.textContent = 'Organizza una Partita';
+  document.getElementById('btn-submit-create').textContent = 'Pubblica Partita';
+  document.getElementById('slots-section').classList.remove('hidden');
+
+  el.formCreateMatch.reset();
+  impostaVincoliData();
+  generaSlotOrari();
+
+  // Se l'utente e' un gestore, il circolo viene precompilato
+  if (currentProfile?.role === 'gestore' && currentProfile.circolo) {
+    document.getElementById('input-club').value = currentProfile.circolo;
+  }
+
+  el.createError.classList.add('hidden');
+  selectedSpot = 0;
+  updateSlotsButtonsUI();
+  openModal(el.modalCreate);
+}
+
+el.btnOpenCreate.addEventListener('click', openCreateModal);
+document.body.addEventListener('click', (e) => {
+  if (e.target.closest('.btn-open-create-empty')) openCreateModal();
+});
+
+el.btnCloseCreate.addEventListener('click', () => closeModal(el.modalCreate));
+el.modalCreateBackdrop.addEventListener('click', () => closeModal(el.modalCreate));
+
+// Cambiando la data, gli orari disponibili vengono ricalcolati
+el.inputDate.addEventListener('change', generaSlotOrari);
+
+function updateSlotsButtonsUI() {
+  el.slotsButtons.forEach((b) => {
+    const selected = Number(b.dataset.slots) === selectedSpot;
+    b.className = selected
+      ? 'slots-btn py-2.5 rounded-xl border border-lime-neon bg-lime-neon/10 text-lime-neon text-xs font-display font-700'
+      : 'slots-btn py-2.5 rounded-xl border border-court-500 text-white/70 text-xs font-display font-700';
+  });
+  el.inputMissing.value = selectedSpot;
+}
+
+el.slotsButtons.forEach((btn) => {
+  btn.addEventListener('click', () => {
+    selectedSpot = Number(btn.dataset.slots);
+    updateSlotsButtonsUI();
+  });
+});
+
+el.formCreateMatch.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  el.createError.classList.add('hidden');
+
+  const formData = new FormData(el.formCreateMatch);
+  const payload = {
+    club: formData.get('club')?.trim(),
+    zona: formData.get('zona'),
+    match_date: formData.get('date'),
+    match_time: formData.get('time'),
+    level: formData.get('level'),
+    // posto scelto dall'organizzatore: 0-1 Squadra A, 2-3 Squadra B
+    spot: Math.min(3, Math.max(0, Number(formData.get('missing')) || 0)),
+  };
+
+  if (!payload.club || !payload.zona || !payload.match_date || !payload.match_time) {
+    el.createError.textContent = 'Compila tutti i campi obbligatori.';
+    el.createError.classList.remove('hidden');
+    return;
+  }
+
+  // Controllo finale: la partita non puo' iniziare nel passato
+  const inizioPartita = new Date(`${payload.match_date}T${payload.match_time}`);
+  if (inizioPartita <= new Date()) {
+    el.createError.textContent = 'Non puoi organizzare una partita in una data o un orario gia passati.';
+    el.createError.classList.remove('hidden');
+    return;
+  }
+
+  const submitBtn = document.getElementById('btn-submit-create');
+  const inModifica = Boolean(editingMatchId);
+  submitBtn.disabled = true;
+  submitBtn.textContent = inModifica ? 'Salvataggio...' : 'Pubblicazione...';
+
+  try {
+    if (inModifica) {
+      await modificaPartita(editingMatchId, payload);
+      showToast('Partita aggiornata.');
+    } else {
+      await creaPartita(payload);
+      showToast('Partita pubblicata! 🎾');
+    }
+    closeModal(el.modalCreate);
+    editingMatchId = null;
+    await caricaPartite();
+  } catch (err) {
+    console.error(err);
+    el.createError.textContent = messaggioErrore(err, 'Errore durante il salvataggio della partita. Riprova.');
+    el.createError.classList.remove('hidden');
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = inModifica ? 'Salva Modifiche' : 'Pubblica Partita';
+  }
+});
+
+// ---------------------------------------------------------
+// 12. EVENTI: MODALE AUTH
+// ---------------------------------------------------------
+el.btnLogin.addEventListener('click', () => {
+  authMode = 'login';
+  updateAuthModeUI();
+  openModal(el.modalAuth);
+});
+
+el.btnCloseAuth.addEventListener('click', () => {
+  closeModal(el.modalAuth);
+  resetAuthForgotView();
+});
+el.modalAuthBackdrop.addEventListener('click', () => {
+  closeModal(el.modalAuth);
+  resetAuthForgotView();
+});
+
+el.btnForgotPassword.addEventListener('click', () => mostraFormForgot());
+el.btnBackToLogin.addEventListener('click', () => resetAuthForgotView());
+
+el.formAuthForgot.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  el.forgotError.classList.add('hidden');
+  el.forgotSuccess.classList.add('hidden');
+
+  const email = el.forgotEmail.value.trim();
+
+  el.btnSubmitForgot.disabled = true;
+  el.btnSubmitForgot.textContent = 'Invio...';
+
+  try {
+    await inviaLinkRecuperoPassword(email);
+    el.forgotSuccess.textContent = 'Controlla la tua email: ti abbiamo inviato un link per reimpostare la password.';
+    el.forgotSuccess.classList.remove('hidden');
+  } catch (err) {
+    console.error(err);
+    el.forgotError.textContent = messaggioErrore(err, 'Errore durante l\'invio dell\'email. Riprova tra qualche minuto.');
+    el.forgotError.classList.remove('hidden');
+  } finally {
+    el.btnSubmitForgot.disabled = false;
+    el.btnSubmitForgot.textContent = 'Invia link di recupero';
+  }
+});
+
+el.formResetPassword.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  el.resetPasswordError.classList.add('hidden');
+
+  const nuovaPassword = el.resetPasswordNew.value;
+  const conferma = el.resetPasswordConfirm.value;
+
+  if (nuovaPassword !== conferma) {
+    el.resetPasswordError.textContent = 'Le password non coincidono.';
+    el.resetPasswordError.classList.remove('hidden');
+    return;
+  }
+
+  el.btnSubmitResetPassword.disabled = true;
+  el.btnSubmitResetPassword.textContent = 'Salvataggio...';
+
+  try {
+    const { error } = await supabaseClient.auth.updateUser({ password: nuovaPassword });
+    if (error) throw error;
+
+    closeModal(el.modalResetPassword);
+    el.formResetPassword.reset();
+    showToast('Password aggiornata: ora sei connesso con la nuova password.');
+  } catch (err) {
+    console.error(err);
+    el.resetPasswordError.textContent = messaggioErrore(err, 'Errore durante l\'aggiornamento della password. Riprova.');
+    el.resetPasswordError.classList.remove('hidden');
+  } finally {
+    el.btnSubmitResetPassword.disabled = false;
+    el.btnSubmitResetPassword.textContent = 'Salva nuova password';
+  }
+});
+
+el.btnCancelResetPassword.addEventListener('click', async () => {
+  closeModal(el.modalResetPassword);
+  el.formResetPassword.reset();
+  // Annulla la sessione di recupero temporanea invece di lasciarla appesa.
+  await logoutUtente();
+});
+
+el.btnToggleAuthMode.addEventListener('click', () => {
+  authMode = authMode === 'login' ? 'signup' : 'login';
+  updateAuthModeUI();
+});
+
+function updateAuthModeUI() {
+  el.authError.classList.add('hidden');
+  if (authMode === 'signup') {
+    el.authTitle.textContent = 'Registrati';
+    el.authSignupFields.classList.remove('hidden');
+    el.btnSubmitAuth.textContent = 'Crea Account';
+    el.btnToggleAuthMode.innerHTML = 'Hai già un account? <span class="text-lime-neon">Accedi</span>';
+    el.btnForgotPassword.classList.add('hidden');
+  } else {
+    el.authTitle.textContent = 'Accedi';
+    el.authSignupFields.classList.add('hidden');
+    el.btnSubmitAuth.textContent = 'Accedi';
+    el.btnToggleAuthMode.innerHTML = 'Non hai un account? <span class="text-lime-neon">Registrati</span>';
+    el.btnForgotPassword.classList.remove('hidden');
+  }
+}
+
+/**
+ * Mostra, dentro lo stesso modale di login, il form per richiedere il
+ * link di recupero password al posto del form di login/registrazione.
+ */
+function mostraFormForgot() {
+  el.formAuth.classList.add('hidden');
+  el.formAuthForgot.classList.remove('hidden');
+  el.authTitle.textContent = 'Recupera password';
+  el.forgotError.classList.add('hidden');
+  el.forgotSuccess.classList.add('hidden');
+  el.forgotEmail.value = el.authEmail.value || '';
+}
+
+/**
+ * Torna dal form "recupera password" al form di login/registrazione,
+ * ripristinando titolo e stato in base alla modalita' corrente.
+ */
+function resetAuthForgotView() {
+  el.formAuthForgot.reset();
+  el.forgotError.classList.add('hidden');
+  el.forgotSuccess.classList.add('hidden');
+  el.formAuthForgot.classList.add('hidden');
+  el.formAuth.classList.remove('hidden');
+  updateAuthModeUI();
+}
+
+el.formAuth.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  el.authError.classList.add('hidden');
+
+  const email = el.authEmail.value.trim();
+  const password = el.authPassword.value;
+
+  el.btnSubmitAuth.disabled = true;
+  el.btnSubmitAuth.textContent = authMode === 'signup' ? 'Creazione...' : 'Accesso...';
+
+  try {
+    if (authMode === 'signup') {
+      const nome = el.authNome.value.trim();
+      const cognome = el.authCognome.value.trim();
+      const telefono = el.authTelefono.value.trim();
+      const level = el.authLevel.value;
+
+      if (!nome || !cognome) {
+        throw new Error('Nome e cognome sono obbligatori.');
+      }
+
+      const codice = el.authCodice.value.trim();
+      const { user, session } = await registraUtente({
+        email, password, nome, cognome, telefono, level, codice,
+      });
+
+      if (user && session) {
+        // Sessione gia' attiva: accesso immediato
+        currentUser = user;
+        currentProfile = await loadProfile(user);
+        renderAuthState();
+        showToast('Registrazione completata!');
+      } else {
+        // Conferma via email richiesta: il profilo verra' creato al primo accesso
+        showToast('Controlla la tua email per confermare, poi accedi.');
+      }
+    } else {
+      const user = await loginUtente(email, password);
+      currentUser = user;
+      currentProfile = await loadProfile(user);
+      renderAuthState();
+      showToast(`Bentornato, ${displayName(currentProfile)}! 🎾`);
+    }
+    // Con l'accesso diventano visibili le proprie iscrizioni e i risultati
+    if (currentUser) await caricaPartite();
+
+    closeModal(el.modalAuth);
+    el.formAuth.reset();
+  } catch (err) {
+    console.error(err);
+    el.authError.textContent = messaggioErrore(
+      err,
+      authMode === 'signup'
+        ? 'Non e\' stato possibile completare la registrazione. Riprova.'
+        : 'Non e\' stato possibile accedere. Controlla email e password.'
+    );
+    el.authError.classList.remove('hidden');
+  } finally {
+    el.btnSubmitAuth.disabled = false;
+    el.btnSubmitAuth.textContent = authMode === 'signup' ? 'Crea Account' : 'Accedi';
+  }
+});
+
+// ---------------------------------------------------------
+// 13. AVVIO APP
+// ---------------------------------------------------------
+/**
+ * Restituisce la data odierna in formato YYYY-MM-DD (fuso orario locale).
+ */
+function oggiISO() {
+  const d = new Date();
+  const off = d.getTimezoneOffset();
+  return new Date(d.getTime() - off * 60000).toISOString().slice(0, 10);
+}
+
+/**
+ * Popola la tendina degli orari con slot da 30 minuti (08:00 -> 23:30).
+ * Se la data scelta e' oggi, nasconde gli slot gia' passati:
+ * non si possono organizzare partite nel passato.
+ */
+function generaSlotOrari() {
+  const select = el.inputTime;
+  const dataScelta = el.inputDate.value;
+  const isOggi = dataScelta === oggiISO();
+
+  // minuti trascorsi da mezzanotte (con 15 min di margine minimo)
+  const adesso = new Date();
+  const minutiOra = adesso.getHours() * 60 + adesso.getMinutes() + 15;
+
+  const precedente = select.value;
+  select.innerHTML = '';
+
+  let primoValido = null;
+
+  for (let h = 8; h <= 23; h++) {
+    for (const m of [0, 30]) {
+      const minuti = h * 60 + m;
+      if (isOggi && minuti < minutiOra) continue; // slot gia' passato
+
+      const value = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+      const opt = document.createElement('option');
+      opt.value = value;
+      opt.textContent = value;
+      select.appendChild(opt);
+      if (!primoValido) primoValido = value;
+    }
+  }
+
+  if (select.options.length === 0) {
+    const opt = document.createElement('option');
+    opt.value = '';
+    opt.textContent = 'Nessun orario disponibile oggi';
+    opt.disabled = true;
+    select.appendChild(opt);
+    return;
+  }
+
+  // mantiene la scelta precedente se ancora valida
+  const ancoraValido = [...select.options].some((o) => o.value === precedente);
+  select.value = ancoraValido ? precedente : (primoValido || '');
+}
+
+/**
+ * Blocca la selezione di date passate sul calendario.
+ */
+function impostaVincoliData() {
+  el.inputDate.min = oggiISO();
+  if (!el.inputDate.value) el.inputDate.value = oggiISO();
+}
+
+async function init() {
+  impostaVincoliData();
+  generaSlotOrari();
+  await initAuth();
+  await caricaPartite();
+}
+
+init();
+
+  </script>
+
+  <!-- PWA: registrazione service worker (non blocca l'avvio dell'app) -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').catch((err) => {
+          console.warn('Service worker non registrato:', err);
+        });
+      });
+    }
+  </script>
+</body>
+</html>
