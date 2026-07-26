@@ -80,5 +80,5 @@ create trigger trg_set_match_origin
 -- poi esegui solo queste righe.
 -- ---------------------------------------------------------
 -- update public.profiles
--- set role = 'gestore', circolo = 'Padel Club Paestum'
+-- set role = 'gestore', circolo = 'Padel Arena'
 -- where id = (select id from auth.users where email = 'gestore@esempio.it');

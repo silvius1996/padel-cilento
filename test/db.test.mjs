@@ -202,14 +202,14 @@ async function seed() {
   // Partita giocata due giorni fa
   await db.query(
     `insert into public.matches (id, club, zona, match_date, match_time, level, total_slots, filled_slots, created_by)
-     values ($1, 'Padel Village', 'paestum', current_date - 2, '20:00', 'intermedio', 4, 0, $2)`,
+     values ($1, 'Padel Arena', 'paestum', current_date - 2, '20:00', 'intermedio', 4, 0, $2)`,
     [PARTITA, U.aldo],
   );
 
   // Partita ancora da giocare, per i test sul divieto di anticipare il risultato
   await db.query(
     `insert into public.matches (id, club, zona, match_date, match_time, level, total_slots, filled_slots, created_by)
-     values ($1, 'Padel Village', 'paestum', current_date + 3, '20:00', 'intermedio', 4, 0, $2)`,
+     values ($1, 'Padel Arena', 'paestum', current_date + 3, '20:00', 'intermedio', 4, 0, $2)`,
     [PARTITA_FUTURA, U.aldo],
   );
 }
@@ -646,7 +646,7 @@ async function testDataPartita() {
   // intendendo ieri.
   const creaPartita = (giorni) => db.query(
     `insert into public.matches (club, zona, match_date, match_time, level, created_by)
-     values ('Padel Village', 'paestum',
+     values ('Padel Arena', 'paestum',
              (now() at time zone 'Europe/Rome')::date + ($1)::int,
              '20:00', 'intermedio', $2)`,
     [giorni, U.ester],
@@ -678,7 +678,7 @@ async function testDataPartita() {
   );
 
   await deveRiuscire('una partita si puo correggere senza toccare la data', () => db.query(
-    `update public.matches set club = 'Padel Village - campo 2' where id = $1`, [mie[0].id],
+    `update public.matches set club = 'Padel Arena - campo 2' where id = $1`, [mie[0].id],
   ));
 
   await db.exec('reset role');
@@ -818,10 +818,10 @@ async function testCreazionePartita() {
   await db.exec('set role authenticated');
 
   const { rows: creata } = await db.query(
-    `select * from public.crea_partita('Padel Village', 'paestum',
+    `select * from public.crea_partita('Padel Arena', 'paestum',
        current_date + 4, '18:30', 'intermedio', 2::smallint)`,
   );
-  uguale('la partita viene creata', 'Padel Village', creata[0].club);
+  uguale('la partita viene creata', 'Padel Arena', creata[0].club);
   uguale('l organizzatore e gia in campo', 1, creata[0].filled_slots);
 
   const { rows: iscritti } = await db.query(
@@ -961,7 +961,7 @@ async function testEliminaAccount() {
   await come(U.dina);
   await db.exec('set role authenticated');
   const { rows: futura } = await db.query(
-    `select * from public.crea_partita('Padel Village', 'agropoli',
+    `select * from public.crea_partita('Padel Arena', 'agropoli',
        current_date + 6, '21:00', 'avanzato', 0::smallint)`,
   );
 
@@ -1257,7 +1257,7 @@ async function testCodiceCircolo() {
 
   await db.query(
     `insert into public.club_codes (code, circolo, uso_singolo)
-     values ('PAESTUM-2026', 'Padel Club Paestum', false)`,
+     values ('PAESTUM-2026', 'Padel Arena', false)`,
   );
 
   // ----- Il registro dei tentativi non e' leggibile dal browser -----
@@ -1303,14 +1303,14 @@ async function testCodiceCircolo() {
   await come(U.dina);
   const esitoDina = await provaCodice('PAESTUM-2026');
   esito('un altro utente non e coinvolto dal blocco',
-    esitoDina.ok === true && esitoDina.circolo === 'Padel Club Paestum',
+    esitoDina.ok === true && esitoDina.circolo === 'Padel Arena',
     `esito: ${JSON.stringify(esitoDina)}`);
 
   const { rows: ruoloDina } = await db.query(
     'select role, circolo from public.profiles where id = $1', [U.dina],
   );
   uguale('il codice valido promuove a gestore', 'gestore', ruoloDina[0].role);
-  uguale('il circolo viene assegnato', 'Padel Club Paestum', ruoloDina[0].circolo);
+  uguale('il circolo viene assegnato', 'Padel Arena', ruoloDina[0].circolo);
 
   // ----- Un uso riuscito azzera il contatore -----
   const { rows: registro } = await db.query(
@@ -1338,7 +1338,7 @@ async function testCodiceCircolo() {
 
 /**
  * Il circolo come entita' (aggiornamento n.13). Prima era una stringa
- * scritta a mano, e "Padel Village" e "padel village" erano due circoli.
+ * scritta a mano, e "Padel Arena" e "padel arena" erano due circoli.
  */
 async function testCircoli() {
   console.log('\nIL CIRCOLO COME ENTITA');

@@ -112,7 +112,7 @@ create index if not exists idx_matches_feed on public.matches (match_date, match
 -- uso_singolo = true  -> il codice funziona una volta sola
 -- ---------------------------------------------------------
 -- insert into public.club_codes (code, circolo, uso_singolo)
--- values ('PAESTUM-2026', 'Padel Club Paestum', false);
+-- values ('PAESTUM-2026', 'Padel Arena', false);
 
 -- Per revocare un codice (chi e' gia gestore resta gestore):
 -- update public.club_codes set attivo = false where code = 'PAESTUM-2026';

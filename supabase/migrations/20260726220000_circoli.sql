@@ -4,8 +4,8 @@
 --
 -- PERCHE' ADESSO
 -- I tornei appartengono a un circolo e li gestisce un circolo.
--- Finche' "circolo" e' testo scritto a mano, "Padel Village",
--- "padel village" e "Village" sono tre circoli diversi, e non c'e'
+-- Finche' "circolo" e' testo scritto a mano, "Padel Arena",
+-- "padel arena" e "Arena" sono tre circoli diversi, e non c'e'
 -- modo di verificare che QUESTO gestore possa toccare QUEL torneo.
 --
 -- C'e' una seconda ragione, non tecnica: al circolo l'accesso viene
@@ -45,7 +45,7 @@ create table if not exists public.circoli (
 );
 
 -- Il punto di tutta questa migrazione: due circoli non possono
--- chiamarsi allo stesso modo, e "Padel Village" e "padel village"
+-- chiamarsi allo stesso modo, e "Padel Arena" e "padel arena"
 -- sono lo stesso nome. Senza questo indice si torna al problema di
 -- prima, solo con una tabella in mezzo.
 create unique index if not exists idx_circoli_nome
@@ -404,12 +404,12 @@ grant execute on function public.elimina_mio_account() to authenticated;
 -- che lo abilita, si consegna il codice al circolo.
 -- =========================================================
 -- insert into public.circoli (nome, zona, abbonamento_scade_il)
--- values ('Padel Club Paestum', 'paestum', '2027-07-31');
+-- values ('Padel Arena', 'paestum', '2027-07-31');
 --
 -- insert into public.club_codes (code, circolo, circolo_id, uso_singolo)
 -- select 'PAESTUM-2027', c.nome, c.id, false
--- from public.circoli c where c.nome = 'Padel Club Paestum';
+-- from public.circoli c where c.nome = 'Padel Arena';
 --
 -- Per sospendere un cliente che non ha rinnovato (i tornei restano
 -- visibili, non puo' piu' crearne):
--- update public.circoli set attivo = false where nome = 'Padel Club Paestum';
+-- update public.circoli set attivo = false where nome = 'Padel Arena';

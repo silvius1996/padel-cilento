@@ -40,9 +40,9 @@ const giorno = (n) => {
 };
 
 const PROFILO = {
-  id: IO, nome: 'Silvio', cognome: 'Marino', full_name: 'Silvio Marino',
+  id: IO, nome: 'Andrea', cognome: 'Costa', full_name: 'Andrea Costa',
   level: 'intermedio', avatar_url: null, telefono: '3331234567',
-  role: 'gestore', circolo: 'Padel Village', circolo_id: 'c1',
+  role: 'gestore', circolo: 'Padel Arena', circolo_id: 'c1',
   eliminato_il: null, created_at: oggi.toISOString(),
 };
 
@@ -53,23 +53,23 @@ const p = (id, ora, club, zona, livello, pieni, giorni, origine) => ({
 });
 
 const PARTITE = [
-  p('m1', '19:30:00', 'Padel Village', 'paestum', 'intermedio', 3, 0, 'circolo'),
-  p('m2', '21:00:00', 'Circolo Agropoli', 'agropoli', 'open', 2, 0, 'giocatore'),
-  p('m3', '18:00:00', 'Capaccio Sporting', 'capaccio', 'avanzato', 4, 1, 'circolo'),
-  p('m4', '20:30:00', 'Padel Village', 'paestum', 'principiante', 1, 1, 'giocatore'),
-  p('m5', '19:00:00', 'Circolo Agropoli', 'agropoli', 'intermedio', 3, 2, 'giocatore'),
+  p('m1', '19:30:00', 'Padel Arena', 'paestum', 'intermedio', 3, 0, 'circolo'),
+  p('m2', '21:00:00', 'Circolo Le Torri', 'agropoli', 'open', 2, 0, 'giocatore'),
+  p('m3', '18:00:00', 'Sporting Kaleido', 'capaccio', 'avanzato', 4, 1, 'circolo'),
+  p('m4', '20:30:00', 'Padel Arena', 'paestum', 'principiante', 1, 1, 'giocatore'),
+  p('m5', '19:00:00', 'Circolo Le Torri', 'agropoli', 'intermedio', 3, 2, 'giocatore'),
 ];
 
 const g = (nome, cognome, livello) => ({ nome, cognome, full_name: `${nome} ${cognome}`, level: livello, avatar_url: null });
 const PARTECIPANTI = [
-  { user_id: IO, spot: 0, joined_at: oggi.toISOString(), profiles: g('Silvio', 'Marino', 'intermedio') },
+  { user_id: IO, spot: 0, joined_at: oggi.toISOString(), profiles: g('Andrea', 'Costa', 'intermedio') },
   { user_id: 'u2', spot: 1, joined_at: oggi.toISOString(), profiles: g('Luca', 'Bianchi', 'intermedio') },
   { user_id: 'u3', spot: 2, joined_at: oggi.toISOString(), profiles: g('Marco', 'Rossi', 'intermedio') },
 ];
 
 const CLASSIFICA = [
   { user_id: 'u3', nome: 'Marco', cognome: 'Rossi', avatar_url: null, level: 'avanzato', partite: 18, vittorie: 14, percentuale_vittorie: 78 },
-  { user_id: IO, nome: 'Silvio', cognome: 'Marino', avatar_url: null, level: 'intermedio', partite: 14, vittorie: 10, percentuale_vittorie: 71 },
+  { user_id: IO, nome: 'Andrea', cognome: 'Costa', avatar_url: null, level: 'intermedio', partite: 14, vittorie: 10, percentuale_vittorie: 71 },
   { user_id: 'u4', nome: 'Anna', cognome: 'Verdi', avatar_url: null, level: 'intermedio', partite: 12, vittorie: 8, percentuale_vittorie: 67 },
   { user_id: 'u2', nome: 'Luca', cognome: 'Bianchi', avatar_url: null, level: 'intermedio', partite: 15, vittorie: 9, percentuale_vittorie: 60 },
   { user_id: 'u5', nome: 'Gennaro', cognome: 'Esposito', avatar_url: null, level: 'open', partite: 11, vittorie: 6, percentuale_vittorie: 55 },
@@ -80,7 +80,7 @@ const TORNEI = [{
   descrizione: 'Due gironi, otto coppie', livello: 'intermedio',
   data_inizio: giorno(-6), data_fine: giorno(0), stato: 'in_corso',
   formato: 'gironi_e_finali', qualificate_per_girone: 2, finale_terzo_posto: true,
-  creato_da: IO, created_at: oggi.toISOString(), circoli: { nome: 'Padel Village' },
+  creato_da: IO, created_at: oggi.toISOString(), circoli: { nome: 'Padel Arena' },
 }];
 
 const GIRONI = [
@@ -96,7 +96,7 @@ const sq = (id, a, b, gir) => ({
 const SQUADRE = [
   sq('s1', 'Marco Rossi', 'Luca Bianchi', 'g1'), sq('s2', 'Anna Verdi', 'Sara Neri', 'g1'),
   sq('s3', 'Paolo Gialli', 'Marco Blu', 'g1'),  sq('s4', 'Elena Viola', 'Ugo Grigi', 'g1'),
-  sq('s5', 'Gennaro Esposito', 'Ciro Rullo', 'g2'), sq('s6', 'Silvia Marino', 'Rita Greco', 'g2'),
+  sq('s5', 'Gennaro Esposito', 'Ciro Rullo', 'g2'), sq('s6', 'Giulia Fontana', 'Rita Greco', 'g2'),
   sq('s7', 'Anna Coppola', 'Luisa Ruggi', 'g2'), sq('s8', 'Nino Ferrara', 'Peppe Longo', 'g2'),
 ];
 
@@ -138,19 +138,19 @@ const CLASSIFICHE = {
   ],
   g2: [
     cls(1, 's8', 'Nino Ferrara / Peppe Longo', 3, 1, 2, 0, 12, 5),
-    cls(2, 's6', 'Silvia Marino / Rita Greco', 3, 1, 2, 1, 15, 12),
+    cls(2, 's6', 'Giulia Fontana / Rita Greco', 3, 1, 2, 1, 15, 12),
     cls(3, 's5', 'Gennaro Esposito / Ciro Rullo', 0, 0, 0, 2, 5, 12),
     cls(4, 's7', 'Anna Coppola / Luisa Ruggi', 0, 0, 1, 2, 12, 15),
   ],
 };
 
 const BACHECA = [
-  { torneo_id: 'tx', torneo: 'Trofeo di Primavera', circolo: 'Padel Village', data: giorno(-90), posizione: 1, squadra: 'Silvio Marino / Luca Bianchi' },
-  { torneo_id: 'ty', torneo: 'Open di Paestum', circolo: 'Capaccio Sporting', data: giorno(-160), posizione: 2, squadra: 'Silvio Marino / Marco Rossi' },
+  { torneo_id: 'tx', torneo: 'Trofeo di Primavera', circolo: 'Padel Arena', data: giorno(-90), posizione: 1, squadra: 'Andrea Costa / Luca Bianchi' },
+  { torneo_id: 'ty', torneo: 'Open di Paestum', circolo: 'Sporting Kaleido', data: giorno(-160), posizione: 2, squadra: 'Andrea Costa / Marco Rossi' },
 ];
 
 const STATISTICHE = [{
-  user_id: IO, nome: 'Silvio', cognome: 'Marino', level: 'intermedio', avatar_url: null,
+  user_id: IO, nome: 'Andrea', cognome: 'Costa', level: 'intermedio', avatar_url: null,
   partite: 14, vittorie: 10, sconfitte: 4, percentuale_vittorie: 71,
 }];
 
@@ -162,7 +162,7 @@ function rispostaPer(url) {
   const via = u.pathname;
   const select = u.searchParams.get('select') || '';
 
-  if (via.includes('/auth/v1/user')) return { user: { id: IO, email: 'silvio@demo.it' } };
+  if (via.includes('/auth/v1/user')) return { user: { id: IO, email: 'demo@esempio.it' } };
   if (via.includes('/auth/v1/')) return {};
 
   if (via.endsWith('/rpc/mio_profilo')) return PROFILO;
@@ -436,8 +436,8 @@ async function registra(nome) {
       expires_in: 604800, expires_at: scadenza, refresh_token: 'demo',
       user: {
         id: io, aud: 'authenticated', role: 'authenticated',
-        email: 'silvio@demo.it', email_confirmed_at: new Date().toISOString(),
-        user_metadata: { nome: 'Silvio', cognome: 'Marino' }, app_metadata: {},
+        email: 'demo@esempio.it', email_confirmed_at: new Date().toISOString(),
+        user_metadata: { nome: 'Andrea', cognome: 'Costa' }, app_metadata: {},
         created_at: new Date().toISOString(),
       },
     }));

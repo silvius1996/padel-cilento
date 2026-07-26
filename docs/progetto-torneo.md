@@ -57,7 +57,7 @@ non lo è: è una **stringa di testo** in due posti scollegati.
 | `profiles.circolo` | testo, assegnato da `usa_codice_circolo()` |
 | `club_codes.circolo` | testo, scritto a mano quando si crea il codice |
 
-Finché è testo, "Padel Village", "padel village" e "Village" sono tre circoli
+Finché è testo, "Padel Arena", "padel arena" e "Arena" sono tre circoli
 diversi, e non c'è modo di verificare che *questo* gestore possa toccare
 *quel* torneo.
 

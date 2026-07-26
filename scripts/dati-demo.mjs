@@ -55,7 +55,7 @@ const COPPIE = [
   ['Paolo Gialli', 'Marco Blu'],
   ['Elena Viola', 'Ugo Grigi'],
   ['Gennaro Esposito', 'Ciro Rullo'],
-  ['Silvia Marino', 'Rita Greco'],
+  ['Giulia Fontana', 'Rita Greco'],
   ['Anna Coppola', 'Luisa Ruggi'],
   ['Nino Ferrara', 'Peppe Longo'],
 ];
