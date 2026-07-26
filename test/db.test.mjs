@@ -639,9 +639,16 @@ async function testRuoloGestore() {
 async function testDataPartita() {
   console.log('\nUNA PARTITA NON SI ORGANIZZA NEL PASSATO');
 
+  // La data si conta in ora italiana, come fa il trigger. Con
+  // current_date (che e' UTC) questo test si romperebbe ogni sera
+  // dalle 22 in poi, quando a Roma e' gia' il giorno dopo: il
+  // database direbbe "oggi" intendendo domani, e il test "oggi"
+  // intendendo ieri.
   const creaPartita = (giorni) => db.query(
     `insert into public.matches (club, zona, match_date, match_time, level, created_by)
-     values ('Padel Village', 'paestum', current_date + ($1)::int, '20:00', 'intermedio', $2)`,
+     values ('Padel Village', 'paestum',
+             (now() at time zone 'Europe/Rome')::date + ($1)::int,
+             '20:00', 'intermedio', $2)`,
     [giorni, U.ester],
   );
 
@@ -664,7 +671,8 @@ async function testDataPartita() {
   await deveFallire(
     'una partita non si puo spostare nel passato',
     () => db.query(
-      `update public.matches set match_date = current_date - 5 where id = $1`, [mie[0].id],
+      `update public.matches
+       set match_date = (now() at time zone 'Europe/Rome')::date - 5 where id = $1`, [mie[0].id],
     ),
     'data passata',
   );

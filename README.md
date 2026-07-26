@@ -52,6 +52,8 @@ Servono solo per lavorare in locale: la pubblicazione e automatica.
 
 ```bash
 npm test            # verifica la logica del database (non tocca la produzione)
+npm run video       # registra i due video di presentazione in video/
+npm run dati:demo   # riempie il database con un torneo dimostrativo
 npm run build:css   # rigenera public/styles.css
 npm run db:status   # mostra lo stato delle migrazioni
 npm run db:verify   # controlla com'e fatto il database di produzione
@@ -59,6 +61,24 @@ npm run db:verify   # controlla com'e fatto il database di produzione
 npm run deploy      # pubblica a mano (di norma non serve: lo fa GitHub)
 npm run db:push     # applica le migrazioni a mano (idem)
 ```
+
+### Presentazioni e dati dimostrativi
+
+`public/presentazione/` contiene due pagine che si animano da sole su una linea
+del tempo fissa: una per i giocatori, una per i circoli. Non sono schermate
+dell'app, sono scenografie pensate per essere **registrate**: `npm run video` le
+apre in un browser senza finestra e ne salva la ripresa in `video/`.
+
+Sono anche raggiungibili online, quindi si possono mandare a un circolo come
+link invece che come file:
+`/presentazione/circoli.html` e `/presentazione/giocatori.html`.
+
+`npm run dati:demo` crea un circolo e un torneo completi — gironi, calendario,
+risultati, tabellone, medaglie — per poter riprendere l'app piena invece che
+vuota. Scrive sul database vero, marca tutto con un nome riconoscibile, e
+`npm run dati:demo pulisci` lo rimuove senza toccare altro. Non crea utenti
+finti: le coppie di un torneo sono nomi scritti a mano, ed e proprio il motivo
+per cui la modalita torneo funziona senza obbligare nessuno a registrarsi.
 
 ### Il foglio di stile
 

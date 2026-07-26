@@ -11,7 +11,9 @@
     "db:baseline": "node scripts/db.mjs baseline",
     "db:push": "node scripts/db.mjs push",
     "db:status": "node scripts/db.mjs status",
-    "db:verify": "node scripts/verifica.mjs"
+    "db:verify": "node scripts/verifica.mjs",
+    "video": "node scripts/video.mjs",
+    "dati:demo": "node scripts/dati-demo.mjs"
   },
   "devDependencies": {
     "@electric-sql/pglite": "^0.5.4",
