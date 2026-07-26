@@ -36,6 +36,8 @@ const PARTITA_VECCHIA = 'aaaaaaaa-0000-0000-0000-000000000003';    // iscrizioni
 const PARTITA_CORREZIONE = 'aaaaaaaa-0000-0000-0000-000000000004'; // correzione del punteggio
 const PARTITA_ADMIN = 'aaaaaaaa-0000-0000-0000-000000000005';      // moderazione
 
+const CIRCOLO_NOME = 'Padel Agropoli';
+
 let db;
 let passati = 0;
 const falliti = [];
@@ -1323,6 +1325,151 @@ async function testCodiceCircolo() {
   );
 }
 
+/**
+ * Il circolo come entita' (aggiornamento n.13). Prima era una stringa
+ * scritta a mano, e "Padel Village" e "padel village" erano due circoli.
+ */
+async function testCircoli() {
+  console.log('\nIL CIRCOLO COME ENTITA');
+
+  // Solo l'amministratore crea circoli
+  await come(U.carlo);
+  await db.exec('set role authenticated');
+  await deveFallire(
+    'un utente qualunque non crea un circolo',
+    () => db.query(`insert into public.circoli (nome, zona) values ('Circolo Abusivo', 'paestum')`),
+    'row-level security',
+  );
+
+  await db.exec('reset role');
+  await db.query(`update public.profiles set role = 'admin' where id = $1`, [U.carlo]);
+
+  await come(U.carlo);
+  await db.exec('set role authenticated');
+  await deveRiuscire('l amministratore crea un circolo', () => db.query(
+    `insert into public.circoli (nome, zona, telefono) values ($1, 'agropoli', '0974000000')`,
+    [CIRCOLO_NOME],
+  ));
+
+  // Il punto di tutta la migrazione
+  await deveFallire(
+    'due circoli non possono avere lo stesso nome',
+    () => db.query(`insert into public.circoli (nome, zona) values ($1, 'paestum')`, [CIRCOLO_NOME]),
+    'duplicate key',
+  );
+  await deveFallire(
+    'il confronto ignora maiuscole e spazi',
+    () => db.query(`insert into public.circoli (nome, zona) values ($1, 'paestum')`,
+      [`  ${CIRCOLO_NOME.toUpperCase()}  `]),
+    'duplicate key',
+  );
+
+  await db.exec('reset role');
+  const { rows: circolo } = await db.query(
+    'select id, attivo from public.circoli where nome = $1', [CIRCOLO_NOME],
+  );
+  const idCircolo = circolo[0].id;
+
+  // Visibili a tutti: i tabelloni dei tornei li legge anche chi non ha l'account
+  await come(null);
+  await db.exec('set role anon');
+  const { rows: visti } = await db.query('select nome from public.circoli');
+  esito('i circoli sono visibili anche senza accesso', visti.length >= 1, `visti: ${visti.length}`);
+  await db.exec('reset role');
+
+  // ----- Il codice assegna il circolo, non piu' solo il nome -----
+  await db.query(
+    `insert into public.club_codes (code, circolo, circolo_id, uso_singolo)
+     values ('AGROPOLI-2027', $1, $2, false)`, [CIRCOLO_NOME, idCircolo],
+  );
+
+  // Non Ester: testCodiceCircolo la porta di proposito a cinque tentativi
+  // falliti, quindi qui sarebbe ancora bloccata. E' la protezione che
+  // funziona, non un intoppo.
+  await come(U.bea);
+  await db.exec('set role authenticated');
+  const esitoCodice = await provaCodice('AGROPOLI-2027');
+  esito('il codice funziona', esitoCodice.ok === true, JSON.stringify(esitoCodice));
+
+  const { rows: profilo } = await db.query('select circolo_id, role from public.mio_profilo()');
+  uguale('il gestore viene collegato al circolo', idCircolo, profilo[0].circolo_id);
+  uguale('ed e gestore', 'gestore', profilo[0].role);
+
+  // ----- Chi gestisce cosa -----
+  const gestisce = async (uid, idc) => {
+    await come(uid);
+    const { rows } = await db.query('select public.e_gestore_del_circolo($1) as si', [idc]);
+    return rows[0].si;
+  };
+
+  uguale('il gestore gestisce il proprio circolo', true, await gestisce(U.bea, idCircolo));
+  uguale('un altro utente no', false, await gestisce(U.aldo, idCircolo));
+  uguale('l amministratore gestisce qualunque circolo', true, await gestisce(U.carlo, idCircolo));
+
+  // ----- L'interruttore commerciale -----
+  await db.exec('reset role');
+  await db.query(`update public.circoli set attivo = false where id = $1`, [idCircolo]);
+
+  uguale('un circolo sospeso non e utilizzabile', false,
+    (await db.query('select public.circolo_utilizzabile($1) as si', [idCircolo])).rows[0].si);
+  uguale('e il suo gestore perde i poteri', false, await gestisce(U.bea, idCircolo));
+  uguale('ma l amministratore interviene lo stesso', true, await gestisce(U.carlo, idCircolo));
+
+  await db.exec('reset role');
+  await db.query(
+    `update public.circoli set attivo = true, abbonamento_scade_il = current_date - 1 where id = $1`,
+    [idCircolo],
+  );
+  uguale('un abbonamento scaduto vale come sospeso', false,
+    (await db.query('select public.circolo_utilizzabile($1) as si', [idCircolo])).rows[0].si);
+
+  // Un cliente che non rinnova non abilita nuovi gestori
+  await db.query(
+    `insert into public.club_codes (code, circolo, circolo_id, uso_singolo)
+     values ('AGROPOLI-SCADUTO', $1, $2, false)`, [CIRCOLO_NOME, idCircolo],
+  );
+  await come(U.dina);
+  const esitoScaduto = await provaCodice('AGROPOLI-SCADUTO');
+  esito('con l abbonamento scaduto il codice non funziona',
+    esitoScaduto.ok === false && /abbonamento/i.test(esitoScaduto.errore),
+    JSON.stringify(esitoScaduto));
+
+  await db.exec('reset role');
+  await db.query(
+    `update public.circoli set abbonamento_scade_il = current_date + 365 where id = $1`,
+    [idCircolo],
+  );
+  uguale('rinnovando torna utilizzabile', true,
+    (await db.query('select public.circolo_utilizzabile($1) as si', [idCircolo])).rows[0].si);
+
+  // ----- Il legame non si scrive dal browser -----
+  await come(U.aldo);
+  await db.exec('set role authenticated');
+  await deveFallire(
+    'un utente non si collega da solo a un circolo',
+    () => db.query('update public.profiles set circolo_id = $1 where id = $2', [idCircolo, U.aldo]),
+    'permission denied',
+  );
+
+  await db.exec('reset role');
+  await db.exec('grant update on public.profiles to authenticated');
+  await come(U.aldo);
+  await db.exec('set role authenticated');
+  await deveFallire(
+    'anche con i permessi riaperti il trigger lo impedisce',
+    () => db.query('update public.profiles set circolo_id = $1 where id = $2', [idCircolo, U.aldo]),
+    'codice circolo',
+  );
+
+  await db.exec('reset role');
+  await db.exec('revoke update on public.profiles from authenticated');
+  await db.exec(`grant update (nome, cognome, telefono, full_name, level, avatar_url)
+                 on public.profiles to authenticated`);
+
+  // Carlo torna giocatore: i poteri non si lasciano in giro
+  await db.query(`update public.profiles set role = 'giocatore' where id = $1`, [U.carlo]);
+}
+
 // ---------------------------------------------------------
 // Avvio
 // ---------------------------------------------------------
@@ -1358,6 +1505,7 @@ async function main() {
   await testIscrizioneTardiva();
   await testCorrezioneRisultato();
   await testAmministratore();
+  await testCircoli();
   await testEliminaAccount();
 
   console.log('\n' + '='.repeat(60));

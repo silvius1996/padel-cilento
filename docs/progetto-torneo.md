@@ -77,6 +77,17 @@ circoli
 La scrive **solo l'amministratore**: un circolo è un dato anagrafico, non
 qualcosa che ci si crea da soli, altrimenti si torna alle stringhe diverse.
 
+**Il circolo è anche un cliente**, e un cliente ha un ciclo di vita. Due campi lo
+governano: `attivo` (la decisione manuale: sospeso, chiuso) e
+`abbonamento_scade_il` (nullo = nessuna scadenza). Un circolo non in regola
+**resta visibile insieme ai suoi tornei** — sono fatti accaduti, non si
+cancellano perché non ha rinnovato — ma non può più creare o modificare niente,
+né abilitare nuovi gestori con un codice. L'amministratore continua a poter
+intervenire ovunque.
+
+Sono due colonne e un controllo, ed è il motivo per cui vanno messe subito:
+aggiungerle dopo significa rimettere le mani in ogni permesso.
+
 Poi due collegamenti:
 
 - `profiles.circolo_id` → di quale circolo sono gestore
@@ -333,8 +344,8 @@ funziona.
 
 | | Cosa | Perché |
 |---|---|---|
-| **0** | `valida_punteggio` estratta e condivisa | Mezz'ora, ripaga un debito che c'è già |
-| **1** | Tabella `circoli` + collegamenti a profili e codici | Prerequisito: senza, un torneo non ha proprietario |
+| ~~**0**~~ | ~~`valida_punteggio` estratta e condivisa~~ | **fatta** — aggiornamento n.12 |
+| ~~**1**~~ | ~~Tabella `circoli` + collegamenti a profili e codici~~ | **fatta** — aggiornamento n.13 |
 | **2** | Tornei, squadre, gironi, calendario, risultati, classifica | È il cuore: da qui un torneo si gioca per intero |
 | **3** | Fasi finali e tabellone | Completa il torneo |
 | **4** | Rifiniture: collegamento ai giocatori, condivisione, stampa | Rende piacevole ciò che già funziona |
