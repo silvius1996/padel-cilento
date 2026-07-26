@@ -596,6 +596,54 @@ async function testRuoloGestore() {
 }
 
 /**
+ * La data nel passato la rifiuta il database (aggiornamento n.7), non
+ * piu' solo l'attributo "min" del campo data nel modulo di creazione.
+ */
+async function testDataPartita() {
+  console.log('\nUNA PARTITA NON SI ORGANIZZA NEL PASSATO');
+
+  const creaPartita = (giorni) => db.query(
+    `insert into public.matches (club, zona, match_date, match_time, level, created_by)
+     values ('Padel Village', 'paestum', current_date + ($1)::int, '20:00', 'intermedio', $2)`,
+    [giorni, U.ester],
+  );
+
+  await come(U.ester);
+  await db.exec('set role authenticated');
+
+  await deveFallire(
+    'una partita di ieri viene rifiutata',
+    () => creaPartita(-1),
+    'data passata',
+  );
+
+  await deveRiuscire('una partita di oggi si puo organizzare', () => creaPartita(0));
+  await deveRiuscire('una partita di domani si puo organizzare', () => creaPartita(1));
+
+  const { rows: mie } = await db.query(
+    `select id from public.matches where created_by = $1 order by match_date`, [U.ester],
+  );
+
+  await deveFallire(
+    'una partita non si puo spostare nel passato',
+    () => db.query(
+      `update public.matches set match_date = current_date - 5 where id = $1`, [mie[0].id],
+    ),
+    'data passata',
+  );
+
+  await deveRiuscire('una partita si puo correggere senza toccare la data', () => db.query(
+    `update public.matches set club = 'Padel Village - campo 2' where id = $1`, [mie[0].id],
+  ));
+
+  await db.exec('reset role');
+
+  // Le partite di prova appena create non devono disturbare i conteggi
+  // dei test successivi, se in futuro qualcuno ne aggiungera'.
+  await db.query('delete from public.matches where created_by = $1', [U.ester]);
+}
+
+/**
  * Le due funzioni sui posti sono state rimosse: erano scavalcabili e
  * dall'aggiornamento n.5 filled_slots lo mantiene un trigger.
  */
@@ -739,6 +787,7 @@ async function main() {
   await testPrivacyTelefono();
   await testPrivacyAnonimi();
   await testRuoloGestore();
+  await testDataPartita();
   await testPostiNonFalsificabili();
 
   console.log('\n' + '='.repeat(60));

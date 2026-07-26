@@ -220,6 +220,60 @@ drop function if exists public.decrement_filled_slots(uuid);
 
 
 -- =========================================================
+-- PARTE 4 — LA DATA NEL PASSATO LA RIFIUTA IL DATABASE
+--
+-- Il modulo di creazione impedisce gia' di scegliere un giorno
+-- passato (in index.html:  el.inputDate.min = oggiISO() ), ma quello
+-- e' un controllo che vive solo nella pagina: basta togliere
+-- l'attributo dagli strumenti sviluppatore, o chiamare l'API con la
+-- chiave anon che e' pubblica, e la partita di tre giorni fa entra
+-- nel feed. E' l'unico punto in cui una regola non era applicata dal
+-- database.
+--
+-- La regola qui e' identica a quella del modulo — si guarda il
+-- giorno, non l'ora — cosi' l'interfaccia non se ne accorge e nulla
+-- cambia per chi usa l'app normalmente.
+--
+-- Sulle modifiche il controllo scatta solo se la data viene davvero
+-- spostata: altrimenti non si potrebbe piu' correggere il nome del
+-- circolo su una partita di ieri.
+-- =========================================================
+
+create or replace function public.controlla_data_partita()
+returns trigger
+language plpgsql
+as $$
+begin
+  -- Come per il trigger sul ruolo, si esaminano solo le richieste che
+  -- arrivano dal browser. Dall'Editor SQL resta possibile inserire una
+  -- partita vecchia, se mai servisse recuperarne una a mano.
+  if current_user not in ('anon', 'authenticated') then
+    return new;
+  end if;
+
+  if tg_op = 'UPDATE' and new.match_date is not distinct from old.match_date then
+    return new;
+  end if;
+
+  -- L'ora italiana, non quella del server: a mezzanotte e mezza a Roma
+  -- in UTC e' ancora il giorno prima.
+  if new.match_date < (now() at time zone 'Europe/Rome')::date then
+    raise exception 'Non si puo'' organizzare una partita in una data passata';
+  end if;
+
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_controlla_data_partita on public.matches;
+
+create trigger trg_controlla_data_partita
+  before insert or update on public.matches
+  for each row
+  execute function public.controlla_data_partita();
+
+
+-- =========================================================
 -- VERIFICA (opzionale)
 -- =========================================================
 -- Le colonne scrivibili da "authenticated": non devono comparire
