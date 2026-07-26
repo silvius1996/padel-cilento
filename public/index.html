@@ -139,6 +139,12 @@
             <path d="M8 21h8M12 17v4M7 4h10v4a5 5 0 01-10 0V4z"/><path d="M17 5h2a2 2 0 01-2 3M7 5H5a2 2 0 002 3"/>
           </svg>
         </button>
+        <button id="btn-open-tornei" title="Tornei" aria-label="Tornei"
+                class="w-9 h-9 rounded-full bg-court-700 border border-court-500 flex items-center justify-center text-white/70 hover:border-lime-neon hover:text-lime-neon transition-colors shrink-0">
+          <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 4v5a3 3 0 003 3h3M4 20v-5a3 3 0 013-3h3M20 4v5a3 3 0 01-3 3h-3M20 20v-5a3 3 0 00-3-3h-3"/>
+          </svg>
+        </button>
         <button id="btn-login" class="px-4 py-2 rounded-full bg-court-700 border border-court-500 text-sm font-semibold hover:border-lime-neon hover:text-lime-neon transition-colors">
           Accedi
         </button>
@@ -719,6 +725,152 @@
     </div>
   </div>
 
+  <!-- ============ TORNEI: ELENCO ============ -->
+  <div id="modal-tornei" class="hidden fixed inset-0 z-50 items-end sm:items-center justify-center">
+    <div id="modal-tornei-backdrop" class="absolute inset-0 bg-black/70 modal-backdrop"></div>
+    <div class="relative w-full sm:max-w-md bg-court-800 border border-court-600 rounded-t-3xl sm:rounded-3xl p-6 pb-8 max-h-[92vh] overflow-y-auto">
+      <div class="flex items-center justify-between mb-1">
+        <h3 class="font-display font-700 text-xl">Tornei</h3>
+        <button id="btn-close-tornei" class="w-8 h-8 rounded-full bg-court-700 flex items-center justify-center text-white/60 hover:text-white">
+          <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <p class="text-xs text-court-500 mb-4">Organizzati dai circoli del Cilento.</p>
+
+      <button type="button" id="btn-nuovo-torneo"
+              class="hidden w-full mb-4 bg-lime-neon text-court-900 font-display font-700 py-3 rounded-xl shadow-neon">
+        + Crea un torneo
+      </button>
+
+      <div id="tornei-loading" class="space-y-2">
+        <div class="h-16 rounded-xl bg-court-700 animate-pulse"></div>
+        <div class="h-16 rounded-xl bg-court-700 animate-pulse"></div>
+      </div>
+
+      <div id="tornei-empty" class="hidden text-center py-10 px-2 rounded-2xl border border-dashed border-court-500">
+        <p class="font-display font-700 text-base mb-1">Nessun torneo</p>
+        <p id="tornei-empty-text" class="text-court-500 text-sm">Quando un circolo ne pubblica uno, lo trovi qui.</p>
+      </div>
+
+      <div id="tornei-list" class="space-y-2"></div>
+    </div>
+  </div>
+
+  <!-- ============ TORNEO: CREAZIONE ============ -->
+  <div id="modal-crea-torneo" class="hidden fixed inset-0 z-50 items-end sm:items-center justify-center">
+    <div id="modal-crea-torneo-backdrop" class="absolute inset-0 bg-black/70 modal-backdrop"></div>
+    <div class="relative w-full sm:max-w-md bg-court-800 border border-court-600 rounded-t-3xl sm:rounded-3xl p-6 pb-8 max-h-[92vh] overflow-y-auto">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="font-display font-700 text-xl">Crea un torneo</h3>
+        <button id="btn-close-crea-torneo" class="w-8 h-8 rounded-full bg-court-700 flex items-center justify-center text-white/60 hover:text-white">
+          <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <form id="form-crea-torneo" class="space-y-4">
+        <div>
+          <label class="block text-[11px] font-semibold text-court-500 uppercase tracking-wide mb-1.5" for="torneo-nome">Nome del torneo</label>
+          <input id="torneo-nome" type="text" required maxlength="80" placeholder="Torneo d'estate 2026"
+                 class="w-full bg-court-700 border border-court-500 rounded-xl px-4 py-3 text-sm text-white focus:border-lime-neon outline-none">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-[11px] font-semibold text-court-500 uppercase tracking-wide mb-1.5" for="torneo-inizio">Dal</label>
+            <input id="torneo-inizio" type="date"
+                   class="w-full bg-court-700 border border-court-500 rounded-xl px-4 py-3 text-sm text-white focus:border-lime-neon outline-none">
+          </div>
+          <div>
+            <label class="block text-[11px] font-semibold text-court-500 uppercase tracking-wide mb-1.5" for="torneo-fine">Al</label>
+            <input id="torneo-fine" type="date"
+                   class="w-full bg-court-700 border border-court-500 rounded-xl px-4 py-3 text-sm text-white focus:border-lime-neon outline-none">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-semibold text-court-500 uppercase tracking-wide mb-1.5" for="torneo-livello">Livello</label>
+          <select id="torneo-livello"
+                  class="w-full bg-court-700 border border-court-500 rounded-xl px-4 py-3 text-sm text-white focus:border-lime-neon outline-none">
+            <option value="open">Open · tutti i livelli</option>
+            <option value="principiante">Principiante · 1.0-2.0</option>
+            <option value="intermedio" selected>Intermedio · 2.5-3.5</option>
+            <option value="avanzato">Avanzato · 4.0+</option>
+          </select>
+        </div>
+
+        <p id="crea-torneo-error" class="hidden text-sm text-red-400 font-medium"></p>
+
+        <button type="submit" id="btn-submit-torneo"
+                class="w-full bg-lime-neon text-court-900 font-display font-700 py-3.5 rounded-xl shadow-neon">
+          Crea il torneo
+        </button>
+        <p class="text-[11px] text-court-500 leading-snug">
+          Nasce come bozza: lo vedi solo tu finché non apri le iscrizioni.
+        </p>
+      </form>
+    </div>
+  </div>
+
+  <!-- ============ TORNEO: DETTAGLIO ============ -->
+  <div id="modal-torneo" class="hidden fixed inset-0 z-50 items-end sm:items-center justify-center">
+    <div id="modal-torneo-backdrop" class="absolute inset-0 bg-black/70 modal-backdrop"></div>
+    <div class="relative w-full sm:max-w-lg bg-court-800 border border-court-600 rounded-t-3xl sm:rounded-3xl p-6 pb-8 max-h-[92vh] overflow-y-auto">
+      <div class="flex items-start justify-between gap-3 mb-1">
+        <div class="min-w-0">
+          <h3 id="torneo-titolo" class="font-display font-700 text-xl leading-tight truncate">Torneo</h3>
+          <p id="torneo-sottotitolo" class="text-xs text-court-500 mt-0.5"></p>
+        </div>
+        <button id="btn-close-torneo" class="w-8 h-8 rounded-full bg-court-700 flex items-center justify-center text-white/60 hover:text-white shrink-0">
+          <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <p id="torneo-detail-error" class="hidden text-sm text-red-400 font-medium mt-3"></p>
+
+      <!-- Pannello di gestione: compare solo al circolo che organizza -->
+      <div id="torneo-gestione" class="hidden mt-4 rounded-2xl border border-court-600 bg-court-900/60 p-3 space-y-3">
+        <p class="text-[11px] font-semibold text-court-500 uppercase tracking-wide">Gestione del torneo</p>
+        <div id="torneo-azioni-stato" class="grid grid-cols-2 gap-2"></div>
+
+        <div id="torneo-gestione-preparazione" class="space-y-3">
+          <div class="flex gap-2">
+            <button type="button" id="btn-aggiungi-girone"
+                    class="flex-1 py-2.5 rounded-xl border border-court-500 text-sm font-semibold text-white/80 hover:border-lime-neon hover:text-lime-neon transition-colors">
+              + Girone
+            </button>
+            <button type="button" id="btn-genera-calendario"
+                    class="flex-1 py-2.5 rounded-xl border border-court-500 text-sm font-semibold text-white/80 hover:border-lime-neon hover:text-lime-neon transition-colors">
+              Genera calendario
+            </button>
+          </div>
+
+          <div class="rounded-xl border border-court-600 p-3 space-y-2">
+            <p class="text-[11px] font-semibold text-court-500 uppercase tracking-wide">Iscrivi una coppia</p>
+            <div class="grid grid-cols-2 gap-2">
+              <input id="squadra-g1" type="text" maxlength="60" placeholder="Giocatore 1"
+                     class="w-full bg-court-700 border border-court-500 rounded-lg px-3 py-2 text-sm text-white focus:border-lime-neon outline-none">
+              <input id="squadra-g2" type="text" maxlength="60" placeholder="Giocatore 2"
+                     class="w-full bg-court-700 border border-court-500 rounded-lg px-3 py-2 text-sm text-white focus:border-lime-neon outline-none">
+            </div>
+            <select id="squadra-girone"
+                    class="w-full bg-court-700 border border-court-500 rounded-lg px-3 py-2 text-sm text-white focus:border-lime-neon outline-none"></select>
+            <button type="button" id="btn-aggiungi-squadra"
+                    class="w-full bg-lime-neon text-court-900 font-display font-700 py-2.5 rounded-lg">
+              Iscrivi la coppia
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div id="torneo-loading" class="mt-4 space-y-2">
+        <div class="h-24 rounded-xl bg-court-700 animate-pulse"></div>
+        <div class="h-24 rounded-xl bg-court-700 animate-pulse"></div>
+      </div>
+
+      <div id="torneo-contenuto" class="mt-4 space-y-5"></div>
+    </div>
+  </div>
+
   <!-- ============ TOAST ============ -->
   <div id="toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] bg-court-700 border border-lime-neon text-white text-sm font-semibold px-5 py-3 rounded-full shadow-neon-sm max-w-[90vw] text-center"></div>
 
@@ -887,6 +1039,46 @@ const el = {
   profileError: document.getElementById('profile-error'),
   btnSubmitProfile: document.getElementById('btn-submit-profile'),
   btnLogout: document.getElementById('btn-logout'),
+  // Tornei
+  btnOpenTornei: document.getElementById('btn-open-tornei'),
+  modalTornei: document.getElementById('modal-tornei'),
+  modalTorneiBackdrop: document.getElementById('modal-tornei-backdrop'),
+  btnCloseTornei: document.getElementById('btn-close-tornei'),
+  btnNuovoTorneo: document.getElementById('btn-nuovo-torneo'),
+  torneiLoading: document.getElementById('tornei-loading'),
+  torneiEmpty: document.getElementById('tornei-empty'),
+  torneiEmptyText: document.getElementById('tornei-empty-text'),
+  torneiList: document.getElementById('tornei-list'),
+
+  modalCreaTorneo: document.getElementById('modal-crea-torneo'),
+  modalCreaTorneoBackdrop: document.getElementById('modal-crea-torneo-backdrop'),
+  btnCloseCreaTorneo: document.getElementById('btn-close-crea-torneo'),
+  formCreaTorneo: document.getElementById('form-crea-torneo'),
+  torneoNome: document.getElementById('torneo-nome'),
+  torneoInizio: document.getElementById('torneo-inizio'),
+  torneoFine: document.getElementById('torneo-fine'),
+  torneoLivello: document.getElementById('torneo-livello'),
+  creaTorneoError: document.getElementById('crea-torneo-error'),
+  btnSubmitTorneo: document.getElementById('btn-submit-torneo'),
+
+  modalTorneo: document.getElementById('modal-torneo'),
+  modalTorneoBackdrop: document.getElementById('modal-torneo-backdrop'),
+  btnCloseTorneo: document.getElementById('btn-close-torneo'),
+  torneoTitolo: document.getElementById('torneo-titolo'),
+  torneoSottotitolo: document.getElementById('torneo-sottotitolo'),
+  torneoDetailError: document.getElementById('torneo-detail-error'),
+  torneoGestione: document.getElementById('torneo-gestione'),
+  torneoAzioniStato: document.getElementById('torneo-azioni-stato'),
+  torneoGestionePreparazione: document.getElementById('torneo-gestione-preparazione'),
+  btnAggiungiGirone: document.getElementById('btn-aggiungi-girone'),
+  btnGeneraCalendario: document.getElementById('btn-genera-calendario'),
+  squadraG1: document.getElementById('squadra-g1'),
+  squadraG2: document.getElementById('squadra-g2'),
+  squadraGirone: document.getElementById('squadra-girone'),
+  btnAggiungiSquadra: document.getElementById('btn-aggiungi-squadra'),
+  torneoLoading: document.getElementById('torneo-loading'),
+  torneoContenuto: document.getElementById('torneo-contenuto'),
+
   btnDeleteAccount: document.getElementById('btn-delete-account'),
   deleteAccountConfirm: document.getElementById('delete-account-confirm'),
   deleteAccountError: document.getElementById('delete-account-error'),
@@ -2792,6 +2984,701 @@ function creaRigaClassifica(r, posizione) {
   riga.appendChild(perc);
   return riga;
 }
+
+// ---------------------------------------------------------
+// 9-sexies. TORNEI
+//
+// Il torneo e' un mondo separato dalle partite: lo organizza un
+// circolo, i risultati li inserisce il circolo, e non entra nella
+// classifica generale.
+//
+// Qui c'e' solo cio' che si vede. Chi puo' fare cosa lo decidono le
+// policy del database: se qualcuno si fa comparire i pulsanti dalla
+// console del browser, li trova che non funzionano.
+// ---------------------------------------------------------
+let torneoCorrente = null;      // il torneo aperto nel dettaglio
+let torneoDati = null;          // gironi, squadre, incontri, classifiche
+
+const STATI_TORNEO = {
+  bozza:      { etichetta: 'BOZZA',        classe: 'bg-court-600 text-court-500 border-court-500' },
+  iscrizioni: { etichetta: 'ISCRIZIONI',   classe: 'bg-electric/15 text-electric border-electric/40' },
+  in_corso:   { etichetta: 'IN CORSO',     classe: 'bg-lime-neon/15 text-lime-neon border-lime-neon/40' },
+  concluso:   { etichetta: 'CONCLUSO',     classe: 'bg-court-600 text-white/60 border-court-500' },
+  annullato:  { etichetta: 'ANNULLATO',    classe: 'bg-red-500/15 text-red-400 border-red-500/40' },
+};
+
+/**
+ * Vero se l'utente collegato organizza questo torneo.
+ * Serve solo a mostrare i pulsanti: la verifica vera e' nel database.
+ */
+function gestisceTorneo(torneo) {
+  if (!torneo || !currentProfile) return false;
+  if (sonoAmministratore()) return true;
+  return currentProfile.role === 'gestore'
+    && currentProfile.circolo_id
+    && currentProfile.circolo_id === torneo.circolo_id;
+}
+
+function nomeSquadra(s) {
+  if (!s) return '—';
+  const proprio = (s.nome || '').trim();
+  if (proprio) return proprio;
+  return `${(s.giocatore_1 || '').trim()} / ${(s.giocatore_2 || '').trim()}`;
+}
+
+async function caricaTornei() {
+  const { data, error } = await supabaseClient
+    .from('tornei')
+    .select('*, circoli(nome)')
+    .order('created_at', { ascending: false })
+    .limit(50);
+  if (error) throw error;
+  return data || [];
+}
+
+async function caricaDatiTorneo(torneoId) {
+  const [gironi, squadre, incontri] = await Promise.all([
+    supabaseClient.from('tornei_gironi').select('*').eq('torneo_id', torneoId).order('ordine'),
+    supabaseClient.from('torneo_squadre').select('*').eq('torneo_id', torneoId).order('created_at'),
+    supabaseClient.from('torneo_incontri').select('*').eq('torneo_id', torneoId)
+      .order('turno').order('ordine'),
+  ]);
+
+  for (const r of [gironi, squadre, incontri]) if (r.error) throw r.error;
+
+  // La classifica la calcola il database, un girone per volta
+  const classifiche = {};
+  for (const g of gironi.data || []) {
+    const { data, error } = await supabaseClient.rpc('classifica_girone', { p_girone_id: g.id });
+    if (error) throw error;
+    classifiche[g.id] = data || [];
+  }
+
+  return {
+    gironi: gironi.data || [],
+    squadre: squadre.data || [],
+    incontri: incontri.data || [],
+    classifiche,
+  };
+}
+
+// ----- Elenco dei tornei -----
+async function apriTornei() {
+  openModal(el.modalTornei);
+  el.torneiLoading.classList.remove('hidden');
+  el.torneiEmpty.classList.add('hidden');
+  el.torneiList.innerHTML = '';
+
+  const puoCreare = Boolean(currentProfile)
+    && (sonoAmministratore() || (currentProfile.role === 'gestore' && currentProfile.circolo_id));
+  el.btnNuovoTorneo.classList.toggle('hidden', !puoCreare);
+
+  try {
+    const tornei = await caricaTornei();
+    el.torneiLoading.classList.add('hidden');
+
+    if (tornei.length === 0) {
+      el.torneiEmpty.classList.remove('hidden');
+      el.torneiEmptyText.textContent = puoCreare
+        ? 'Crea il primo torneo del tuo circolo.'
+        : 'Quando un circolo ne pubblica uno, lo trovi qui.';
+      return;
+    }
+
+    tornei.forEach((t) => el.torneiList.appendChild(creaRigaTorneo(t)));
+  } catch (e) {
+    console.error(e);
+    el.torneiLoading.classList.add('hidden');
+    el.torneiEmpty.classList.remove('hidden');
+    el.torneiEmptyText.textContent = messaggioErrore(e, 'Impossibile caricare i tornei.');
+  }
+}
+
+function creaRigaTorneo(t) {
+  const stato = STATI_TORNEO[t.stato] || STATI_TORNEO.bozza;
+
+  const riga = document.createElement('button');
+  riga.type = 'button';
+  riga.className = 'w-full text-left bg-court-700 border border-court-600 rounded-xl px-3 py-3 hover:border-lime-neon transition-colors';
+
+  const testa = document.createElement('div');
+  testa.className = 'flex items-center justify-between gap-2 mb-1';
+
+  const nome = document.createElement('p');
+  nome.className = 'font-display font-700 text-sm truncate';
+  nome.textContent = t.nome;
+
+  const badge = document.createElement('span');
+  badge.className = `text-[10px] font-bold px-2 py-0.5 rounded-md border shrink-0 ${stato.classe}`;
+  badge.textContent = stato.etichetta;
+
+  testa.appendChild(nome);
+  testa.appendChild(badge);
+
+  const info = document.createElement('p');
+  info.className = 'text-[11px] text-court-500';
+  const pezzi = [t.circoli?.nome || 'Circolo', LEVEL_LABELS[t.livello]?.split(' · ')[0] || t.livello];
+  if (t.data_inizio) pezzi.push(formattaDataTorneo(t.data_inizio));
+  info.textContent = pezzi.join(' · ');
+
+  riga.appendChild(testa);
+  riga.appendChild(info);
+  riga.addEventListener('click', () => apriTorneo(t.id));
+  return riga;
+}
+
+function formattaDataTorneo(iso) {
+  if (!iso) return '';
+  const d = new Date(`${iso}T12:00:00`);
+  return d.toLocaleDateString('it-IT', { day: 'numeric', month: 'short' });
+}
+
+// ----- Dettaglio del torneo -----
+async function apriTorneo(torneoId) {
+  closeModal(el.modalTornei);
+  openModal(el.modalTorneo);
+
+  el.torneoDetailError.classList.add('hidden');
+  el.torneoLoading.classList.remove('hidden');
+  el.torneoContenuto.innerHTML = '';
+  el.torneoGestione.classList.add('hidden');
+
+  try {
+    const { data, error } = await supabaseClient
+      .from('tornei').select('*, circoli(nome)').eq('id', torneoId).single();
+    if (error) throw error;
+
+    torneoCorrente = data;
+    torneoDati = await caricaDatiTorneo(torneoId);
+
+    el.torneoLoading.classList.add('hidden');
+    renderTorneo();
+  } catch (e) {
+    console.error(e);
+    el.torneoLoading.classList.add('hidden');
+    el.torneoDetailError.textContent = messaggioErrore(e, 'Impossibile caricare il torneo.');
+    el.torneoDetailError.classList.remove('hidden');
+  }
+}
+
+async function ricaricaTorneo() {
+  if (!torneoCorrente) return;
+  torneoDati = await caricaDatiTorneo(torneoCorrente.id);
+  const { data } = await supabaseClient
+    .from('tornei').select('*, circoli(nome)').eq('id', torneoCorrente.id).single();
+  if (data) torneoCorrente = data;
+  renderTorneo();
+}
+
+function renderTorneo() {
+  const t = torneoCorrente;
+  const stato = STATI_TORNEO[t.stato] || STATI_TORNEO.bozza;
+
+  el.torneoTitolo.textContent = t.nome;
+  el.torneoSottotitolo.textContent =
+    `${t.circoli?.nome || 'Circolo'} · ${stato.etichetta.toLowerCase()}`;
+
+  renderGestioneTorneo();
+
+  el.torneoContenuto.innerHTML = '';
+
+  if (torneoDati.gironi.length === 0) {
+    el.torneoContenuto.appendChild(cartellinoVuoto(
+      'Nessun girone',
+      gestisceTorneo(t)
+        ? 'Aggiungi i gironi, iscrivi le coppie e genera il calendario.'
+        : 'Il circolo sta ancora preparando il torneo.',
+    ));
+    return;
+  }
+
+  torneoDati.gironi.forEach((g) => el.torneoContenuto.appendChild(creaBloccoGirone(g)));
+}
+
+function cartellinoVuoto(titolo, testo) {
+  const box = document.createElement('div');
+  box.className = 'text-center py-8 px-3 rounded-2xl border border-dashed border-court-500';
+  const t = document.createElement('p');
+  t.className = 'font-display font-700 text-base mb-1';
+  t.textContent = titolo;
+  const p = document.createElement('p');
+  p.className = 'text-court-500 text-sm';
+  p.textContent = testo;
+  box.appendChild(t);
+  box.appendChild(p);
+  return box;
+}
+
+function creaBloccoGirone(girone) {
+  const wrap = document.createElement('div');
+  wrap.className = 'rounded-2xl border border-court-600 bg-court-900/40 p-3';
+
+  const titolo = document.createElement('p');
+  titolo.className = 'font-display font-700 text-sm mb-2';
+  titolo.textContent = `Girone ${girone.nome}`;
+  wrap.appendChild(titolo);
+
+  const classifica = torneoDati.classifiche[girone.id] || [];
+  if (classifica.length === 0) {
+    const vuoto = document.createElement('p');
+    vuoto.className = 'text-[11px] text-court-500';
+    vuoto.textContent = 'Nessuna squadra assegnata.';
+    wrap.appendChild(vuoto);
+  } else {
+    wrap.appendChild(creaTabellaClassifica(classifica));
+  }
+
+  const incontri = torneoDati.incontri.filter((i) => i.girone_id === girone.id);
+  if (incontri.length > 0) wrap.appendChild(creaCalendarioGirone(incontri));
+
+  return wrap;
+}
+
+function creaTabellaClassifica(righe) {
+  const tabella = document.createElement('div');
+  tabella.className = 'space-y-1';
+
+  const intestazione = document.createElement('div');
+  intestazione.className = 'flex items-center gap-2 px-2 text-[10px] font-semibold text-court-500 uppercase tracking-wide';
+  intestazione.innerHTML = `
+    <span class="w-4 shrink-0"></span>
+    <span class="flex-1">Squadra</span>
+    <span class="w-6 text-center">G</span>
+    <span class="w-6 text-center">V</span>
+    <span class="w-8 text-center">Set</span>
+    <span class="w-8 text-center">Pt</span>
+  `;
+  tabella.appendChild(intestazione);
+
+  righe.forEach((r) => {
+    const riga = document.createElement('div');
+    riga.className = 'flex items-center gap-2 rounded-lg bg-court-700 border border-court-600 px-2 py-2';
+
+    const pos = document.createElement('span');
+    pos.className = 'w-4 text-center text-[11px] font-display font-700 shrink-0 '
+      + (r.posizione <= 2 ? 'text-lime-neon' : 'text-court-500');
+    pos.textContent = String(r.posizione);
+
+    const nome = document.createElement('span');
+    nome.className = 'flex-1 text-xs font-semibold truncate';
+    nome.textContent = r.nome;
+
+    const g = document.createElement('span');
+    g.className = 'w-6 text-center text-[11px] text-court-500';
+    g.textContent = String(r.partite);
+
+    const v = document.createElement('span');
+    v.className = 'w-6 text-center text-[11px] text-court-500';
+    v.textContent = String(r.vittorie);
+
+    const set = document.createElement('span');
+    set.className = 'w-8 text-center text-[11px] text-court-500';
+    set.textContent = `${r.set_vinti}-${r.set_persi}`;
+
+    const punti = document.createElement('span');
+    punti.className = 'w-8 text-center text-xs font-display font-700 text-lime-neon';
+    punti.textContent = String(r.punti);
+
+    [pos, nome, g, v, set, punti].forEach((x) => riga.appendChild(x));
+    tabella.appendChild(riga);
+  });
+
+  return tabella;
+}
+
+function creaCalendarioGirone(incontri) {
+  const wrap = document.createElement('div');
+  wrap.className = 'mt-3 space-y-2';
+
+  const titolo = document.createElement('p');
+  titolo.className = 'text-[10px] font-semibold text-court-500 uppercase tracking-wide';
+  titolo.textContent = 'Calendario';
+  wrap.appendChild(titolo);
+
+  const perTurno = new Map();
+  incontri.forEach((i) => {
+    if (!perTurno.has(i.turno)) perTurno.set(i.turno, []);
+    perTurno.get(i.turno).push(i);
+  });
+
+  [...perTurno.keys()].sort((a, b) => a - b).forEach((turno) => {
+    const et = document.createElement('p');
+    et.className = 'text-[10px] text-court-500 pt-1';
+    et.textContent = `Turno ${turno}`;
+    wrap.appendChild(et);
+
+    perTurno.get(turno).forEach((i) => wrap.appendChild(creaRigaIncontro(i)));
+  });
+
+  return wrap;
+}
+
+function creaRigaIncontro(incontro) {
+  const squadra = (id) => torneoDati.squadre.find((s) => s.id === id);
+  const casa = squadra(incontro.squadra_casa);
+  const ospite = squadra(incontro.squadra_ospite);
+
+  const riga = document.createElement('div');
+  riga.className = 'rounded-lg bg-court-700 border border-court-600 px-2.5 py-2';
+
+  const linea = document.createElement('div');
+  linea.className = 'flex items-center gap-2';
+
+  const nomi = document.createElement('div');
+  nomi.className = 'flex-1 min-w-0';
+
+  const c = document.createElement('p');
+  c.className = 'text-xs truncate '
+    + (incontro.vincitore === 'C' ? 'font-bold text-lime-neon' : 'text-white/80');
+  c.textContent = nomeSquadra(casa);
+
+  const o = document.createElement('p');
+  o.className = 'text-xs truncate '
+    + (incontro.vincitore === 'O' ? 'font-bold text-lime-neon' : 'text-white/80');
+  o.textContent = nomeSquadra(ospite);
+
+  nomi.appendChild(c);
+  nomi.appendChild(o);
+
+  const punteggio = document.createElement('span');
+  punteggio.className = 'text-xs font-display font-700 shrink-0 '
+    + (incontro.sets ? 'text-white' : 'text-court-500');
+  punteggio.textContent = incontro.sets ? formattaSet(incontro.sets) : 'da giocare';
+
+  linea.appendChild(nomi);
+  linea.appendChild(punteggio);
+  riga.appendChild(linea);
+
+  if (gestisceTorneo(torneoCorrente) && torneoCorrente.stato === 'in_corso') {
+    riga.appendChild(creaAzioniIncontro(incontro, riga));
+  }
+
+  return riga;
+}
+
+/** Inserimento del punteggio, riservato a chi organizza. */
+function creaAzioniIncontro(incontro, riga) {
+  const azioni = document.createElement('div');
+  azioni.className = 'mt-2';
+
+  const bottone = document.createElement('button');
+  bottone.type = 'button';
+  bottone.className = 'w-full py-1.5 rounded-lg border border-court-500 text-[11px] font-semibold text-white/70 hover:border-lime-neon hover:text-lime-neon transition-colors';
+  bottone.textContent = incontro.sets ? 'Correggi il punteggio' : 'Inserisci il punteggio';
+
+  bottone.addEventListener('click', () => {
+    azioni.innerHTML = '';
+    azioni.appendChild(creaFormPunteggioTorneo(incontro));
+  });
+
+  azioni.appendChild(bottone);
+
+  if (incontro.sets) {
+    const annulla = document.createElement('button');
+    annulla.type = 'button';
+    annulla.className = 'w-full mt-1 py-1.5 rounded-lg border border-red-500/40 text-[11px] font-semibold text-red-400';
+    annulla.textContent = 'Annulla il risultato';
+    annulla.addEventListener('click', async () => {
+      annulla.disabled = true;
+      try {
+        const { error } = await supabaseClient.rpc('torneo_annulla_risultato',
+          { p_incontro_id: incontro.id });
+        if (error) throw error;
+        showToast('Risultato annullato.');
+        await ricaricaTorneo();
+      } catch (e) {
+        console.error(e);
+        mostraErroreTorneo(e, 'Impossibile annullare il risultato.');
+        annulla.disabled = false;
+      }
+    });
+    azioni.appendChild(annulla);
+  }
+
+  return azioni;
+}
+
+function creaFormPunteggioTorneo(incontro) {
+  const wrap = document.createElement('div');
+  wrap.className = 'space-y-1.5';
+
+  const setEsistenti = incontro.sets || [];
+
+  for (let s = 1; s <= 3; s++) {
+    const r = document.createElement('div');
+    r.className = 'flex items-center gap-1.5';
+
+    const et = document.createElement('span');
+    et.className = 'text-[10px] text-court-500 w-10 shrink-0';
+    et.textContent = s === 3 ? 'Set 3*' : `Set ${s}`;
+    r.appendChild(et);
+
+    ['a', 'b'].forEach((lato, idx) => {
+      const input = document.createElement('input');
+      input.type = 'number';
+      input.min = '0';
+      input.max = '15';
+      input.inputMode = 'numeric';
+      input.dataset.set = String(s);
+      input.dataset.lato = lato;
+      input.className = 'flex-1 w-full bg-court-800 border border-court-500 rounded-lg px-2 py-1.5 text-center text-xs text-white focus:border-lime-neon outline-none';
+      if (setEsistenti[s - 1]) input.value = setEsistenti[s - 1][idx];
+      r.appendChild(input);
+    });
+
+    wrap.appendChild(r);
+  }
+
+  const errore = document.createElement('p');
+  errore.className = 'hidden text-[11px] text-red-400 font-medium';
+  wrap.appendChild(errore);
+
+  const salva = document.createElement('button');
+  salva.type = 'button';
+  salva.className = 'w-full bg-lime-neon text-court-900 font-display font-700 py-2 rounded-lg text-xs';
+  salva.textContent = 'Salva il punteggio';
+
+  salva.addEventListener('click', async () => {
+    const sets = [];
+    for (let s = 1; s <= 3; s++) {
+      const a = wrap.querySelector(`input[data-set="${s}"][data-lato="a"]`).value.trim();
+      const b = wrap.querySelector(`input[data-set="${s}"][data-lato="b"]`).value.trim();
+      if (a === '' && b === '') continue;
+      if (a === '' || b === '') {
+        errore.textContent = `Set ${s}: servono entrambi i punteggi.`;
+        errore.classList.remove('hidden');
+        return;
+      }
+      sets.push([Number(a), Number(b)]);
+    }
+
+    if (sets.length < 2) {
+      errore.textContent = 'Servono almeno due set.';
+      errore.classList.remove('hidden');
+      return;
+    }
+
+    salva.disabled = true;
+    salva.textContent = 'Salvataggio...';
+    try {
+      const { error } = await supabaseClient.rpc('torneo_registra_risultato', {
+        p_incontro_id: incontro.id,
+        p_sets: sets,
+      });
+      if (error) throw error;
+      showToast('Punteggio salvato.');
+      await ricaricaTorneo();
+    } catch (e) {
+      console.error(e);
+      errore.textContent = messaggioErrore(e, 'Impossibile salvare il punteggio.');
+      errore.classList.remove('hidden');
+      salva.disabled = false;
+      salva.textContent = 'Salva il punteggio';
+    }
+  });
+
+  wrap.appendChild(salva);
+  return wrap;
+}
+
+// ----- Pannello di gestione -----
+function renderGestioneTorneo() {
+  const t = torneoCorrente;
+  const gestisce = gestisceTorneo(t);
+
+  el.torneoGestione.classList.toggle('hidden', !gestisce);
+  if (!gestisce) return;
+
+  // Prima dell'avvio si prepara: gironi, squadre, calendario.
+  const inPreparazione = t.stato === 'bozza' || t.stato === 'iscrizioni';
+  el.torneoGestionePreparazione.classList.toggle('hidden', !inPreparazione);
+
+  if (inPreparazione) {
+    el.squadraGirone.innerHTML = '';
+    if (torneoDati.gironi.length === 0) {
+      const opt = document.createElement('option');
+      opt.value = '';
+      opt.textContent = 'Crea prima un girone';
+      el.squadraGirone.appendChild(opt);
+    } else {
+      torneoDati.gironi.forEach((g) => {
+        const opt = document.createElement('option');
+        opt.value = g.id;
+        opt.textContent = `Girone ${g.nome}`;
+        el.squadraGirone.appendChild(opt);
+      });
+    }
+  }
+
+  // I passaggi di stato possibili da qui
+  el.torneoAzioniStato.innerHTML = '';
+  const passaggi = [];
+  if (t.stato === 'bozza') passaggi.push(['iscrizioni', 'Apri le iscrizioni']);
+  if (t.stato === 'iscrizioni') passaggi.push(['in_corso', 'Avvia il torneo']);
+  if (t.stato === 'in_corso') passaggi.push(['concluso', 'Concludi']);
+  if (t.stato !== 'annullato' && t.stato !== 'concluso') passaggi.push(['annullato', 'Annulla']);
+
+  passaggi.forEach(([nuovo, etichetta]) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = nuovo === 'annullato'
+      ? 'py-2.5 rounded-xl border border-red-500/40 text-red-400 text-sm font-semibold'
+      : 'py-2.5 rounded-xl bg-lime-neon text-court-900 text-sm font-display font-700';
+    b.textContent = etichetta;
+    b.addEventListener('click', () => cambiaStatoTorneo(nuovo, etichetta));
+    el.torneoAzioniStato.appendChild(b);
+  });
+}
+
+function mostraErroreTorneo(e, predefinito) {
+  el.torneoDetailError.textContent = messaggioErrore(e, predefinito);
+  el.torneoDetailError.classList.remove('hidden');
+}
+
+async function cambiaStatoTorneo(nuovo, etichetta) {
+  if (nuovo === 'annullato' && !confirm('Annullare il torneo? Resta visibile ma non si potra piu modificare.')) return;
+
+  el.torneoDetailError.classList.add('hidden');
+  try {
+    const { error } = await supabaseClient.rpc('torneo_cambia_stato', {
+      p_torneo_id: torneoCorrente.id,
+      p_nuovo_stato: nuovo,
+    });
+    if (error) throw error;
+    showToast(`${etichetta}: fatto.`);
+    await ricaricaTorneo();
+  } catch (e) {
+    console.error(e);
+    mostraErroreTorneo(e, 'Impossibile cambiare lo stato del torneo.');
+  }
+}
+
+el.btnAggiungiGirone.addEventListener('click', async () => {
+  el.torneoDetailError.classList.add('hidden');
+  // I gironi si chiamano A, B, C... nell'ordine in cui nascono
+  const lettera = String.fromCharCode(65 + torneoDati.gironi.length);
+  try {
+    const { error } = await supabaseClient.from('tornei_gironi').insert({
+      torneo_id: torneoCorrente.id,
+      nome: lettera,
+      ordine: torneoDati.gironi.length + 1,
+    });
+    if (error) throw error;
+    await ricaricaTorneo();
+  } catch (e) {
+    console.error(e);
+    mostraErroreTorneo(e, 'Impossibile aggiungere il girone.');
+  }
+});
+
+el.btnAggiungiSquadra.addEventListener('click', async () => {
+  el.torneoDetailError.classList.add('hidden');
+
+  const g1 = el.squadraG1.value.trim();
+  const g2 = el.squadraG2.value.trim();
+  const girone = el.squadraGirone.value;
+
+  if (!g1 || !g2) {
+    mostraErroreTorneo(new Error('Servono i nomi di entrambi i giocatori.'), '');
+    return;
+  }
+  if (!girone) {
+    mostraErroreTorneo(new Error('Crea prima un girone.'), '');
+    return;
+  }
+
+  el.btnAggiungiSquadra.disabled = true;
+  try {
+    const { error } = await supabaseClient.from('torneo_squadre').insert({
+      torneo_id: torneoCorrente.id,
+      giocatore_1: g1,
+      giocatore_2: g2,
+      girone_id: girone,
+    });
+    if (error) throw error;
+    el.squadraG1.value = '';
+    el.squadraG2.value = '';
+    el.squadraG1.focus();
+    await ricaricaTorneo();
+  } catch (e) {
+    console.error(e);
+    mostraErroreTorneo(e, 'Impossibile iscrivere la coppia.');
+  } finally {
+    el.btnAggiungiSquadra.disabled = false;
+  }
+});
+
+el.btnGeneraCalendario.addEventListener('click', async () => {
+  el.torneoDetailError.classList.add('hidden');
+  el.btnGeneraCalendario.disabled = true;
+  try {
+    const { data, error } = await supabaseClient.rpc('torneo_genera_calendario', {
+      p_torneo_id: torneoCorrente.id,
+    });
+    if (error) throw error;
+    showToast(`Calendario generato: ${data} incontri.`);
+    await ricaricaTorneo();
+  } catch (e) {
+    console.error(e);
+    mostraErroreTorneo(e, 'Impossibile generare il calendario.');
+  } finally {
+    el.btnGeneraCalendario.disabled = false;
+  }
+});
+
+// ----- Creazione di un torneo -----
+el.btnNuovoTorneo.addEventListener('click', () => {
+  el.creaTorneoError.classList.add('hidden');
+  el.formCreaTorneo.reset();
+  el.torneoLivello.value = 'intermedio';
+  closeModal(el.modalTornei);
+  openModal(el.modalCreaTorneo);
+});
+
+el.formCreaTorneo.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  el.creaTorneoError.classList.add('hidden');
+
+  if (!currentProfile?.circolo_id && !sonoAmministratore()) {
+    el.creaTorneoError.textContent = 'Solo un circolo puo organizzare tornei.';
+    el.creaTorneoError.classList.remove('hidden');
+    return;
+  }
+
+  el.btnSubmitTorneo.disabled = true;
+  el.btnSubmitTorneo.textContent = 'Creazione...';
+
+  try {
+    const { data, error } = await supabaseClient.from('tornei').insert({
+      circolo_id: currentProfile.circolo_id,
+      nome: el.torneoNome.value.trim(),
+      livello: el.torneoLivello.value,
+      data_inizio: el.torneoInizio.value || null,
+      data_fine: el.torneoFine.value || null,
+      creato_da: currentUser.id,
+    }).select().single();
+    if (error) throw error;
+
+    closeModal(el.modalCreaTorneo);
+    showToast('Torneo creato. E in bozza: lo vedi solo tu.');
+    await apriTorneo(data.id);
+  } catch (err) {
+    console.error(err);
+    el.creaTorneoError.textContent = messaggioErrore(err, 'Impossibile creare il torneo.');
+    el.creaTorneoError.classList.remove('hidden');
+  } finally {
+    el.btnSubmitTorneo.disabled = false;
+    el.btnSubmitTorneo.textContent = 'Crea il torneo';
+  }
+});
+
+el.btnOpenTornei.addEventListener('click', apriTornei);
+el.btnCloseTornei.addEventListener('click', () => closeModal(el.modalTornei));
+el.modalTorneiBackdrop.addEventListener('click', () => closeModal(el.modalTornei));
+el.btnCloseTorneo.addEventListener('click', () => closeModal(el.modalTorneo));
+el.modalTorneoBackdrop.addEventListener('click', () => closeModal(el.modalTorneo));
+el.btnCloseCreaTorneo.addEventListener('click', () => closeModal(el.modalCreaTorneo));
+el.modalCreaTorneoBackdrop.addEventListener('click', () => closeModal(el.modalCreaTorneo));
 
 el.btnOpenRanking.addEventListener('click', apriClassifica);
 el.btnCloseRanking.addEventListener('click', () => closeModal(el.modalRanking));

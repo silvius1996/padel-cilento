@@ -346,7 +346,8 @@ funziona.
 |---|---|---|
 | ~~**0**~~ | ~~`valida_punteggio` estratta e condivisa~~ | **fatta** — aggiornamento n.12 |
 | ~~**1**~~ | ~~Tabella `circoli` + collegamenti a profili e codici~~ | **fatta** — aggiornamento n.13 |
-| ~~**2**~~ | ~~Tornei, squadre, gironi, calendario, risultati, classifica~~ | **fatta** — aggiornamenti n.14 e n.15 (database; l'interfaccia manca) |
+| ~~**2**~~ | ~~Tornei, squadre, gironi, calendario, risultati, classifica~~ | **fatta** — aggiornamenti n.14 e n.15 |
+| ~~**2-bis**~~ | ~~Interfaccia: elenco, dettaglio, gestione, classifica pubblica~~ | **fatta** |
 | **2** | Tornei, squadre, gironi, calendario, risultati, classifica | È il cuore: da qui un torneo si gioca per intero |
 | **3** | Fasi finali e tabellone | Completa il torneo |
 | **4** | Rifiniture: collegamento ai giocatori, condivisione, stampa | Rende piacevole ciò che già funziona |

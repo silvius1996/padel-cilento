@@ -151,6 +151,29 @@ Le statistiche e la classifica non sono contatori salvati sul profilo: vengono
 o poi divergerebbe dai fatti, ed e un errore che in questo progetto era gia
 capitato due volte con il conteggio dei posti occupati.
 
+## I tornei
+
+Un mondo separato dalle partite: li organizza un **circolo**, i risultati li
+inserisce il circolo, e non entrano nella classifica generale ne nelle
+statistiche personali.
+
+- I nomi dei giocatori sono **testo**: il circolo iscrive le coppie che ha sul
+  foglio, senza che i giocatori debbano registrarsi. Il collegamento a un
+  account e facoltativo.
+- Il calendario dei gironi si genera da solo, a **girone all'italiana**: in ogni
+  turno una squadra gioca al massimo una volta.
+- La **classifica** e ricalcolata dai risultati a ogni lettura. A pari punti
+  decidono, in ordine: la classifica ridotta fra le sole squadre in parita'
+  (che con due squadre coincide con lo scontro diretto), poi differenza set,
+  differenza game, game fatti.
+- Lo **stato** del torneo (bozza, iscrizioni, in corso, concluso) non si scrive
+  a mano: passa da `torneo_cambia_stato()`, che rifiuta di avviare un torneo
+  senza calendario o con squadre non assegnate a un girone.
+
+Il circolo e anche un **cliente**: `circoli.attivo` e
+`circoli.abbonamento_scade_il` decidono se puo ancora creare. Chi non rinnova
+resta visibile con i suoi tornei, ma non crea piu nulla.
+
 ## Privacy
 
 - Le **partite** sono pubbliche: orario, circolo, livello e posti liberi si vedono
