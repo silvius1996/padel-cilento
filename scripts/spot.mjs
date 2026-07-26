@@ -14,7 +14,7 @@
      npm run spot              registra tutti e due i video
      npm run spot giocatori
 
-   I file finiscono in  video/  (webm e mp4).
+   I file finiscono in  video/  come MP4.
 ========================================================= */
 
 import { chromium } from 'playwright';
@@ -260,24 +260,33 @@ async function copioneGiocatori(r) {
   await r.camera('sinistra');
   await r.titolo('sx', 'Le partite di oggi', 'Vedi chi gioca,\ne dove manca uno',
     'Orario, circolo e posti liberi si vedono anche senza registrarsi.');
-  await r.attesa(4200);
+  await r.attesa(4400);
 
   await r.app(() => {
     document.querySelector('main')?.scrollTo({ top: 260, behavior: 'smooth' });
     window.scrollTo({ top: 260, behavior: 'smooth' });
   });
-  await r.attesa(2600);
+  await r.attesa(2400);
 
-  // --- Il campo ---
+  // --- Hai gia' il campo: cerchi i giocatori ---
   await r.viaTitoli();
-  await r.camera('vicino');
-  await r.attesa(700);
-  await r.tocca(640, 300);
-  await r.app(() => { apriDettaglioPartita('m1'); });
-  await r.attesa(1800);
-
+  await r.tocca(640, 250);
+  await r.app(() => {
+    window.scrollTo({ top: 0 });
+    openCreateModal();
+  });
   await r.camera('destra');
-  await r.titolo('dx', 'Il campo', 'Scegli il tuo posto,\nnon un posto qualsiasi',
+  await r.attesa(1600);
+  await r.titolo('dx', 'Hai gia\' prenotato?', 'Il campo ce l\'hai,\nmancano i giocatori',
+    'Pubblichi l\'ora che hai prenotato e ti arriva chi manca. Bastano trenta secondi.');
+  await r.attesa(5200);
+
+  // --- Il campo: si sceglie il posto ---
+  await r.viaTitoli();
+  await r.app(() => { closeModal(el.modalCreate); apriDettaglioPartita('m1'); });
+  await r.camera('vicino');
+  await r.attesa(1800);
+  await r.titolo('sx', 'Il campo', 'Scegli il tuo posto,\nnon un posto qualsiasi',
     'I posti 0 e 1 sono una coppia, 2 e 3 l\'altra: sai con chi giochi e contro chi.');
   await r.attesa(5000);
 
@@ -285,25 +294,31 @@ async function copioneGiocatori(r) {
   await r.viaTitoli();
   await r.camera('alto');
   await r.attesa(1000);
-  await r.titolo('sx', 'A fine partita', 'Il punteggio lo\nconferma l\'avversario',
-    'Chi ha vinto lo calcola il database dal punteggio. Nessuno se lo assegna da solo.');
+  await r.titolo('dx', 'A fine partita', 'Il punteggio lo\nconferma l\'avversario',
+    'Chi ha vinto lo calcola l\'app dal punteggio. Nessuno se lo assegna da solo.');
   await r.attesa(4600);
 
-  // --- La classifica ---
+  // --- LA CLASSIFICA: il momento piu' importante del video ---
   await r.viaTitoli();
   await r.app(() => { closeModal(el.modalMatch); apriClassifica(); });
   await r.camera('centro');
-  await r.attesa(1600);
-  await r.titolo('dx', 'La classifica', 'Calcolata dai risultati,\nnon dai racconti',
-    'Si aggiorna da sola a ogni partita confermata.');
+  await r.attesa(1800);
+  await r.titolo('sx', 'La classifica', 'Ora puoi vantarti\ncon i tuoi amici',
+    'Chi vince davvero si vede. E resta scritto.');
+  await r.attesa(4200);
+
+  // Ci si avvicina: si legge chi e' davanti a chi
+  await r.camera('vicino');
+  await r.titolo('sx', 'La classifica', 'Ora puoi vantarti\ncon i tuoi amici',
+    'Le percentuali le calcola l\'app dai risultati confermati, non dai racconti del bar.');
   await r.attesa(4600);
 
   // --- La bacheca ---
   await r.viaTitoli();
   await r.app(() => { closeModal(el.modalRanking); openProfileModal(); });
-  await r.camera('vicino');
+  await r.camera('destra');
   await r.attesa(1800);
-  await r.titolo('sx', 'La tua bacheca', 'I tornei che hai vinto,\nsul tuo profilo',
+  await r.titolo('dx', 'La tua bacheca', 'I tornei che hai vinto,\nsul tuo profilo',
     'Con il nome del circolo che li ha organizzati.');
   await r.attesa(4400);
 
@@ -317,6 +332,8 @@ async function copioneGiocatori(r) {
 
 // ---------------------------------------------------------
 // COPIONE 2 — I CIRCOLI
+// Piu' lungo e piu' dettagliato dell'altro: qui non si emoziona
+// nessuno, si fa vedere un prodotto a chi deve decidere se pagarlo.
 // ---------------------------------------------------------
 async function copioneCircoli(r) {
   await r.apertura('Il tuo circolo,<br>sull\'app del <span class="verde">Cilento</span>', 'Tornei, campi e giocatori. In un posto solo.');
@@ -324,39 +341,58 @@ async function copioneCircoli(r) {
   await r.viaApertura();
   await r.attesa(900);
 
-  // --- I giocatori ti trovano ---
+  // --- 1. I campi liberi ---
   await r.camera('sinistra');
   await r.titolo('sx', 'I campi liberi', 'Pubblichi un\'ora vuota,\nte la riempiono loro',
-    'Chi cerca una partita nel Cilento apre l\'app e trova il tuo circolo.');
-  await r.attesa(4600);
+    'Chi cerca una partita nel Cilento apre l\'app e trova il tuo circolo, con il tuo nome.');
+  await r.attesa(4800);
 
-  // --- Il torneo ---
+  // --- 2. Si crea il torneo ---
   await r.viaTitoli();
   await r.app(() => { apriTornei(); });
   await r.camera('centro');
-  await r.attesa(1800);
-  await r.tocca(640, 330);
-  await r.app(() => { apriTorneo('t1'); });
-  await r.attesa(2200);
-
-  await r.camera('destra');
-  await r.titolo('dx', 'Il torneo', 'Gironi, calendario\ne classifiche',
-    'Il calendario si genera da solo. La classifica la ricalcola l\'app a ogni risultato.');
-  await r.attesa(5200);
-
-  // --- La gestione ---
-  await r.viaTitoli();
+  await r.attesa(1500);
+  await r.tocca(640, 232);
+  await r.app(() => { el.btnNuovoTorneo.click(); });
+  await r.attesa(1400);
+  await r.app(() => {
+    el.torneoNome.value = 'Torneo di Ferragosto';
+    el.torneoLivello.value = 'intermedio';
+  });
   await r.camera('vicino');
+  await r.attesa(1200);
+  await r.titolo('sx', 'Passo 1', 'Crei il torneo\nin trenta secondi',
+    'Nome, date, livello. Nasce come bozza: lo vedi solo tu finche\' non apri le iscrizioni.');
+  await r.attesa(5000);
+
+  // --- 3. Gironi e squadre ---
+  await r.viaTitoli();
+  await r.app(() => { closeModal(el.modalCreaTorneo); apriTorneo('t1'); });
+  await r.camera('destra');
+  await r.attesa(2000);
+  await r.titolo('dx', 'Passo 2', 'Iscrivi le coppie\nscrivendo due nomi',
+    'Non serve che i giocatori si registrino: prendi il foglio che hai gia\' e lo copi.');
+  await r.attesa(5000);
+
+  // --- 4. Il calendario e la classifica ---
+  await r.viaTitoli();
   await r.app(() => {
     document.querySelector('#modal-torneo .overflow-y-auto')
-      ?.scrollTo({ top: 420, behavior: 'smooth' });
+      ?.scrollTo({ top: 380, behavior: 'smooth' });
   });
+  await r.camera('vicino');
   await r.attesa(2200);
-  await r.titolo('sx', 'Lo gestisci tu', 'Iscrivi le coppie\nscrivendo due nomi',
-    'Non serve che i giocatori si registrino: il torneo funziona lo stesso.');
-  await r.attesa(4800);
+  await r.titolo('sx', 'Passo 3', 'Il calendario\nse lo fa da solo',
+    'Tutti contro tutti dentro il girone, diviso in turni. Un pulsante, non un pomeriggio.');
+  await r.attesa(5000);
 
-  // --- Il tabellone ---
+  await r.viaTitoli();
+  await r.attesa(300);
+  await r.titolo('dx', 'La classifica', 'Si aggiorna a ogni\nrisultato che inserisci',
+    'Punti, set e game. A pari punti decide lo scontro diretto: le regole sono scritte, non discusse.');
+  await r.attesa(5200);
+
+  // --- 5. Il tabellone ---
   await r.viaTitoli();
   await r.app(() => {
     const c = document.querySelector('#modal-torneo .overflow-y-auto');
@@ -364,17 +400,17 @@ async function copioneCircoli(r) {
   });
   await r.camera('alto');
   await r.attesa(2400);
-  await r.titolo('dx', 'Le fasi finali', 'Il tabellone\nva avanti da solo',
-    'Inserisci il punteggio: chi vince sale al turno dopo, senza che tu faccia altro.');
+  await r.titolo('sx', 'Passo 4', 'Le finali\nvanno avanti da sole',
+    'Inserisci il punteggio: chi vince compare nel turno dopo, senza che tu componga niente.');
   await r.attesa(5200);
 
-  // --- Le medaglie ---
+  // --- 6. Le medaglie ---
   await r.viaTitoli();
   await r.app(() => { closeModal(el.modalTorneo); openProfileModal(); });
   await r.camera('centro');
   await r.attesa(1800);
-  await r.titolo('sx', 'Dopo il torneo', 'Il nome del tuo circolo\nresta sul loro profilo',
-    'Chi vince si porta il tuo torneo in bacheca. E lo fa vedere.');
+  await r.titolo('dx', 'Dopo il torneo', 'Il nome del tuo circolo\nresta sul loro profilo',
+    'Chi vince si porta il tuo torneo in bacheca. E lo fa vedere agli altri.');
   await r.attesa(4800);
 
   // --- Chiusura ---
