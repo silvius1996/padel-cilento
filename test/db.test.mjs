@@ -39,6 +39,7 @@ const PARTITA_ADMIN = 'aaaaaaaa-0000-0000-0000-000000000005';      // moderazion
 const CIRCOLO_NOME = 'Padel Agropoli';
 const TORNEO = 'cccccccc-0000-0000-0000-000000000001';
 const TORNEO_PARITA = 'cccccccc-0000-0000-0000-000000000002';
+const TORNEO_FINALI = 'cccccccc-0000-0000-0000-000000000003';
 
 let db;
 let passati = 0;
@@ -1762,6 +1763,160 @@ async function testParitaClassifica() {
     diff[0] >= diff[1] && diff[1] >= diff[2], JSON.stringify(diff));
 }
 
+/**
+ * Il tabellone (aggiornamento n.16): dalle qualificate dei gironi
+ * alla finale, con i vincitori che avanzano da soli.
+ */
+async function testTabellone() {
+  console.log('\nTABELLONE DELLE FASI FINALI');
+
+  await db.exec('reset role');
+  const { rows: c } = await db.query('select id from public.circoli where nome = $1', [CIRCOLO_NOME]);
+
+  await come(U.bea);
+  await db.exec('set role authenticated');
+
+  // Due gironi da due squadre: quattro qualificate, quindi semifinali
+  // e finale. Con la finale per il terzo posto attiva.
+  await db.query(
+    `insert into public.tornei (id, circolo_id, nome, creato_da, qualificate_per_girone, finale_terzo_posto)
+     values ($1, $2, 'Torneo con finali', $3, 2, true)`,
+    [TORNEO_FINALI, c[0].id, U.bea],
+  );
+
+  const gironi = {};
+  for (const [nome, ordine] of [['A', 1], ['B', 2]]) {
+    const { rows } = await db.query(
+      `insert into public.tornei_gironi (torneo_id, nome, ordine) values ($1, $2, $3) returning id`,
+      [TORNEO_FINALI, nome, ordine],
+    );
+    gironi[nome] = rows[0].id;
+  }
+
+  const squadre = {};
+  for (const [nome, girone] of [['A1', 'A'], ['A2', 'A'], ['B1', 'B'], ['B2', 'B']]) {
+    const { rows } = await db.query(
+      `insert into public.torneo_squadre (torneo_id, nome, giocatore_1, giocatore_2, girone_id)
+       values ($1, $2, $3, $4, $5) returning id`,
+      [TORNEO_FINALI, nome, `${nome} Uno`, `${nome} Due`, gironi[girone]],
+    );
+    squadre[nome] = rows[0].id;
+  }
+
+  await db.query('select public.torneo_genera_calendario($1)', [TORNEO_FINALI]);
+  await db.query(`select public.torneo_cambia_stato($1, 'iscrizioni')`, [TORNEO_FINALI]);
+  await db.query(`select public.torneo_cambia_stato($1, 'in_corso')`, [TORNEO_FINALI]);
+
+  await deveFallire(
+    'il tabellone non si genera a gironi aperti',
+    () => db.query('select public.torneo_genera_tabellone($1)', [TORNEO_FINALI]),
+    'non sono ancora conclusi',
+  );
+
+  // Si giocano i gironi: in ognuno vince la squadra "1"
+  const { rows: incontriGirone } = await db.query(
+    `select id, squadra_casa from public.torneo_incontri
+     where torneo_id = $1 and fase = 'girone'`, [TORNEO_FINALI],
+  );
+  for (const i of incontriGirone) {
+    const vinceCasa = i.squadra_casa === squadre.A1 || i.squadra_casa === squadre.B1;
+    await db.query('select public.torneo_registra_risultato($1, $2::jsonb)',
+      [i.id, vinceCasa ? '[[6,1],[6,1]]' : '[[1,6],[1,6]]']);
+  }
+
+  const { rows: creati } = await db.query(
+    'select public.torneo_genera_tabellone($1) as n', [TORNEO_FINALI],
+  );
+  // 2 semifinali + 1 finale + 1 finale terzo posto
+  uguale('il tabellone ha 4 incontri', 4, creati[0].n);
+
+  await db.exec('reset role');
+  const semifinali = async () => (await db.query(
+    `select id, ordine, squadra_casa, squadra_ospite, prossimo_incontro_id, prossimo_lato
+     from public.torneo_incontri where torneo_id = $1 and fase = 'semifinale' order by ordine`,
+    [TORNEO_FINALI],
+  )).rows;
+
+  const sf = await semifinali();
+  uguale('ci sono due semifinali', 2, sf.length);
+
+  // L'accoppiamento incrociato: prima di un girone contro seconda dell'altro
+  const nomeDi = (id) => Object.keys(squadre).find((k) => squadre[k] === id);
+  const accoppiamenti = sf.map((s) => [nomeDi(s.squadra_casa), nomeDi(s.squadra_ospite)].sort().join('-'));
+  esito(
+    'le prime non incontrano subito la seconda del proprio girone',
+    accoppiamenti.includes('A1-B2') && accoppiamenti.includes('A2-B1'),
+    JSON.stringify(accoppiamenti),
+  );
+
+  const { rows: finale } = await db.query(
+    `select id, squadra_casa, squadra_ospite from public.torneo_incontri
+     where torneo_id = $1 and fase = 'finale'`, [TORNEO_FINALI],
+  );
+  uguale('la finale esiste', 1, finale.length);
+  uguale('e parte senza squadre', null, finale[0].squadra_casa);
+  esito('le semifinali sanno dove mandare il vincitore',
+    sf.every((s) => s.prossimo_incontro_id === finale[0].id), JSON.stringify(sf.map((s) => s.prossimo_incontro_id)));
+
+  // ----- Si gioca la prima semifinale: il vincitore sale da solo -----
+  await come(U.bea);
+  await db.exec('set role authenticated');
+  await db.query('select public.torneo_registra_risultato($1, $2::jsonb)',
+    [sf[0].id, '[[6,2],[6,2]]']);
+
+  await db.exec('reset role');
+  const vincitoreSf1 = sf[0].squadra_casa;
+  const { rows: finaleDopo } = await db.query(
+    'select squadra_casa, squadra_ospite from public.torneo_incontri where id = $1', [finale[0].id],
+  );
+  uguale('il vincitore della semifinale entra in finale', vincitoreSf1, finaleDopo[0].squadra_casa);
+  uguale('l altra casella resta vuota', null, finaleDopo[0].squadra_ospite);
+
+  const { rows: terzo } = await db.query(
+    `select squadra_casa from public.torneo_incontri
+     where torneo_id = $1 and fase = 'finale_3_4'`, [TORNEO_FINALI],
+  );
+  uguale('e il perdente va alla finale per il terzo posto', sf[0].squadra_ospite, terzo[0].squadra_casa);
+
+  // ----- Seconda semifinale -----
+  await come(U.bea);
+  await db.exec('set role authenticated');
+  await db.query('select public.torneo_registra_risultato($1, $2::jsonb)',
+    [sf[1].id, '[[6,3],[6,3]]']);
+
+  await db.exec('reset role');
+  const { rows: finalePiena } = await db.query(
+    'select squadra_casa, squadra_ospite from public.torneo_incontri where id = $1', [finale[0].id],
+  );
+  esito('la finale ha entrambe le squadre',
+    finalePiena[0].squadra_casa !== null && finalePiena[0].squadra_ospite !== null,
+    JSON.stringify(finalePiena[0]));
+
+  // ----- Annullare a monte quando a valle si e' gia' giocato -----
+  await come(U.bea);
+  await db.exec('set role authenticated');
+  await db.query('select public.torneo_registra_risultato($1, $2::jsonb)',
+    [finale[0].id, '[[6,4],[6,4]]']);
+
+  await deveFallire(
+    'non si annulla una semifinale se la finale e gia giocata',
+    () => db.query('select public.torneo_annulla_risultato($1)', [sf[1].id]),
+    'gia',
+  );
+
+  // Annullata la finale, la semifinale torna modificabile
+  await deveRiuscire('annullata la finale, la semifinale si sblocca', async () => {
+    await db.query('select public.torneo_annulla_risultato($1)', [finale[0].id]);
+    await db.query('select public.torneo_annulla_risultato($1)', [sf[1].id]);
+  });
+
+  await db.exec('reset role');
+  const { rows: finaleSvuotata } = await db.query(
+    'select squadra_ospite from public.torneo_incontri where id = $1', [finale[0].id],
+  );
+  uguale('e la casella in finale si svuota', null, finaleSvuotata[0].squadra_ospite);
+}
+
 // ---------------------------------------------------------
 // Avvio
 // ---------------------------------------------------------
@@ -1800,6 +1955,7 @@ async function main() {
   await testCircoli();
   await testTornei();
   await testParitaClassifica();
+  await testTabellone();
   await testEliminaAccount();
 
   console.log('\n' + '='.repeat(60));

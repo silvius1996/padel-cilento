@@ -170,6 +170,13 @@ statistiche personali.
   a mano: passa da `torneo_cambia_stato()`, che rifiuta di avviare un torneo
   senza calendario o con squadre non assegnate a un girone.
 
+- Le **fasi finali** si generano a gironi conclusi. Le qualificate vengono messe
+  in fila per merito — tutte le prime, poi tutte le seconde — e accoppiate prima
+  con ultima: con due gironi questo basta a evitare che due squadre dello stesso
+  girone si rincontrino subito. Poi il tabellone va avanti da solo: chi vince
+  compare nel turno successivo, chi perde una semifinale nella finale per il
+  terzo posto.
+
 Il circolo e anche un **cliente**: `circoli.attivo` e
 `circoli.abbonamento_scade_il` decidono se puo ancora creare. Chi non rinnova
 resta visibile con i suoi tornei, ma non crea piu nulla.

@@ -349,7 +349,7 @@ funziona.
 | ~~**2**~~ | ~~Tornei, squadre, gironi, calendario, risultati, classifica~~ | **fatta** — aggiornamenti n.14 e n.15 |
 | ~~**2-bis**~~ | ~~Interfaccia: elenco, dettaglio, gestione, classifica pubblica~~ | **fatta** |
 | **2** | Tornei, squadre, gironi, calendario, risultati, classifica | È il cuore: da qui un torneo si gioca per intero |
-| **3** | Fasi finali e tabellone | Completa il torneo |
+| ~~**3**~~ | ~~Fasi finali e tabellone~~ | **fatta** — aggiornamento n.16 |
 | **4** | Rifiniture: collegamento ai giocatori, condivisione, stampa | Rende piacevole ciò che già funziona |
 
 La fase 2 resta la più grande del progetto, ma è **più piccola di quanto sarebbe

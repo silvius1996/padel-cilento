@@ -832,6 +832,11 @@
         <p class="text-[11px] font-semibold text-court-500 uppercase tracking-wide">Gestione del torneo</p>
         <div id="torneo-azioni-stato" class="grid grid-cols-2 gap-2"></div>
 
+        <button type="button" id="btn-genera-tabellone"
+                class="hidden w-full py-2.5 rounded-xl border border-court-500 text-sm font-semibold text-white/80 hover:border-lime-neon hover:text-lime-neon transition-colors">
+          Genera il tabellone
+        </button>
+
         <div id="torneo-gestione-preparazione" class="space-y-3">
           <div class="flex gap-2">
             <button type="button" id="btn-aggiungi-girone"
@@ -1069,6 +1074,7 @@ const el = {
   torneoDetailError: document.getElementById('torneo-detail-error'),
   torneoGestione: document.getElementById('torneo-gestione'),
   torneoAzioniStato: document.getElementById('torneo-azioni-stato'),
+  btnGeneraTabellone: document.getElementById('btn-genera-tabellone'),
   torneoGestionePreparazione: document.getElementById('torneo-gestione-preparazione'),
   btnAggiungiGirone: document.getElementById('btn-aggiungi-girone'),
   btnGeneraCalendario: document.getElementById('btn-genera-calendario'),
@@ -3193,6 +3199,47 @@ function renderTorneo() {
   }
 
   torneoDati.gironi.forEach((g) => el.torneoContenuto.appendChild(creaBloccoGirone(g)));
+
+  const finali = torneoDati.incontri.filter((i) => i.fase !== 'girone');
+  if (finali.length > 0) el.torneoContenuto.appendChild(creaBloccoFinali(finali));
+}
+
+/**
+ * Le fasi finali. Gli incontri esistono come caselle anche prima di
+ * sapere chi le giochera': il vincitore di ogni turno ci entra da solo,
+ * appena il risultato viene inserito.
+ */
+const NOMI_FASE = {
+  quarti: 'Quarti di finale',
+  semifinale: 'Semifinali',
+  finale: 'Finale',
+  finale_3_4: 'Finale 3º / 4º posto',
+};
+
+function creaBloccoFinali(incontri) {
+  const wrap = document.createElement('div');
+  wrap.className = 'rounded-2xl border border-lime-neon/30 bg-court-900/40 p-3';
+
+  const titolo = document.createElement('p');
+  titolo.className = 'font-display font-700 text-sm mb-2 text-lime-neon';
+  titolo.textContent = 'Fasi finali';
+  wrap.appendChild(titolo);
+
+  ['quarti', 'semifinale', 'finale', 'finale_3_4'].forEach((fase) => {
+    const dellaFase = incontri.filter((i) => i.fase === fase);
+    if (dellaFase.length === 0) return;
+
+    const et = document.createElement('p');
+    et.className = 'text-[10px] font-semibold text-court-500 uppercase tracking-wide mt-3 mb-1';
+    et.textContent = NOMI_FASE[fase] || fase;
+    wrap.appendChild(et);
+
+    dellaFase
+      .sort((a, b) => a.ordine - b.ordine)
+      .forEach((i) => wrap.appendChild(creaRigaIncontro(i)));
+  });
+
+  return wrap;
 }
 
 function cartellinoVuoto(titolo, testo) {
@@ -3228,7 +3275,8 @@ function creaBloccoGirone(girone) {
     wrap.appendChild(creaTabellaClassifica(classifica));
   }
 
-  const incontri = torneoDati.incontri.filter((i) => i.girone_id === girone.id);
+  const incontri = torneoDati.incontri.filter(
+    (i) => i.girone_id === girone.id && i.fase === 'girone');
   if (incontri.length > 0) wrap.appendChild(creaCalendarioGirone(incontri));
 
   return wrap;
@@ -3349,7 +3397,11 @@ function creaRigaIncontro(incontro) {
   linea.appendChild(punteggio);
   riga.appendChild(linea);
 
-  if (gestisceTorneo(torneoCorrente) && torneoCorrente.stato === 'in_corso') {
+  // Una casella del tabellone senza entrambe le squadre non e' ancora
+  // un incontro: aspetta chi vince il turno prima.
+  const pronta = incontro.squadra_casa && incontro.squadra_ospite;
+
+  if (gestisceTorneo(torneoCorrente) && torneoCorrente.stato === 'in_corso' && pronta) {
     riga.appendChild(creaAzioniIncontro(incontro, riga));
   }
 
@@ -3510,6 +3562,20 @@ function renderGestioneTorneo() {
     }
   }
 
+  // Il tabellone si genera a gironi conclusi, e solo se il torneo lo
+  // prevede. Il database rifiuta comunque negli altri casi: qui si
+  // evita solo di mostrare un pulsante che darebbe errore.
+  const incontriGirone = torneoDati.incontri.filter((i) => i.fase === 'girone');
+  const gironiConclusi = incontriGirone.length > 0 && incontriGirone.every((i) => i.sets);
+  const prevedeFinali = t.formato === 'gironi_e_finali';
+  const haFinali = torneoDati.incontri.some((i) => i.fase !== 'girone');
+
+  el.btnGeneraTabellone.classList.toggle(
+    'hidden',
+    !(t.stato === 'in_corso' && prevedeFinali && gironiConclusi),
+  );
+  el.btnGeneraTabellone.textContent = haFinali ? 'Rigenera il tabellone' : 'Genera il tabellone';
+
   // I passaggi di stato possibili da qui
   el.torneoAzioniStato.innerHTML = '';
   const passaggi = [];
@@ -3605,6 +3671,24 @@ el.btnAggiungiSquadra.addEventListener('click', async () => {
     mostraErroreTorneo(e, 'Impossibile iscrivere la coppia.');
   } finally {
     el.btnAggiungiSquadra.disabled = false;
+  }
+});
+
+el.btnGeneraTabellone.addEventListener('click', async () => {
+  el.torneoDetailError.classList.add('hidden');
+  el.btnGeneraTabellone.disabled = true;
+  try {
+    const { data, error } = await supabaseClient.rpc('torneo_genera_tabellone', {
+      p_torneo_id: torneoCorrente.id,
+    });
+    if (error) throw error;
+    showToast(`Tabellone generato: ${data} incontri.`);
+    await ricaricaTorneo();
+  } catch (e) {
+    console.error(e);
+    mostraErroreTorneo(e, 'Impossibile generare il tabellone.');
+  } finally {
+    el.btnGeneraTabellone.disabled = false;
   }
 });
 
