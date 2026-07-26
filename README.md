@@ -52,7 +52,7 @@ Servono solo per lavorare in locale: la pubblicazione e automatica.
 
 ```bash
 npm test            # verifica la logica del database (non tocca la produzione)
-npm run video       # registra i due video di presentazione in video/
+npm run spot        # registra i due video di presentazione in video/
 npm run dati:demo   # riempie il database con un torneo dimostrativo
 npm run build:css   # rigenera public/styles.css
 npm run db:status   # mostra lo stato delle migrazioni
@@ -64,14 +64,19 @@ npm run db:push     # applica le migrazioni a mano (idem)
 
 ### Presentazioni e dati dimostrativi
 
-`public/presentazione/` contiene due pagine che si animano da sole su una linea
-del tempo fissa: una per i giocatori, una per i circoli. Non sono schermate
-dell'app, sono scenografie pensate per essere **registrate**: `npm run video` le
-apre in un browser senza finestra e ne salva la ripresa in `video/`.
+`npm run spot` registra i due video di presentazione — uno per i giocatori, uno
+per i circoli — e li salva in `video/` come MP4.
 
-Sono anche raggiungibili online, quindi si possono mandare a un circolo come
-link invece che come file:
-`/presentazione/circoli.html` e `/presentazione/giocatori.html`.
+Dentro il telefono che si vede nei video **gira l'app vera**: `public/index.html`
+dentro un iframe, con le sue schermate, i suoi modali e le sue animazioni. Non e
+una copia disegnata per l'occasione. Per farla funzionare senza collegarsi al
+database, le sue chiamate vengono intercettate e a ognuna si risponde con dati
+di esempio: l'app non se ne accorge ed esegue il suo codice di sempre.
+
+Intorno al telefono ci sono solo la macchina da presa e le didascalie
+(`public/presentazione/spot.html`); il copione — che schermata aprire, quando
+muovere la camera, che testo mostrare — sta in `scripts/spot.mjs` ed e la
+prima cosa da toccare per cambiare ritmo o parole.
 
 `npm run dati:demo` crea un circolo e un torneo completi — gironi, calendario,
 risultati, tabellone, medaglie — per poter riprendere l'app piena invece che

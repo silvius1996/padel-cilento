@@ -1,0 +1,238 @@
+<meta charset="utf-8">
+<title>Padel Cilento — spot</title>
+
+<!-- =========================================================
+     IL PALCO
+
+     Non ridisegna l'app: la CONTIENE. Dentro il telefono gira
+     index.html per davvero, con le sue schermate, i suoi modali e
+     le sue animazioni. Qui intorno ci sono solo la macchina da
+     presa (le rotazioni in tre dimensioni) e le didascalie.
+
+     Chi comanda e' scripts/spot.mjs, che chiama window.spot.
+========================================================= -->
+
+<style>
+  :root {
+    --lime: #C6FF3D;
+    --electric: #3D7FFF;
+    --c900: #0B0F0E;
+    --c800: #111613;
+    --c700: #171D19;
+    --c600: #222A25;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    width: 1280px; height: 720px; overflow: hidden;
+    background: var(--c900);
+    font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif;
+    color: #fff;
+    position: relative;
+  }
+
+  /* Fondale: due aloni che respirano, per non avere il nero piatto */
+  .alone {
+    position: absolute; border-radius: 50%; filter: blur(90px);
+    animation: respiro 11s ease-in-out infinite;
+  }
+  .alone.verde    { width: 780px; height: 780px; right: -180px; top: -220px;
+                    background: rgba(198,255,61,.13); }
+  .alone.blu      { width: 680px; height: 680px; left: -200px; bottom: -240px;
+                    background: rgba(61,127,255,.11); animation-delay: -5s; }
+  @keyframes respiro { 0%,100% { transform: scale(1); } 50% { transform: scale(1.18); } }
+
+  /* ---------- LA MACCHINA DA PRESA ---------- */
+  .scena3d {
+    position: absolute; inset: 0;
+    perspective: 1700px;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  .telaio {
+    width: 392px; height: 812px;
+    border-radius: 46px;
+    background: #050807;
+    border: 5px solid #23292a;
+    padding: 8px;
+    box-shadow:
+      0 60px 120px -30px rgba(0,0,0,.95),
+      0 0 90px -20px rgba(198,255,61,.3),
+      inset 0 0 0 1px rgba(255,255,255,.07);
+    transform-style: preserve-3d;
+    transition: transform 1.7s cubic-bezier(.45,0,.2,1), opacity 1s ease;
+    transform: rotateY(-24deg) rotateX(7deg) scale(.74) translateX(150px);
+  }
+  .telaio iframe {
+    width: 100%; height: 100%;
+    border: 0; border-radius: 38px;
+    background: var(--c900);
+    display: block;
+  }
+
+  /* Riflesso obliquo sul vetro: e' cio' che fa sembrare uno schermo
+     invece di un rettangolo con dentro una pagina */
+  .telaio::after {
+    content: ''; position: absolute; inset: 8px;
+    border-radius: 38px; pointer-events: none;
+    background: linear-gradient(115deg,
+      rgba(255,255,255,.10) 0%, rgba(255,255,255,0) 32%,
+      rgba(255,255,255,0) 68%, rgba(198,255,61,.07) 100%);
+  }
+
+  /* ---------- DIDASCALIE ---------- */
+  .testo {
+    position: absolute; top: 50%; transform: translateY(-50%);
+    max-width: 430px; opacity: 0;
+    transition: opacity .9s ease, transform .9s cubic-bezier(.3,0,.2,1);
+  }
+  .testo.sx { left: 88px; }
+  .testo.dx { right: 88px; text-align: right; }
+  .testo.visibile { opacity: 1; }
+
+  .testo .occhiello {
+    font-size: 13px; letter-spacing: 3.5px; text-transform: uppercase;
+    color: var(--lime); margin-bottom: 16px; font-weight: 600;
+  }
+  .testo h2 {
+    font-size: 46px; font-weight: 700; line-height: 1.1; letter-spacing: -1.4px;
+  }
+  .testo p {
+    margin-top: 18px; font-size: 21px; line-height: 1.45; color: #96a29b;
+  }
+
+  /* ---------- APERTURA E CHIUSURA ---------- */
+  .cartello {
+    position: absolute; inset: 0; z-index: 20;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    background: var(--c900);
+    opacity: 0; pointer-events: none;
+    transition: opacity 1s ease;
+  }
+  .cartello.visibile { opacity: 1; }
+  .cartello h1 { font-size: 76px; font-weight: 700; letter-spacing: -2.4px; text-align: center; line-height: 1.06; }
+  .cartello .paese { margin-top: 22px; font-size: 22px; color: #96a29b; letter-spacing: 1px; }
+  .verde { color: var(--lime); }
+
+  .marchio { display: flex; align-items: center; gap: 22px; }
+  .quadrato {
+    width: 88px; height: 88px; border-radius: 24px; background: var(--lime);
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 0 60px rgba(198,255,61,.5);
+  }
+  .indirizzo {
+    margin-top: 40px; font-size: 22px; color: var(--lime);
+    border: 1px solid rgba(198,255,61,.4); border-radius: 999px; padding: 14px 32px;
+  }
+
+  /* Un dito che tocca lo schermo: si vede quando l'app reagisce */
+  .tocco {
+    position: absolute; width: 74px; height: 74px; border-radius: 50%;
+    border: 3px solid var(--lime); background: rgba(198,255,61,.18);
+    opacity: 0; pointer-events: none; z-index: 15;
+    transform: translate(-50%, -50%) scale(.4);
+  }
+  .tocco.attivo { animation: tocca .85s ease-out; }
+  @keyframes tocca {
+    0%   { opacity: 0; transform: translate(-50%,-50%) scale(.35); }
+    25%  { opacity: 1; transform: translate(-50%,-50%) scale(1); }
+    100% { opacity: 0; transform: translate(-50%,-50%) scale(1.9); }
+  }
+</style>
+
+<div class="alone verde"></div>
+<div class="alone blu"></div>
+
+<div class="scena3d">
+  <div class="telaio" id="telaio">
+    <iframe id="app" src="/index.html" title="app"></iframe>
+  </div>
+</div>
+
+<div class="testo sx" id="testo-sx">
+  <div class="occhiello"></div>
+  <h2></h2>
+  <p></p>
+</div>
+<div class="testo dx" id="testo-dx">
+  <div class="occhiello"></div>
+  <h2></h2>
+  <p></p>
+</div>
+
+<div class="tocco" id="tocco"></div>
+
+<div class="cartello visibile" id="apertura">
+  <h1></h1>
+  <div class="paese"></div>
+</div>
+
+<div class="cartello" id="chiusura">
+  <div class="marchio">
+    <div class="quadrato">
+      <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="#0B0F0E" stroke-width="2.4">
+        <circle cx="12" cy="12" r="9"/><path d="M12 3v18M3 12h18"/>
+      </svg>
+    </div>
+    <h1 style="font-size:60px">Padel <span class="verde">Cilento</span></h1>
+  </div>
+  <div class="indirizzo">padelcilento.silvius13-bet.workers.dev</div>
+</div>
+
+<script>
+  // Posizioni della macchina da presa. Sono transform: il passaggio
+  // fra una e l'altra lo fa la transizione CSS, quindi il movimento
+  // e' sempre morbido senza doverlo animare a mano.
+  const INQUADRATURE = {
+    apertura:  'rotateY(-24deg) rotateX(7deg) scale(.74) translateX(150px)',
+    sinistra:  'rotateY(-15deg) rotateX(4deg) scale(.80) translateX(230px)',
+    destra:    'rotateY(15deg) rotateX(4deg) scale(.80) translateX(-230px)',
+    centro:    'rotateY(0deg) rotateX(0deg) scale(.84)',
+    vicino:    'rotateY(-7deg) rotateX(2deg) scale(1.02) translateY(30px)',
+    alto:      'rotateY(6deg) rotateX(3deg) scale(.98) translateY(120px)',
+    uscita:    'rotateY(26deg) rotateX(8deg) scale(.62) translateX(-120px)',
+  };
+
+  const telaio = document.getElementById('telaio');
+  const tocco = document.getElementById('tocco');
+
+  window.spot = {
+    camera(nome) {
+      telaio.style.transform = INQUADRATURE[nome] || INQUADRATURE.centro;
+    },
+
+    titolo(lato, occhiello, titolo, sotto) {
+      ['sx', 'dx'].forEach((l) => {
+        const el = document.getElementById('testo-' + l);
+        if (l !== lato) { el.classList.remove('visibile'); return; }
+        el.querySelector('.occhiello').textContent = occhiello || '';
+        el.querySelector('h2').textContent = titolo || '';
+        el.querySelector('p').textContent = sotto || '';
+        el.classList.add('visibile');
+      });
+    },
+
+    nascondiTitoli() {
+      ['sx', 'dx'].forEach((l) => document.getElementById('testo-' + l).classList.remove('visibile'));
+    },
+
+    apertura(titolo, sotto) {
+      const c = document.getElementById('apertura');
+      c.querySelector('h1').innerHTML = titolo;
+      c.querySelector('.paese').textContent = sotto || '';
+      c.classList.add('visibile');
+    },
+    viaApertura() { document.getElementById('apertura').classList.remove('visibile'); },
+    chiusura()    { document.getElementById('chiusura').classList.add('visibile'); },
+
+    // Il cerchio che appare dove l'app viene toccata
+    tocca(x, y) {
+      tocco.style.left = x + 'px';
+      tocco.style.top = y + 'px';
+      tocco.classList.remove('attivo');
+      void tocco.offsetWidth;
+      tocco.classList.add('attivo');
+    },
+  };
+</script>

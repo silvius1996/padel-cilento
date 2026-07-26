@@ -12,8 +12,8 @@
     "db:push": "node scripts/db.mjs push",
     "db:status": "node scripts/db.mjs status",
     "db:verify": "node scripts/verifica.mjs",
-    "video": "node scripts/video.mjs",
-    "dati:demo": "node scripts/dati-demo.mjs"
+    "dati:demo": "node scripts/dati-demo.mjs",
+    "spot": "node scripts/spot.mjs"
   },
   "devDependencies": {
     "@electric-sql/pglite": "^0.5.4",
