@@ -19,15 +19,35 @@ telefono: tutto e applicato da PostgreSQL tramite policy RLS e funzioni
 `security definer`. Modificare il codice della pagina dalla console del browser
 non permette di aggirare nulla.
 
+## Pubblicare
+
+**Non serve fare niente a mano.** Quando il lavoro arriva nel ramo principale,
+GitHub esegue da solo, in quest'ordine: i test, l'aggiornamento del database, la
+pubblicazione del sito. Se i test falliscono si ferma li' e non pubblica nulla.
+
+L'automazione e in `.github/workflows/pubblica.yml`. Si puo anche far ripartire
+a mano dalla scheda **Actions** del progetto su GitHub, senza modificare niente.
+
+Perche l'ordine conta: il database va aggiornato **prima** del sito, altrimenti
+per qualche minuto la pagina nuova cerca funzioni che nel database non esistono
+ancora. I tre passi sono legati fra loro, quindi quell'ordine e garantito.
+
+Servono tre segreti, impostati una volta sola in
+*Settings -> Secrets and variables -> Actions*: `SUPABASE_DB_URL`,
+`CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`.
+
 ## Comandi
+
+Servono solo per lavorare in locale: la pubblicazione e automatica.
 
 ```bash
 npm test            # verifica la logica del database (non tocca la produzione)
-npm run deploy      # rigenera il CSS e pubblica il sito
-npm run build:css   # rigenera public/styles.css (lo fa già il deploy)
-npm run db:push     # applica al database le migrazioni mancanti
+npm run build:css   # rigenera public/styles.css
 npm run db:status   # mostra lo stato delle migrazioni
 npm run db:verify   # controlla com'e fatto il database di produzione
+
+npm run deploy      # pubblica a mano (di norma non serve: lo fa GitHub)
+npm run db:push     # applica le migrazioni a mano (idem)
 ```
 
 ### Il foglio di stile

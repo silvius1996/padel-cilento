@@ -143,7 +143,15 @@ function comandoBaseline() {
 function comandoPush() {
   const url = urlDatabase();
   console.log('Applicazione delle migrazioni mancanti al database remoto.');
-  return supabase(['db', 'push'], url);
+
+  // Di persona il CLI chiede conferma prima di applicare, ed e' giusto
+  // cosi'. Quando gira da solo su GitHub non c'e' nessuno a rispondere,
+  // e la domanda bloccherebbe tutto: li' la conferma e' implicita
+  // nell'aver salvato il lavoro (i test devono essere gia' passati).
+  const automatico = process.env.CI === 'true' || process.argv.includes('--yes');
+  const argomenti = automatico ? ['db', 'push', '--yes'] : ['db', 'push'];
+
+  return supabase(argomenti, url);
 }
 
 function comandoStatus() {

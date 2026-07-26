@@ -1,0 +1,123 @@
+# =========================================================
+# PADEL CILENTO — Pubblicazione automatica
+#
+# Quando qualcosa arriva nel ramo principale, GitHub fa da solo cio'
+# che prima si faceva a mano dal computer:
+#
+#   1. esegue i test        (se falliscono, si ferma qui)
+#   2. aggiorna il database (le migrazioni mancanti)
+#   3. pubblica il sito
+#
+# L'ordine non e' un dettaglio: il database va aggiornato PRIMA del
+# sito, altrimenti per qualche minuto la pagina nuova cerca funzioni
+# che nel database non esistono ancora. I tre passi sono legati fra
+# loro con "needs", quindi quell'ordine e' garantito.
+#
+# SERVONO TRE SEGRETI, da impostare una volta sola in
+# Settings -> Secrets and variables -> Actions:
+#
+#   SUPABASE_DB_URL         la stringa di connessione al database
+#                           (la stessa che sta nel file .env)
+#   CLOUDFLARE_API_TOKEN    token con permesso "Edit Cloudflare Workers"
+#   CLOUDFLARE_ACCOUNT_ID   l'identificativo dell'account Cloudflare
+#
+# Finche' non ci sono, il passo corrispondente si ferma spiegando
+# quale manca.
+# =========================================================
+
+name: Pubblica
+
+on:
+  push:
+    branches: [master]
+  # Permette di rilanciare la pubblicazione a mano dalla scheda
+  # "Actions", senza dover modificare niente.
+  workflow_dispatch:
+
+# Due pubblicazioni contemporanee si darebbero fastidio: la seconda
+# aspetta che la prima abbia finito.
+concurrency:
+  group: pubblicazione
+  cancel-in-progress: false
+
+jobs:
+  test:
+    name: 1. Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - run: npm test
+
+  database:
+    name: 2. Database
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Controllo del segreto
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          if [ -z "$SUPABASE_DB_URL" ]; then
+            echo "Manca il segreto SUPABASE_DB_URL."
+            echo "Impostalo in Settings -> Secrets and variables -> Actions."
+            echo "E' la stessa stringa che sta nel file .env sul computer."
+            exit 1
+          fi
+
+      - run: npm ci
+
+      - name: Applica le migrazioni mancanti
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: npm run db:push
+
+      - name: Stato delle migrazioni
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: npm run db:status
+
+  sito:
+    name: 3. Sito
+    needs: database
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Controllo dei segreti
+        env:
+          TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ -z "$TOKEN" ]; then
+            echo "Manca il segreto CLOUDFLARE_API_TOKEN."
+            echo "Si crea dal pannello Cloudflare, sezione token API,"
+            echo "con il modello \"Edit Cloudflare Workers\"."
+            exit 1
+          fi
+          if [ -z "$ACCOUNT" ]; then
+            echo "Manca il segreto CLOUDFLARE_ACCOUNT_ID."
+            echo "E' l'identificativo dell'account, visibile nel pannello Cloudflare."
+            exit 1
+          fi
+
+      - run: npm ci
+
+      # Rigenera il foglio di stile e pubblica: e' esattamente il
+      # comando "npm run deploy" che si usava dal computer.
+      - name: Pubblica il sito
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npm run deploy

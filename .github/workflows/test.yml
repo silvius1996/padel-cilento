@@ -1,7 +1,19 @@
+# =========================================================
+# PADEL CILENTO — Test automatici
+#
+# Girano sui rami di lavoro: servono ad accorgersi di un errore
+# PRIMA che il lavoro arrivi nel ramo principale.
+#
+# Sul ramo principale i test li esegue "pubblica.yml" come primo
+# passo, quindi qui il ramo principale e' escluso per non farli
+# girare due volte.
+# =========================================================
+
 name: Test
 
 on:
   push:
+    branches-ignore: [master]
   pull_request:
 
 jobs:

@@ -27,9 +27,12 @@ npm test            # deve dire: TUTTO A POSTO — 153 verifiche superate
 
 npm run db:push     # applica al database le cinque migrazioni mancanti
 npm run db:status   # controllo
-
-npm run deploy      # rigenera il CSS e pubblica il sito
 ```
+
+Il sito lo pubblica **GitHub da solo** appena il lavoro arriva nel ramo
+principale (vedi `.github/workflows/pubblica.yml`): non serve piu' `npm run
+deploy` dal computer, ne' l'accesso a Cloudflare. Perche' funzioni vanno
+impostati una volta sola i tre segreti descritti nel README.
 
 **L'ordine conta.** `db:push` va prima di `deploy`: l'interfaccia nuova chiama
 funzioni (`crea_partita`, `elimina_mio_account`, `correggi_risultato`) che senza
