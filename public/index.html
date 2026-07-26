@@ -526,6 +526,12 @@
           </p>
         </div>
 
+        <!-- Bacheca: i tornei in cui si e' saliti sul podio -->
+        <div id="profile-bacheca" class="hidden">
+          <p class="text-[11px] font-semibold text-court-500 uppercase tracking-wide mb-2">Bacheca</p>
+          <div id="bacheca-list" class="space-y-1.5"></div>
+        </div>
+
         <div class="grid grid-cols-2 gap-3">
           <div>
             <label class="block text-xs font-semibold text-court-500 uppercase tracking-wide mb-1.5" for="profile-nome">Nome</label>
@@ -1112,6 +1118,8 @@ const el = {
   contactsList: document.getElementById('contacts-list'),
   matchResult: document.getElementById('match-result'),
   profileStats: document.getElementById('profile-stats'),
+  profileBacheca: document.getElementById('profile-bacheca'),
+  bachecaList: document.getElementById('bacheca-list'),
 
   modalRanking: document.getElementById('modal-ranking'),
   modalRankingBackdrop: document.getElementById('modal-ranking-backdrop'),
@@ -1440,6 +1448,7 @@ function openProfileModal() {
 
   openModal(el.modalProfile);
   renderProfileStats();
+  renderBacheca();
 }
 
 /**
@@ -1460,6 +1469,69 @@ async function renderProfileStats() {
   document.getElementById('stat-vuoto').classList.toggle('hidden', s.partite > 0);
 
   el.profileStats.classList.remove('hidden');
+}
+
+/**
+ * Le medaglie vinte nei tornei. Non sono un dato salvato sul profilo:
+ * il database le ricava dal tabellone ogni volta. Se il circolo
+ * corregge il risultato di una finale, la bacheca cambia da sola.
+ */
+const MEDAGLIE = {
+  1: { icona: '🥇', testo: 'Vincitore',  classe: 'border-lime-neon/40 bg-lime-neon/10' },
+  2: { icona: '🥈', testo: 'Finalista',  classe: 'border-court-500 bg-court-700' },
+  3: { icona: '🥉', testo: 'Terzo posto', classe: 'border-court-500 bg-court-700' },
+};
+
+async function caricaBacheca() {
+  const { data, error } = await supabaseClient.rpc('bacheca_giocatore');
+  if (error) throw error;
+  return data || [];
+}
+
+async function renderBacheca() {
+  el.profileBacheca.classList.add('hidden');
+  el.bachecaList.innerHTML = '';
+
+  let righe = [];
+  try {
+    righe = await caricaBacheca();
+  } catch (e) {
+    console.error(e);
+    return;   // la bacheca e' un di piu': se non arriva, il profilo resta usabile
+  }
+
+  if (righe.length === 0) return;
+
+  righe.forEach((r) => {
+    const m = MEDAGLIE[r.posizione] || MEDAGLIE[3];
+
+    const riga = document.createElement('div');
+    riga.className = `flex items-center gap-2.5 rounded-xl border px-3 py-2 ${m.classe}`;
+
+    const icona = document.createElement('span');
+    icona.className = 'text-lg leading-none shrink-0';
+    icona.textContent = m.icona;
+
+    const info = document.createElement('div');
+    info.className = 'min-w-0 flex-1';
+
+    const nome = document.createElement('p');
+    nome.className = 'text-xs font-semibold truncate';
+    nome.textContent = r.torneo;
+
+    const sotto = document.createElement('p');
+    sotto.className = 'text-[10px] text-court-500 truncate';
+    sotto.textContent = [m.testo, r.circolo, r.data ? formattaDataTorneo(r.data) : null]
+      .filter(Boolean).join(' · ');
+
+    info.appendChild(nome);
+    info.appendChild(sotto);
+    riga.appendChild(icona);
+    riga.appendChild(info);
+    el.bachecaList.appendChild(riga);
+  });
+
+  el.profileBacheca.classList.remove('hidden');
 }
 
 el.btnAvatar.addEventListener('click', openProfileModal);

@@ -1917,6 +1917,90 @@ async function testTabellone() {
   uguale('e la casella in finale si svuota', null, finaleSvuotata[0].squadra_ospite);
 }
 
+/**
+ * L'albo d'oro e la bacheca (aggiornamento n.17): la medaglia si
+ * ricava dal tabellone, non viene salvata da nessuna parte.
+ */
+async function testBacheca() {
+  console.log('\nMEDAGLIE E BACHECA');
+
+  await db.exec('reset role');
+
+  // Si riprende il torneo con le finali: la finale era stata annullata
+  // alla fine del blocco precedente. Si ricostruisce fino in fondo,
+  // stavolta collegando i due vincitori a due account veri.
+  const { rows: sf } = await db.query(
+    `select id, ordine, squadra_casa, squadra_ospite from public.torneo_incontri
+     where torneo_id = $1 and fase = 'semifinale' order by ordine`, [TORNEO_FINALI],
+  );
+
+  await come(U.bea);
+  await db.exec('set role authenticated');
+  await db.query('select public.torneo_registra_risultato($1, $2::jsonb)',
+    [sf[1].id, '[[6,3],[6,3]]']);
+
+  await db.exec('reset role');
+  const { rows: finale } = await db.query(
+    `select id, squadra_casa, squadra_ospite from public.torneo_incontri
+     where torneo_id = $1 and fase = 'finale'`, [TORNEO_FINALI],
+  );
+
+  // La squadra che arrivera' in finale viene collegata a due account
+  await db.query(
+    'update public.torneo_squadre set user_id_1 = $2, user_id_2 = $3 where id = $1',
+    [finale[0].squadra_casa, U.aldo, U.carlo],
+  );
+
+  await come(U.bea);
+  await db.exec('set role authenticated');
+  await db.query('select public.torneo_registra_risultato($1, $2::jsonb)',
+    [finale[0].id, '[[6,4],[6,4]]']);
+
+  await db.exec('reset role');
+  const { rows: albo } = await db.query('select * from public.albo_torneo($1) order by posizione',
+    [TORNEO_FINALI]);
+  esito('l albo ha almeno primo e secondo', albo.length >= 2, `righe: ${albo.length}`);
+  uguale('il primo e chi ha vinto la finale', finale[0].squadra_casa, albo[0].squadra_id);
+  uguale('il secondo e chi l ha persa', finale[0].squadra_ospite, albo[1].squadra_id);
+
+  // ----- La bacheca dei due vincitori -----
+  await come(U.aldo);
+  const { rows: bachecaAldo } = await db.query('select * from public.bacheca_giocatore()');
+  uguale('il vincitore ha una medaglia', 1, bachecaAldo.length);
+  uguale('ed e la prima posizione', 1, bachecaAldo[0].posizione);
+  uguale('con il nome del torneo', 'Torneo con finali', bachecaAldo[0].torneo);
+  uguale('e il circolo che lo ha organizzato', CIRCOLO_NOME, bachecaAldo[0].circolo);
+
+  await come(U.carlo);
+  const { rows: bachecaCarlo } = await db.query('select * from public.bacheca_giocatore()');
+  uguale('anche il compagno ha la sua', 1, bachecaCarlo.length);
+
+  await come(U.dina);
+  const { rows: bachecaDina } = await db.query('select * from public.bacheca_giocatore()');
+  uguale('chi non ha giocato non ha medaglie', 0, bachecaDina.length);
+
+  // ----- Il punto della faccenda: la medaglia non e' salvata -----
+  await come(U.bea);
+  await db.exec('set role authenticated');
+  await db.query('select public.torneo_annulla_risultato($1)', [finale[0].id]);
+
+  await come(U.aldo);
+  const { rows: dopoAnnullo } = await db.query('select * from public.bacheca_giocatore()');
+  uguale('annullata la finale, la medaglia sparisce', 0, dopoAnnullo.length);
+
+  // Si rigioca la finale al contrario: il titolo cambia mano da solo
+  await come(U.bea);
+  await db.exec('set role authenticated');
+  await db.query('select public.torneo_registra_risultato($1, $2::jsonb)',
+    [finale[0].id, '[[4,6],[4,6]]']);
+
+  await come(U.aldo);
+  const { rows: finalista } = await db.query('select * from public.bacheca_giocatore()');
+  uguale('e chi prima era primo ora e secondo', 2, finalista[0].posizione);
+
+  await db.exec('reset role');
+}
+
 // ---------------------------------------------------------
 // Avvio
 // ---------------------------------------------------------
@@ -1956,6 +2040,7 @@ async function main() {
   await testTornei();
   await testParitaClassifica();
   await testTabellone();
+  await testBacheca();
   await testEliminaAccount();
 
   console.log('\n' + '='.repeat(60));

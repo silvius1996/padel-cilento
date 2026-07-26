@@ -177,6 +177,16 @@ statistiche personali.
   compare nel turno successivo, chi perde una semifinale nella finale per il
   terzo posto.
 
+- Chi sale sul podio di un torneo si porta una **medaglia sul profilo**, con il
+  nome del torneo e il circolo. Vale per chi e collegato a un account: le coppie
+  iscritte solo a nome e cognome restano nell'albo del torneo, ma non hanno un
+  profilo su cui comparire.
+
+  La medaglia **non e un dato salvato**: si ricava dal tabellone a ogni lettura,
+  come le statistiche. Se il circolo corregge il risultato di una finale, la
+  bacheca si aggiorna da sola — e un premio appeso al profilo sbagliato non puo
+  esistere.
+
 Il circolo e anche un **cliente**: `circoli.attivo` e
 `circoli.abbonamento_scade_il` decidono se puo ancora creare. Chi non rinnova
 resta visibile con i suoi tornei, ma non crea piu nulla.
