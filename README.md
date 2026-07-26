@@ -32,9 +32,19 @@ Perche l'ordine conta: il database va aggiornato **prima** del sito, altrimenti
 per qualche minuto la pagina nuova cerca funzioni che nel database non esistono
 ancora. I tre passi sono legati fra loro, quindi quell'ordine e garantito.
 
-Servono tre segreti, impostati una volta sola in
-*Settings -> Secrets and variables -> Actions*: `SUPABASE_DB_URL`,
-`CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`.
+Servono due segreti, impostati una volta sola in
+*Settings -> Secrets and variables -> Actions*:
+
+| Segreto | Cos'e |
+|---|---|
+| `SUPABASE_DB_URL` | la stringa di connessione al database, la stessa che sta in `.env` |
+| `CLOUDFLARE_API_TOKEN` | una chiave creata dal pannello Cloudflare, modello "Edit Cloudflare Workers" |
+
+C'e anche un terzo segreto **facoltativo**, `CLOUDFLARE_ACCOUNT_ID`: serve solo
+se la chiave ha accesso a piu di un account Cloudflare, perche in quel caso la
+pubblicazione non saprebbe su quale andare. Con un account solo si puo omettere.
+Se serve, e la sequenza di lettere e numeri che compare nell'indirizzo del
+pannello Cloudflare subito dopo `dash.cloudflare.com/`.
 
 ## Comandi
 

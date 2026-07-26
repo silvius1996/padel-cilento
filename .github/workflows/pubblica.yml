@@ -106,10 +106,15 @@ jobs:
             echo "con il modello \"Edit Cloudflare Workers\"."
             exit 1
           fi
+          # L'identificativo dell'account e' facoltativo: se la chiave ha
+          # accesso a un solo account, Cloudflare lo ricava da sola. Serve
+          # indicarlo solo quando gli account sono piu' di uno, perche' li'
+          # la pubblicazione non saprebbe su quale andare.
           if [ -z "$ACCOUNT" ]; then
-            echo "Manca il segreto CLOUDFLARE_ACCOUNT_ID."
-            echo "E' l'identificativo dell'account, visibile nel pannello Cloudflare."
-            exit 1
+            echo "CLOUDFLARE_ACCOUNT_ID non impostato: si lascia decidere alla chiave."
+            echo "Se la pubblicazione qui sotto dice di non sapere quale account usare,"
+            echo "aggiungi il segreto: e' la sequenza di lettere e numeri che compare"
+            echo "nell'indirizzo del pannello Cloudflare, subito dopo dash.cloudflare.com/"
           fi
 
       - run: npm ci
