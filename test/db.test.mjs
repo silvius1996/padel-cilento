@@ -27,6 +27,7 @@ const U = {
   carlo: '33333333-3333-3333-3333-333333333333', // Squadra B, posto 2
   dina:  '44444444-4444-4444-4444-444444444444', // Squadra B, posto 3
   ester: '55555555-5555-5555-5555-555555555555', // non gioca: serve ai test negativi
+  nuovo: '66666666-6666-6666-6666-666666666666', // si registra a test in corso
 };
 
 const PARTITA = 'aaaaaaaa-0000-0000-0000-000000000001';
@@ -383,8 +384,17 @@ async function testStatistiche() {
 async function testStatisticheContestate() {
   console.log('\nUN RISULTATO CONTESTATO NON CONTA');
 
+  // Si contesta solo un risultato ancora in attesa: la conferma di un
+  // avversario e' definitiva (vedi testContestazioneRegole). Qui il
+  // risultato viene riportato in attesa dall'esterno, per riprodurre la
+  // situazione in cui nessuno ha ancora guardato il punteggio.
+  await db.query(
+    `update public.match_results set stato = 'in_attesa' where match_id = $1`, [PARTITA],
+  );
+
+  // Il punteggio l'ha inserito Carlo (Squadra B): Aldo e' un avversario
   await come(U.aldo);
-  await deveRiuscire('un giocatore contesta il risultato', () => db.query(
+  await deveRiuscire('un avversario contesta il risultato', () => db.query(
     'select public.contesta_risultato($1, $2)', [PARTITA, 'il terzo set non e mai stato giocato'],
   ));
 
@@ -399,6 +409,222 @@ async function testStatisticheContestate() {
   );
   const dopo = await db.query('select * from public.statistiche_giocatore($1)', [U.carlo]);
   uguale('tornando confermata, la partita riappare', 1, dopo.rows[0].partite);
+}
+
+/**
+ * Le regole della contestazione (aggiornamento n.7).
+ * Senza questi limiti chi perdeva poteva contestare una partita gia'
+ * confermata e cancellare la sconfitta dalle proprie statistiche.
+ */
+async function testContestazioneRegole() {
+  console.log('\nLE REGOLE DELLA CONTESTAZIONE');
+
+  // Il risultato di PARTITA e' confermato (fine del blocco precedente)
+  await come(U.aldo);
+  await deveFallire(
+    'un risultato confermato non si puo piu contestare',
+    () => db.query('select public.contesta_risultato($1, null)', [PARTITA]),
+    'confermato',
+  );
+
+  await come(U.ester);
+  await deveFallire(
+    'chi non ha giocato non puo contestare',
+    () => db.query('select public.contesta_risultato($1, null)', [PARTITA]),
+    'non hai giocato',
+  );
+
+  await come(null);
+  await deveFallire(
+    'senza autenticazione non si contesta',
+    () => db.query('select public.contesta_risultato($1, null)', [PARTITA]),
+    'autenticato',
+  );
+
+  // Torniamo in attesa per provare i due casi che restano
+  await db.query(
+    `update public.match_results set stato = 'in_attesa' where match_id = $1`, [PARTITA],
+  );
+
+  await come(U.carlo);
+  await deveFallire(
+    'chi ha inserito il punteggio non puo contestarlo da solo',
+    () => db.query('select public.contesta_risultato($1, null)', [PARTITA]),
+    'hai inserito tu',
+  );
+
+  // Si invecchia il risultato oltre la finestra delle 48 ore: da qui in
+  // avanti conta nelle statistiche di tutti, quindi non si tocca piu'.
+  await db.query(
+    `update public.match_results set registrato_il = now() - interval '72 hours'
+     where match_id = $1`, [PARTITA],
+  );
+
+  await come(U.aldo);
+  await deveFallire(
+    'passate 48 ore la contestazione e chiusa',
+    () => db.query('select public.contesta_risultato($1, null)', [PARTITA]),
+    'scaduti',
+  );
+
+  // Si ripristina tutto per i test successivi
+  await db.exec('reset role');
+  await db.query(
+    `update public.match_results
+     set stato = 'confermato', registrato_il = now() where match_id = $1`, [PARTITA],
+  );
+}
+
+/**
+ * Il ruolo "gestore" si ottiene solo con un codice circolo valido
+ * (aggiornamento n.7). Prima bastava un update dalla console del browser.
+ */
+async function testRuoloGestore() {
+  console.log('\nIL RUOLO GESTORE NON SI AUTOASSEGNA');
+
+  // La registrazione di un nuovo utente passa da un insert fatto dal
+  // browser: i permessi per colonna non devono averla rotta.
+  await db.exec('reset role');
+  await db.query('insert into auth.users (id, email) values ($1, $2)', [U.nuovo, 'nuovo@test.it']);
+
+  await come(U.nuovo);
+  await db.exec('set role authenticated');
+
+  await deveRiuscire('un nuovo utente crea il proprio profilo', () => db.query(
+    `insert into public.profiles (id, nome, cognome, telefono, level, full_name)
+     values ($1, 'Nuovo', 'Utente', '3331111111', 'intermedio', 'Nuovo Utente')`,
+    [U.nuovo],
+  ));
+
+  const { rows: appena } = await db.query('select role, circolo from public.mio_profilo()');
+  uguale('chi si registra nasce giocatore', 'giocatore', appena[0].role);
+  uguale('chi si registra nasce senza circolo', null, appena[0].circolo);
+
+  await come(U.ester);
+  await db.exec('set role authenticated');
+
+  // Primo lucchetto: "role" e "circolo" non sono fra le colonne
+  // scrivibili, quindi il permesso viene negato prima di ogni altro
+  // controllo.
+  await deveFallire(
+    'un utente non puo promuoversi gestore',
+    () => db.query(
+      `update public.profiles set role = 'gestore', circolo = 'Circolo Finto' where id = $1`,
+      [U.ester],
+    ),
+    'permission denied',
+  );
+
+  await deveFallire(
+    'un utente non puo nascere gestore',
+    () => db.query(
+      `insert into public.profiles (id, nome, cognome, full_name, role, circolo)
+       values ($1, 'Finto', 'Gestore', 'Finto Gestore', 'gestore', 'Circolo Finto')`,
+      ['77777777-7777-7777-7777-777777777777'],
+    ),
+    'permission denied',
+  );
+
+  // Cio' che l'utente deve poter fare continua a funzionare
+  await deveRiuscire('il proprio profilo resta modificabile', () => db.query(
+    `update public.profiles
+     set nome = 'Ester', cognome = 'Gialli', telefono = '3339999999',
+         level = 'avanzato', full_name = 'Ester Gialli', avatar_url = null
+     where id = $1`,
+    [U.ester],
+  ));
+
+  // La riga di un altro utente e' invisibile alla policy: l'update non
+  // solleva un errore, semplicemente non tocca nulla. La verifica si fa
+  // quindi sul risultato, non sull'eccezione.
+  await db.query(`update public.profiles set nome = 'Manomesso' where id = $1`, [U.aldo]);
+
+  const { rows: altrui } = await db.query(
+    'select nome from public.profiles where id = $1', [U.aldo],
+  );
+  uguale('il profilo di un altro utente resta intatto', 'Aldo', altrui[0].nome);
+
+  // Secondo lucchetto: si simula la distrazione di una migrazione futura
+  // che riconcede la scrittura su tutta la tabella. I permessi di colonna
+  // spariscono, il trigger deve reggere da solo.
+  await db.exec('reset role');
+  await db.exec('grant update on public.profiles to authenticated');
+
+  await come(U.ester);
+  await db.exec('set role authenticated');
+
+  await deveFallire(
+    'anche con i permessi riaperti il trigger blocca il cambio di ruolo',
+    () => db.query(
+      `update public.profiles set role = 'gestore', circolo = 'Circolo Finto' where id = $1`,
+      [U.ester],
+    ),
+    'codice circolo',
+  );
+
+  // Si ripristinano i permessi come li lascia la migrazione n.7
+  await db.exec('reset role');
+  await db.exec('revoke update on public.profiles from authenticated');
+  await db.exec(`grant update (nome, cognome, telefono, full_name, level, avatar_url)
+                 on public.profiles to authenticated`);
+
+  // La strada legittima: il codice circolo
+  await db.exec('reset role');
+  await db.query(
+    `insert into public.club_codes (code, circolo, uso_singolo)
+     values ('PAESTUM-2026', 'Padel Club Paestum', false)`,
+  );
+
+  await come(U.ester);
+  await db.exec('set role authenticated');
+
+  await deveRiuscire('con un codice valido si diventa gestore', () => db.query(
+    `select public.usa_codice_circolo('PAESTUM-2026')`,
+  ));
+
+  const { rows } = await db.query('select role, circolo from public.mio_profilo()');
+  uguale('il ruolo risulta gestore', 'gestore', rows[0].role);
+  uguale('il circolo arriva dal codice, non dall utente', 'Padel Club Paestum', rows[0].circolo);
+
+  await deveFallire(
+    'un codice inesistente viene rifiutato',
+    () => db.query(`select public.usa_codice_circolo('CODICE-INVENTATO')`),
+    'non valido',
+  );
+
+  await db.exec('reset role');
+}
+
+/**
+ * Le due funzioni sui posti sono state rimosse: erano scavalcabili e
+ * dall'aggiornamento n.5 filled_slots lo mantiene un trigger.
+ */
+async function testPostiNonFalsificabili() {
+  console.log('\nI POSTI OCCUPATI NON SI FALSIFICANO');
+
+  await come(U.ester);
+  await db.exec('set role authenticated');
+
+  await deveFallire(
+    'decrement_filled_slots non esiste piu',
+    () => db.query('select public.decrement_filled_slots($1)', [PARTITA]),
+    'does not exist',
+  );
+
+  await deveFallire(
+    'increment_filled_slots non esiste piu',
+    () => db.query('select public.increment_filled_slots($1)', [PARTITA]),
+    'does not exist',
+  );
+
+  await db.exec('reset role');
+
+  const { rows } = await db.query(
+    `select filled_slots,
+            (select count(*) from public.match_players where match_id = $1) as iscritti
+     from public.matches where id = $1`, [PARTITA],
+  );
+  uguale('i posti occupati coincidono con gli iscritti', rows[0].iscritti, rows[0].filled_slots);
 }
 
 async function testClassifica() {
@@ -507,10 +733,13 @@ async function main() {
   await testConferma();
   await testStatistiche();
   await testStatisticheContestate();
+  await testContestazioneRegole();
   await testClassifica();
   await testContatti();
   await testPrivacyTelefono();
   await testPrivacyAnonimi();
+  await testRuoloGestore();
+  await testPostiNonFalsificabili();
 
   console.log('\n' + '='.repeat(60));
   if (falliti.length === 0) {
