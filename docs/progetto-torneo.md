@@ -237,7 +237,7 @@ Proposta:
 
 Attenzione a un punto delicato: questo potere va concesso **solo** sugli incontri
 che appartengono a un torneo di quel circolo. Il rischio, altrimenti, è
-riaprire proprio il buco chiuso nell'aggiornamento n.7, dove chiunque poteva
+riaprire proprio il buco chiuso nell'aggiornamento n.9, dove chiunque poteva
 manomettere i risultati altrui. La funzione dovrà verificare che la partita sia
 legata a un `torneo_incontri` del torneo che quella persona organizza.
 

@@ -1014,7 +1014,7 @@ function getMatchDateTime(match) {
  * le policy che interrogano public.e_amministratore().
  *
  * Il ruolo si assegna a mano dall'Editor SQL di Supabase — dall'app la
- * colonna "role" non e' scrivibile (aggiornamento SQL n.7).
+ * colonna "role" non e' scrivibile (aggiornamento SQL n.9).
  */
 function sonoAmministratore() {
   return currentProfile?.role === 'admin';
@@ -1151,11 +1151,27 @@ async function creaProfiloDaMetadati(user) {
  * Attiva il ruolo "gestore" tramite codice circolo.
  * La verifica avviene interamente lato database (funzione security definer):
  * dal browser non e' possibile aggirarla.
+ *
+ * Dall'aggiornamento n.8 la funzione SQL restituisce l'esito invece di
+ * sollevare un'eccezione: serve a far sopravvivere il contatore dei
+ * tentativi, che un'eccezione annullerebbe insieme alla transazione.
+ * Qui l'esito negativo torna a essere un errore, cosi' per chi chiama
+ * questa funzione non cambia nulla.
  */
 async function usaCodiceCircolo(codice) {
   const { data, error } = await supabaseClient.rpc('usa_codice_circolo', { p_code: codice });
   if (error) throw error;
-  return data; // nome del circolo
+
+  if (!data || !data.ok) {
+    const errore = new Error(data?.errore || 'Codice circolo non valido.');
+    // I messaggi arrivano dal nostro database e sono gia' scritti per
+    // l'utente: si marcano come tali perche' messaggioErrore() li mostri
+    // invece di sostituirli con il testo generico.
+    errore.code = 'P0001';
+    throw errore;
+  }
+
+  return data.circolo; // nome del circolo
 }
 
 async function logoutUtente() {
@@ -1253,7 +1269,7 @@ el.btnCloseProfile.addEventListener('click', () => closeModal(el.modalProfile));
 el.modalProfileBackdrop.addEventListener('click', () => closeModal(el.modalProfile));
 
 // Gli stessi limiti sono applicati dal bucket "avatars" su Supabase
-// (aggiornamento SQL n.8): il controllo qui serve a dare subito un errore
+// (aggiornamenti SQL n.7 e n.10): il controllo qui serve a dare subito un errore
 // comprensibile, invece di far caricare 20 MB per poi rifiutarli.
 const AVATAR_MAX_BYTE = 2 * 1024 * 1024;
 const AVATAR_TIPI = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'];
@@ -2016,7 +2032,7 @@ function renderMatchDetailAction() {
 
   // Pulsanti Modifica/Elimina: solo per chi ha creato la partita
   // L'amministratore gestisce qualunque partita, non solo le proprie: e'
-  // il database a permetterlo (policy dell'aggiornamento n.9), qui si
+  // il database a permetterlo (policy dell'aggiornamento n.11), qui si
   // mostrano soltanto i pulsanti. Nascondere questi controlli a un utente
   // normale non sarebbe una protezione, e infatti non e' su questo che
   // conta la sicurezza.

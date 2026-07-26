@@ -1,5 +1,5 @@
 -- =========================================================
--- PADEL CILENTO — AGGIORNAMENTO SQL n.9
+-- PADEL CILENTO — AGGIORNAMENTO SQL n.11
 -- Amministratore, correzione del risultato, iscrizioni a
 -- partite gia' giocate, eliminazione di partite concluse
 -- =========================================================
@@ -14,7 +14,7 @@
 -- non esisteva, e l'unico modo era l'Editor SQL di Supabase.
 --
 -- L'amministratore NON si autoproclama: il trigger introdotto
--- nell'aggiornamento n.7 impedisce di scrivere "role" dal browser,
+-- nell'aggiornamento n.9 impedisce di scrivere "role" dal browser,
 -- e resta valido anche per questo ruolo. Si nomina a mano
 -- dall'Editor SQL — vedi il fondo di questo file.
 -- =========================================================
@@ -201,7 +201,7 @@ create trigger trg_iscrizione_tardiva
 --     questo che scioglie la contestazione;
 --   - "confermato": non si tocca. La conferma di un avversario e'
 --     definitiva, altrimenti tornerebbe il buco chiuso
---     nell'aggiornamento n.7.
+--     nell'aggiornamento n.9.
 -- Ogni correzione riporta il risultato in attesa e fa ripartire le
 -- 48 ore: il punteggio nuovo va guardato da capo.
 -- =========================================================
@@ -307,7 +307,7 @@ grant execute on function public.correggi_risultato(uuid, jsonb) to authenticate
 -- =========================================================
 -- COME SI NOMINA UN AMMINISTRATORE
 -- Solo dall'Editor SQL di Supabase: dal browser il ruolo non e'
--- scrivibile (aggiornamento n.7). Sostituisci l'email ed esegui.
+-- scrivibile (aggiornamento n.9). Sostituisci l'email ed esegui.
 -- =========================================================
 -- update public.profiles
 -- set role = 'admin'

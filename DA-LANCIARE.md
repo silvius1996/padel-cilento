@@ -1,4 +1,4 @@
-# Da lanciare — aggiornamenti n.7, n.8 e n.9
+# Da lanciare — aggiornamenti dal n.7 al n.11
 
 Promemoria per applicare le modifiche del branch `claude/project-visibility-aqdi5f`.
 **Cancella questo file quando hai finito**: vale una volta sola.
@@ -23,9 +23,9 @@ git fetch origin
 git checkout claude/project-visibility-aqdi5f
 
 npm install         # serve: e' stata aggiunta una dipendenza (tailwindcss)
-npm test            # deve dire: TUTTO A POSTO — 135 verifiche superate
+npm test            # deve dire: TUTTO A POSTO — 153 verifiche superate
 
-npm run db:push     # applica le migrazioni n.7, n.8 e n.9 al database vero
+npm run db:push     # applica al database le cinque migrazioni mancanti
 npm run db:status   # controllo
 
 npm run deploy      # rigenera il CSS e pubblica il sito
@@ -36,7 +36,7 @@ funzioni (`crea_partita`, `elimina_mio_account`, `correggi_risultato`) che senza
 il `db:push` nel database non esistono ancora. Al contrario, se pubblichi solo il database e non
 il sito, non si rompe niente: l'app vecchia continua a funzionare.
 
-**Se `npm test` non arriva a 135, fermati** senza lanciare `db:push`: vuol dire
+**Se `npm test` non arriva a 153, fermati** senza lanciare `db:push`: vuol dire
 che il database di produzione non corrisponde a quello che descrivono le
 migrazioni, e va capito perche' prima.
 
@@ -59,9 +59,22 @@ Queste prove chiudono il cerchio:
 
 Se il salvataggio del profilo desse errore, la causa piu' probabile e' una
 colonna aggiunta a mano dall'Editor SQL che non compare negli elenchi dei
-`grant` delle migrazioni n.6 / n.7: basta aggiungerla li'.
+`grant` delle migrazioni n.6 / n.9: basta aggiungerla li'.
 
-## Cosa contiene l'aggiornamento n.7 — sicurezza
+## I tuoi due aggiornamenti, n.7 e n.8
+
+Erano gia' scritti sul tuo computer e non ancora applicati. Sono stati uniti
+al resto senza modifiche.
+
+- **n.7** `20260726090000_limiti_upload_avatar.sql` — dimensione massima (2 MB)
+  e formati ammessi sul bucket degli avatar.
+- **n.8** `20260726091000_antibruteforce_codice_circolo.sql` — dopo 5 tentativi
+  falliti sul codice circolo l'utente resta bloccato 15 minuti, e durante il
+  blocco non funziona nemmeno il codice corretto. La funzione ora restituisce
+  l'esito invece di sollevare un'eccezione, perche' un'eccezione annullerebbe
+  la transazione e con essa il contatore dei tentativi.
+
+## Cosa contiene l'aggiornamento n.9 — sicurezza
 
 `supabase/migrations/20260726120000_permessi_ruolo_e_contestazione.sql`
 
@@ -80,7 +93,7 @@ colonna aggiunta a mano dall'Editor SQL che non compare negli elenchi dei
 4. **Niente partite con data nel passato.** Il controllo esisteva solo
    nell'attributo `min` del campo data, quindi era aggirabile dalla console.
 
-## Cosa contiene l'aggiornamento n.8 — account, partite, avatar
+## Cosa contiene l'aggiornamento n.10 — account, partite, avatar
 
 `supabase/migrations/20260726150000_account_partita_atomica_avatar.sql`
 
@@ -95,9 +108,11 @@ colonna aggiunta a mano dall'Editor SQL che non compare negli elenchi dei
    un'unica transazione. Prima erano due scritture in sequenza con un rollback a
    mano: se cadeva la connessione a meta', nel feed restava una partita fantasma
    a zero giocatori.
-3. **Limiti sugli avatar**: massimo 2 MB, solo immagini, e ognuno puo' scrivere
-   soltanto i propri file (prima qualunque utente registrato poteva riempire il
-   bucket).
+3. **Avatar: di chi sono i file.** I limiti di dimensione e formato li mette
+   gia' il tuo aggiornamento n.7; qui si aggiunge che ognuno puo' scrivere
+   soltanto i propri file (prima il nome era libero, quindi chiunque poteva
+   scrivere nel bucket di tutti). Unica aggiunta ai formati: HEIC, perche' iOS
+   a volte consegna la foto senza convertirla in JPEG.
 
 ## Fuori dal database: gli asset non arrivano piu' da CDN
 
@@ -115,7 +130,7 @@ Restano su CDN esterni due cose che degradano bene: i **font di Google** (senza
 di loro il testo usa il font di sistema, resta leggibile) e **Sentry** (protetto
 da un `if`: se non carica, l'app non se ne accorge).
 
-## Cosa contiene l'aggiornamento n.9 — amministratore e correzioni
+## Cosa contiene l'aggiornamento n.11 — amministratore e correzioni
 
 `supabase/migrations/20260726180000_amministratore_correzione_risultato.sql`
 

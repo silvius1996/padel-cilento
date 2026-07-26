@@ -1,5 +1,5 @@
 -- =========================================================
--- PADEL CILENTO — AGGIORNAMENTO SQL n.8
+-- PADEL CILENTO — AGGIORNAMENTO SQL n.10
 -- Cancellazione dell'account, creazione atomica della partita,
 -- limiti sugli avatar
 -- =========================================================
@@ -195,7 +195,7 @@ begin
   end if;
 
   -- La data va controllata qui, non basta il trigger dell'aggiornamento
-  -- n.7: questa funzione e' "security definer", gira quindi con i
+  -- n.9: questa funzione e' "security definer", gira quindi con i
   -- privilegi del proprietario, e il trigger esamina solo le scritture
   -- che arrivano dai ruoli pubblici del browser. Senza questa riga la
   -- funzione sarebbe una scorciatoia per rientrare dalla finestra.
@@ -204,7 +204,7 @@ begin
   end if;
 
   -- I vincoli di tabella pensano al resto: zona e livello ammessi,
-  -- data non passata (trigger dell'aggiornamento n.7), origine
+  -- data non passata (trigger dell'aggiornamento n.9), origine
   -- ricavata dal ruolo (trigger dell'aggiornamento n.2).
   insert into public.matches (
     club, zona, match_date, match_time, level, total_slots, filled_slots, created_by
@@ -229,24 +229,26 @@ grant execute on function public.crea_partita(text, text, date, time, text, smal
 
 
 -- =========================================================
--- PARTE 3 — LIMITI SUGLI AVATAR
+-- PARTE 3 — AVATAR: DI CHI SONO I FILE
 --
--- Il bucket "avatars" e' pubblico e scrivibile da qualunque utente
--- registrato, senza limiti di dimensione ne' di tipo: si poteva
--- caricare un video da 200 MB rinominato .png. Con dieci amici non
--- succede niente; e' il genere di cosa che si scopre quando lo spazio
--- gratuito di Supabase e' finito.
+-- La dimensione massima e i formati ammessi sono gia' stati imposti
+-- dall'aggiornamento n.7. Restava aperto l'altro lato del problema:
+-- il NOME del file era libero, quindi un utente registrato poteva
+-- scrivere file con qualunque nome nel bucket di tutti.
 -- =========================================================
 
 -- ---------------------------------------------------------
--- 3.1  DUE MEGABYTE, SOLO IMMAGINI
--- Il limite lo applica Supabase Storage prima di scrivere il file,
--- quindi non e' aggirabile dal browser (il controllo aggiunto nella
--- pagina serve solo a dare un errore comprensibile subito).
+-- 3.1  UN FORMATO IN PIU': LE FOTO DELL'IPHONE
+-- Unica aggiunta ai limiti dell'aggiornamento n.7: iOS consegna a
+-- volte l'immagine in HEIC invece di convertirla in JPEG, e in quel
+-- caso il caricamento verrebbe rifiutato con un errore che l'utente
+-- non saprebbe interpretare. Restano fuori gli SVG, che possono
+-- contenere script, e tutto cio' che non e' un'immagine.
 -- ---------------------------------------------------------
 update storage.buckets
-set file_size_limit = 2097152,   -- 2 MB
-    allowed_mime_types = array['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif']
+set allowed_mime_types = array[
+      'image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'
+    ]
 where id = 'avatars';
 
 

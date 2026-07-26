@@ -121,12 +121,15 @@ const IMPALCATURA = `
 
   -- Schema di archiviazione file (usato dalle policy sugli avatar).
   -- file_size_limit e allowed_mime_types esistono anche su Supabase: sono
-  -- le colonne su cui l'aggiornamento n.8 impone i limiti agli avatar.
+  -- le colonne su cui l'aggiornamento n.7 impone i limiti agli avatar.
   create schema storage;
   create table storage.buckets (
     id text primary key,
     name text,
     public boolean default false,
+    -- Colonne con cui Supabase applica i limiti di caricamento:
+    -- il servizio Storage le legge PRIMA di scrivere il file, quindi
+    -- il controllo non e' aggirabile dal browser.
     file_size_limit bigint,
     allowed_mime_types text[]
   );
@@ -426,7 +429,7 @@ async function testStatisticheContestate() {
 }
 
 /**
- * Le regole della contestazione (aggiornamento n.7).
+ * Le regole della contestazione (aggiornamento n.9).
  * Senza questi limiti chi perdeva poteva contestare una partita gia'
  * confermata e cancellare la sconfitta dalle proprie statistiche.
  */
@@ -491,7 +494,7 @@ async function testContestazioneRegole() {
 
 /**
  * Il ruolo "gestore" si ottiene solo con un codice circolo valido
- * (aggiornamento n.7). Prima bastava un update dalla console del browser.
+ * (aggiornamento n.9). Prima bastava un update dalla console del browser.
  */
 async function testRuoloGestore() {
   console.log('\nIL RUOLO GESTORE NON SI AUTOASSEGNA');
@@ -576,41 +579,56 @@ async function testRuoloGestore() {
     'codice circolo',
   );
 
-  // Si ripristinano i permessi come li lascia la migrazione n.7
+  // Si ripristinano i permessi come li lascia la migrazione n.9
   await db.exec('reset role');
   await db.exec('revoke update on public.profiles from authenticated');
   await db.exec(`grant update (nome, cognome, telefono, full_name, level, avatar_url)
                  on public.profiles to authenticated`);
 
-  // La strada legittima: il codice circolo
+  // La strada legittima: il codice circolo.
+  //
+  // Si usa un codice diverso da quello di testCodiceCircolo, e un utente
+  // diverso da Ester: quel blocco verifica la protezione dai tentativi
+  // ripetuti, e ha bisogno di trovare Ester ancora giocatrice e non
+  // bloccata. Due test che si passano lo stato sono due test che prima o
+  // poi si rompono a vicenda.
   await db.exec('reset role');
   await db.query(
     `insert into public.club_codes (code, circolo, uso_singolo)
-     values ('PAESTUM-2026', 'Padel Club Paestum', false)`,
+     values ('CAPACCIO-2026', 'Padel Capaccio', false)`,
   );
 
-  await come(U.ester);
+  await come(U.nuovo);
   await db.exec('set role authenticated');
 
   await deveRiuscire('con un codice valido si diventa gestore', () => db.query(
-    `select public.usa_codice_circolo('PAESTUM-2026')`,
+    `select public.usa_codice_circolo('CAPACCIO-2026')`,
   ));
 
   const { rows } = await db.query('select role, circolo from public.mio_profilo()');
   uguale('il ruolo risulta gestore', 'gestore', rows[0].role);
-  uguale('il circolo arriva dal codice, non dall utente', 'Padel Club Paestum', rows[0].circolo);
+  uguale('il circolo arriva dal codice, non dall utente', 'Padel Capaccio', rows[0].circolo);
 
-  await deveFallire(
+  // Dall'aggiornamento sui tentativi ripetuti la funzione non solleva piu'
+  // un'eccezione sui codici errati, ma restituisce l'esito: un'eccezione
+  // annullerebbe la transazione, e con essa il contatore dei tentativi.
+  const { rows: esitoErrato } = await db.query(
+    `select public.usa_codice_circolo('CODICE-INVENTATO') as esito`,
+  );
+  const risposta = typeof esitoErrato[0].esito === 'string'
+    ? JSON.parse(esitoErrato[0].esito)
+    : esitoErrato[0].esito;
+  esito(
     'un codice inesistente viene rifiutato',
-    () => db.query(`select public.usa_codice_circolo('CODICE-INVENTATO')`),
-    'non valido',
+    risposta.ok === false && /non valido/i.test(risposta.errore),
+    `esito: ${JSON.stringify(risposta)}`,
   );
 
   await db.exec('reset role');
 }
 
 /**
- * La data nel passato la rifiuta il database (aggiornamento n.7), non
+ * La data nel passato la rifiuta il database (aggiornamento n.9), non
  * piu' solo l'attributo "min" del campo data nel modulo di creazione.
  */
 async function testDataPartita() {
@@ -777,7 +795,7 @@ async function testPrivacyAnonimi() {
 
 /**
  * La partita e l'iscrizione dell'organizzatore nascono insieme
- * (aggiornamento n.8): prima erano due scritture separate, e una
+ * (aggiornamento n.10): prima erano due scritture separate, e una
  * connessione caduta a meta' lasciava una partita a zero giocatori.
  */
 async function testCreazionePartita() {
@@ -874,22 +892,13 @@ async function testCreazionePartita() {
 }
 
 /**
- * Limiti sugli avatar e proprieta' dei file (aggiornamento n.8).
+ * Limiti sugli avatar e proprieta' dei file (aggiornamento n.10).
  */
 async function testAvatar() {
-  console.log('\nLIMITI SUGLI AVATAR');
+  console.log('\nDI CHI SONO I FILE DEGLI AVATAR');
 
-  const { rows: bucket } = await db.query(
-    `select file_size_limit, allowed_mime_types from storage.buckets where id = 'avatars'`,
-  );
-  uguale('il bucket accetta al massimo 2 MB', 2097152, bucket[0].file_size_limit);
-  esito(
-    'il bucket accetta solo immagini',
-    bucket[0].allowed_mime_types.includes('image/jpeg')
-      && !bucket[0].allowed_mime_types.some((t) => !t.startsWith('image/')),
-    `tipi ammessi: ${bucket[0].allowed_mime_types}`,
-  );
-
+  // Dimensione massima e formati ammessi sono verificati in
+  // testLimitiAvatar: qui si controlla solo di chi sono i file.
   await come(U.aldo);
   await db.exec('set role authenticated');
 
@@ -928,7 +937,7 @@ async function testAvatar() {
 }
 
 /**
- * Cancellazione dell'account (aggiornamento n.8): i dati personali
+ * Cancellazione dell'account (aggiornamento n.10): i dati personali
  * spariscono e l'accesso viene distrutto, ma le partite giocate
  * restano, altrimenti si riscriverebbe la storia degli avversari.
  */
@@ -989,7 +998,7 @@ async function testEliminaAccount() {
 }
 
 /**
- * Non ci si iscrive a una partita gia' iniziata (aggiornamento n.9).
+ * Non ci si iscrive a una partita gia' iniziata (aggiornamento n.11).
  */
 async function testIscrizioneTardiva() {
   console.log('\nNON CI SI ISCRIVE A PARTITE GIA GIOCATE');
@@ -1028,7 +1037,7 @@ async function testIscrizioneTardiva() {
 }
 
 /**
- * La correzione del punteggio (aggiornamento n.9): prima, se si
+ * La correzione del punteggio (aggiornamento n.11): prima, se si
  * sbagliava a digitare, non c'era rimedio.
  */
 async function testCorrezioneRisultato() {
@@ -1112,7 +1121,7 @@ async function testCorrezioneRisultato() {
 }
 
 /**
- * L'amministratore (aggiornamento n.9).
+ * L'amministratore (aggiornamento n.11).
  */
 async function testAmministratore() {
   console.log('\nL AMMINISTRATORE');
@@ -1198,6 +1207,122 @@ async function testAmministratore() {
   await db.query(`update public.profiles set role = 'giocatore' where id = $1`, [U.bea]);
 }
 
+async function testLimitiAvatar() {
+  console.log('\nLIMITI DI CARICAMENTO DEGLI AVATAR');
+
+  const { rows } = await db.query(
+    'select file_size_limit, allowed_mime_types from storage.buckets where id = $1',
+    ['avatars'],
+  );
+
+  esito('il bucket avatars esiste', rows.length === 1);
+
+  const limite = rows[0]?.file_size_limit;
+  uguale('la dimensione massima e 2 MB', 2097152, limite);
+
+  const tipi = rows[0]?.allowed_mime_types || [];
+  esito('sono ammesse le immagini JPEG', tipi.includes('image/jpeg'), `tipi: ${tipi}`);
+  esito('sono ammesse le immagini PNG', tipi.includes('image/png'), `tipi: ${tipi}`);
+  esito('sono ammesse le immagini WebP', tipi.includes('image/webp'), `tipi: ${tipi}`);
+  esito('i PDF non sono ammessi', !tipi.includes('application/pdf'), `tipi: ${tipi}`);
+  esito(
+    'gli SVG non sono ammessi (possono contenere script)',
+    !tipi.includes('image/svg+xml'),
+    `tipi: ${tipi}`,
+  );
+}
+
+/** Legge l'esito jsonb restituito da usa_codice_circolo. */
+async function provaCodice(codice) {
+  const { rows } = await db.query('select public.usa_codice_circolo($1) as esito', [codice]);
+  const e = rows[0].esito;
+  return typeof e === 'string' ? JSON.parse(e) : e;
+}
+
+async function testCodiceCircolo() {
+  console.log('\nCODICE CIRCOLO E PROTEZIONE DAI TENTATIVI RIPETUTI');
+
+  await db.query(
+    `insert into public.club_codes (code, circolo, uso_singolo)
+     values ('PAESTUM-2026', 'Padel Club Paestum', false)`,
+  );
+
+  // ----- Il registro dei tentativi non e' leggibile dal browser -----
+  await come(U.ester);
+  await db.exec('set role authenticated');
+  await deveFallire(
+    'il registro dei tentativi non e leggibile da un utente registrato',
+    () => db.query('select * from public.tentativi_codice_circolo'),
+    'permission denied',
+  );
+  await db.exec('reset role');
+
+  // ----- Quattro tentativi sbagliati: si puo' ancora riprovare -----
+  await come(U.ester);
+  let esitoCorrente;
+  for (let i = 1; i <= 4; i++) {
+    esitoCorrente = await provaCodice('CODICE-INVENTATO');
+  }
+  esito('dopo 4 tentativi sbagliati non si e ancora bloccati',
+    esitoCorrente.ok === false && /non valido/i.test(esitoCorrente.errore),
+    `esito: ${JSON.stringify(esitoCorrente)}`);
+
+  // ----- Il quinto fa scattare il blocco -----
+  esitoCorrente = await provaCodice('CODICE-INVENTATO');
+  esito('al quinto tentativo sbagliato scatta il blocco',
+    esitoCorrente.ok === false && /troppi tentativi/i.test(esitoCorrente.errore),
+    `esito: ${JSON.stringify(esitoCorrente)}`);
+
+  // ----- Il blocco vale anche per il codice CORRETTO -----
+  // E' la proprieta' che rende utile la protezione: se il codice giusto
+  // continuasse a funzionare, basterebbe insistere per aggirarla.
+  esitoCorrente = await provaCodice('PAESTUM-2026');
+  esito('durante il blocco non funziona nemmeno il codice corretto',
+    esitoCorrente.ok === false && /troppi tentativi/i.test(esitoCorrente.errore),
+    `esito: ${JSON.stringify(esitoCorrente)}`);
+
+  const { rows: ruoloEster } = await db.query(
+    'select role from public.profiles where id = $1', [U.ester],
+  );
+  uguale('chi e bloccato non diventa gestore', 'giocatore', ruoloEster[0].role);
+
+  // ----- Il blocco riguarda solo chi ha sbagliato -----
+  await come(U.dina);
+  const esitoDina = await provaCodice('PAESTUM-2026');
+  esito('un altro utente non e coinvolto dal blocco',
+    esitoDina.ok === true && esitoDina.circolo === 'Padel Club Paestum',
+    `esito: ${JSON.stringify(esitoDina)}`);
+
+  const { rows: ruoloDina } = await db.query(
+    'select role, circolo from public.profiles where id = $1', [U.dina],
+  );
+  uguale('il codice valido promuove a gestore', 'gestore', ruoloDina[0].role);
+  uguale('il circolo viene assegnato', 'Padel Club Paestum', ruoloDina[0].circolo);
+
+  // ----- Un uso riuscito azzera il contatore -----
+  const { rows: registro } = await db.query(
+    'select count(*)::int as n from public.tentativi_codice_circolo where user_id = $1',
+    [U.dina],
+  );
+  uguale('un uso riuscito azzera il contatore', 0, registro[0].n);
+
+  // ----- Un codice disattivato non funziona -----
+  await db.query(`update public.club_codes set attivo = false where code = 'PAESTUM-2026'`);
+  await come(U.carlo);
+  const esitoDisattivato = await provaCodice('PAESTUM-2026');
+  esito('un codice disattivato viene rifiutato',
+    esitoDisattivato.ok === false && /attivo/i.test(esitoDisattivato.errore),
+    `esito: ${JSON.stringify(esitoDisattivato)}`);
+
+  // ----- Senza autenticazione la funzione rifiuta -----
+  await come(null);
+  await deveFallire(
+    'senza autenticazione il codice non e utilizzabile',
+    () => db.query(`select public.usa_codice_circolo('PAESTUM-2026')`),
+    'autenticato',
+  );
+}
+
 // ---------------------------------------------------------
 // Avvio
 // ---------------------------------------------------------
@@ -1224,6 +1349,8 @@ async function main() {
   await testPrivacyTelefono();
   await testPrivacyAnonimi();
   await testRuoloGestore();
+  await testCodiceCircolo();
+  await testLimitiAvatar();
   await testDataPartita();
   await testPostiNonFalsificabili();
   await testCreazionePartita();
