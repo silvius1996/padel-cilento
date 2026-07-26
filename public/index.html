@@ -1005,6 +1005,21 @@ function getMatchDateTime(match) {
   return new Date(`${match.match_date}T${match.match_time}`);
 }
 
+/**
+ * Vero se l'utente collegato e' amministratore.
+ *
+ * Serve SOLO a decidere quali pulsanti mostrare. Chi modifica questo
+ * valore dalla console del browser vede comparire dei pulsanti che poi
+ * non funzionano: e' il database a decidere chi puo' fare cosa, tramite
+ * le policy che interrogano public.e_amministratore().
+ *
+ * Il ruolo si assegna a mano dall'Editor SQL di Supabase — dall'app la
+ * colonna "role" non e' scrivibile (aggiornamento SQL n.7).
+ */
+function sonoAmministratore() {
+  return currentProfile?.role === 'admin';
+}
+
 function displayName(profile) {
   if (!profile) return 'Giocatore';
   const nome = profile.nome || '';
@@ -1591,6 +1606,33 @@ async function contestaRisultato(matchId, nota) {
   if (error) throw error;
 }
 
+/**
+ * Corregge un punteggio gia' inserito. Il database accetta la correzione
+ * solo finche' il risultato non e' confermato: da chi l'ha inserito se e'
+ * in attesa, da chiunque abbia giocato se e' contestato. E' la via
+ * d'uscita da una contestazione.
+ */
+async function correggiRisultato(matchId, sets) {
+  const { data, error } = await supabaseClient.rpc('correggi_risultato', {
+    p_match_id: matchId,
+    p_sets: sets,
+  });
+  if (error) throw error;
+  return data;
+}
+
+/**
+ * Annulla un risultato: la partita torna come se non fosse mai stato
+ * inserito. Riservata all'amministratore dalle policy del database.
+ */
+async function annullaRisultato(matchId) {
+  const { error } = await supabaseClient
+    .from('match_results')
+    .delete()
+    .eq('match_id', matchId);
+  if (error) throw error;
+}
+
 async function caricaContatti(matchId) {
   const { data, error } = await supabaseClient.rpc('contatti_partita', { p_match_id: matchId });
   if (error) throw error;
@@ -1973,9 +2015,14 @@ function renderMatchDetailAction() {
   btn.style.display = '';
 
   // Pulsanti Modifica/Elimina: solo per chi ha creato la partita
-  const isOwner = currentUser && match.created_by === currentUser.id;
-  el.matchOwnerActions.classList.toggle('hidden', !isOwner);
-  el.matchOwnerActions.classList.toggle('grid', Boolean(isOwner));
+  // L'amministratore gestisce qualunque partita, non solo le proprie: e'
+  // il database a permetterlo (policy dell'aggiornamento n.9), qui si
+  // mostrano soltanto i pulsanti. Nascondere questi controlli a un utente
+  // normale non sarebbe una protezione, e infatti non e' su questo che
+  // conta la sicurezza.
+  const puoGestire = currentUser && (match.created_by === currentUser.id || sonoAmministratore());
+  el.matchOwnerActions.classList.toggle('hidden', !puoGestire);
+  el.matchOwnerActions.classList.toggle('grid', Boolean(puoGestire));
 
   if (!currentUser) {
     el.matchDetailHint.textContent = 'Chi gioca e a che livello e\' visibile solo ai giocatori registrati.';
@@ -2201,11 +2248,15 @@ function renderMatchResult() {
  * Modulo di inserimento punteggio: 2 set obbligatori, il terzo facoltativo.
  * Il primo numero di ogni set e' sempre della Squadra A.
  */
-function creaFormRisultato() {
+function creaFormRisultato(opzioni = {}) {
+  // In modalita' correzione il modulo e' lo stesso, cambiano l'intestazione,
+  // il testo del pulsante e i campi, che partono gia' compilati.
+  const correzione = Boolean(opzioni.correzione);
+
   const wrap = document.createElement('div');
   wrap.className = 'rounded-2xl border border-court-600 bg-court-900/60 p-3';
   wrap.innerHTML = `
-    <p class="text-xs font-semibold text-court-500 uppercase tracking-wide mb-2">Registra il risultato</p>
+    <p class="text-xs font-semibold text-court-500 uppercase tracking-wide mb-2">${correzione ? 'Correggi il punteggio' : 'Registra il risultato'}</p>
     <div class="flex items-center gap-2 mb-1.5 px-1">
       <span class="w-16 shrink-0"></span>
       <span class="flex-1 text-center text-[10px] font-display font-700 text-lime-neon/70 tracking-wide">SQ. A</span>
@@ -2214,12 +2265,14 @@ function creaFormRisultato() {
     </div>
     <div class="space-y-2" id="sets-inputs"></div>
     <p class="text-[11px] text-court-500 mt-2 leading-snug">
-      Il punteggio deve essere confermato da un avversario. Se nessuno lo contesta, si convalida da solo dopo 48 ore.
+      ${correzione
+        ? 'Il punteggio corretto torna in attesa di conferma, e le 48 ore ripartono da adesso.'
+        : 'Il punteggio deve essere confermato da un avversario. Se nessuno lo contesta, si convalida da solo dopo 48 ore.'}
     </p>
     <p class="hidden text-sm text-red-400 font-medium mt-2" id="result-error"></p>
     <button type="button" id="btn-save-result"
             class="w-full mt-2 bg-lime-neon text-court-900 font-display font-700 py-3 rounded-xl shadow-neon">
-      Salva il risultato
+      ${correzione ? 'Salva la correzione' : 'Salva il risultato'}
     </button>
   `;
 
@@ -2254,11 +2307,21 @@ function creaFormRisultato() {
     cont.appendChild(riga);
   }
 
-  wrap.querySelector('#btn-save-result').addEventListener('click', () => salvaRisultato(wrap));
+  // In correzione i campi partono dal punteggio attuale: si cambia la
+  // cifra sbagliata invece di riscrivere tutto.
+  (opzioni.sets || []).forEach((set, i) => {
+    const s = i + 1;
+    const a = wrap.querySelector(`.set-input[data-set="${s}"][data-team="a"]`);
+    const b = wrap.querySelector(`.set-input[data-set="${s}"][data-team="b"]`);
+    if (a && b) { a.value = set[0]; b.value = set[1]; }
+  });
+
+  wrap.querySelector('#btn-save-result')
+    .addEventListener('click', () => salvaRisultato(wrap, correzione));
   return wrap;
 }
 
-async function salvaRisultato(wrap) {
+async function salvaRisultato(wrap, correzione = false) {
   const err = wrap.querySelector('#result-error');
   const btn = wrap.querySelector('#btn-save-result');
   err.classList.add('hidden');
@@ -2288,16 +2351,21 @@ async function salvaRisultato(wrap) {
   btn.textContent = 'Salvataggio...';
 
   try {
-    await registraRisultato(matchId, sets);
-    showToast('Risultato registrato. In attesa di conferma.');
+    if (correzione) {
+      await correggiRisultato(matchId, sets);
+      showToast('Punteggio corretto. In attesa di conferma.');
+    } else {
+      await registraRisultato(matchId, sets);
+      showToast('Risultato registrato. In attesa di conferma.');
+    }
     await caricaPartite();
     await apriDettaglioPartita(matchId);
   } catch (e) {
     console.error(e);
-    err.textContent = e.message || 'Impossibile registrare il risultato.';
+    err.textContent = e.message || 'Impossibile salvare il punteggio.';
     err.classList.remove('hidden');
     btn.disabled = false;
-    btn.textContent = 'Salva il risultato';
+    btn.textContent = correzione ? 'Salva la correzione' : 'Salva il risultato';
   }
 }
 
@@ -2350,11 +2418,61 @@ function creaRiepilogoRisultato(risultato) {
   esito.textContent = `Ha vinto la Squadra ${vincitore}`;
   wrap.appendChild(esito);
 
+  // Chi ha giocato questa partita
+  const gioco = Boolean(currentUser) &&
+    currentDetailParticipants.some((p) => p.user_id === currentUser.id);
+
+  /** Sostituisce il pannello con il modulo di correzione, gia' compilato. */
+  const bottoneCorreggi = (etichetta) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'w-full mt-3 py-2.5 rounded-xl border border-court-500 text-sm font-semibold text-white/80';
+    b.textContent = etichetta;
+    b.addEventListener('click', () => {
+      wrap.replaceWith(creaFormRisultato({ correzione: true, sets: risultato.sets }));
+    });
+    return b;
+  };
+
+  /** Ultima risorsa dell'amministratore: la partita torna senza risultato. */
+  const bottoneAnnulla = () => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'w-full mt-2 py-2.5 rounded-xl border border-red-500/40 text-red-400 text-sm font-semibold';
+    b.textContent = 'Annulla il risultato (amministratore)';
+    b.addEventListener('click', async () => {
+      const matchId = currentDetailMatch.id;
+      b.disabled = true;
+      b.textContent = 'Annullamento...';
+      try {
+        await annullaRisultato(matchId);
+        showToast('Risultato annullato: la partita torna senza punteggio.');
+        await caricaPartite();
+        await apriDettaglioPartita(matchId);
+      } catch (e) {
+        console.error(e);
+        el.matchDetailError.textContent = e.message || 'Impossibile annullare il risultato.';
+        el.matchDetailError.classList.remove('hidden');
+        b.disabled = false;
+        b.textContent = 'Annulla il risultato (amministratore)';
+      }
+    });
+    return b;
+  };
+
   if (risultato.stato === 'contestato') {
     const nota = document.createElement('p');
     nota.className = 'text-[11px] text-red-400/80 mt-2 leading-snug';
-    nota.textContent = 'Il risultato e contestato: non viene conteggiato nelle statistiche di nessun giocatore.';
+    nota.textContent = gioco
+      ? 'Il risultato e contestato: non conta per nessuno finche non viene corretto. Chi ha giocato puo inserire il punteggio giusto.'
+      : 'Il risultato e contestato: non viene conteggiato nelle statistiche di nessun giocatore.';
     wrap.appendChild(nota);
+
+    // E' la via d'uscita dalla contestazione: senza questa, il punteggio
+    // sbagliato resterebbe li' per sempre.
+    if (gioco) wrap.appendChild(bottoneCorreggi('Inserisci il punteggio giusto'));
+    if (sonoAmministratore()) wrap.appendChild(bottoneAnnulla());
+
     return wrap;
   }
 
@@ -2428,6 +2546,14 @@ function creaRiepilogoRisultato(risultato) {
       : 'In attesa della conferma di un avversario. Senza contestazioni diventa valido dopo 48 ore.';
     wrap.appendChild(nota);
   }
+
+  // Chi ha inserito il punteggio puo' correggere un errore di battitura
+  // finche' nessun avversario l'ha confermato.
+  if (risultato.stato === 'in_attesa' && risultato.registrato_da === currentUser?.id) {
+    wrap.appendChild(bottoneCorreggi('Correggi il punteggio'));
+  }
+
+  if (sonoAmministratore()) wrap.appendChild(bottoneAnnulla());
 
   return wrap;
 }

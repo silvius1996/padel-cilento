@@ -1,4 +1,4 @@
-# Da lanciare — aggiornamenti n.7 e n.8
+# Da lanciare — aggiornamenti n.7, n.8 e n.9
 
 Promemoria per applicare le modifiche del branch `claude/project-visibility-aqdi5f`.
 **Cancella questo file quando hai finito**: vale una volta sola.
@@ -23,20 +23,20 @@ git fetch origin
 git checkout claude/project-visibility-aqdi5f
 
 npm install         # serve: e' stata aggiunta una dipendenza (tailwindcss)
-npm test            # deve dire: TUTTO A POSTO — 110 verifiche superate
+npm test            # deve dire: TUTTO A POSTO — 135 verifiche superate
 
-npm run db:push     # applica le migrazioni n.7 e n.8 al database vero
+npm run db:push     # applica le migrazioni n.7, n.8 e n.9 al database vero
 npm run db:status   # controllo
 
 npm run deploy      # rigenera il CSS e pubblica il sito
 ```
 
 **L'ordine conta.** `db:push` va prima di `deploy`: l'interfaccia nuova chiama
-funzioni (`crea_partita`, `elimina_mio_account`) che senza il `db:push` nel
-database non esistono ancora. Al contrario, se pubblichi solo il database e non
+funzioni (`crea_partita`, `elimina_mio_account`, `correggi_risultato`) che senza
+il `db:push` nel database non esistono ancora. Al contrario, se pubblichi solo il database e non
 il sito, non si rompe niente: l'app vecchia continua a funzionare.
 
-**Se `npm test` non arriva a 110, fermati** senza lanciare `db:push`: vuol dire
+**Se `npm test` non arriva a 135, fermati** senza lanciare `db:push`: vuol dire
 che il database di produzione non corrisponde a quello che descrivono le
 migrazioni, e va capito perche' prima.
 
@@ -115,6 +115,40 @@ Restano su CDN esterni due cose che degradano bene: i **font di Google** (senza
 di loro il testo usa il font di sistema, resta leggibile) e **Sentry** (protetto
 da un `if`: se non carica, l'app non se ne accorge).
 
+## Cosa contiene l'aggiornamento n.9 — amministratore e correzioni
+
+`supabase/migrations/20260726180000_amministratore_correzione_risultato.sql`
+
+1. **L'amministratore.** Nuovo ruolo `admin`, che puo' modificare ed eliminare
+   qualunque partita, togliere un giocatore da una formazione e annullare un
+   risultato. I pulsanti compaiono da soli nell'app quando il ruolo e' attivo.
+2. **Il punteggio si puo' correggere.** Prima, se sbagliavi a digitare, non
+   c'era rimedio: l'unica uscita era che un avversario confermasse il punteggio
+   sbagliato. Ora si corregge finche' non e' confermato — da chi l'ha inserito
+   se e' in attesa, da chiunque abbia giocato se e' contestato. E' cosi' che si
+   scioglie una contestazione.
+3. **Una partita conclusa si puo' eliminare.** Era un difetto che riguardava
+   tutti, non solo l'amministratore: il trigger che congela la formazione
+   bloccava anche la cancellazione a cascata, quindi *nessuno* poteva eliminare
+   una partita con un risultato registrato, nemmeno chi l'aveva creata.
+4. **Non ci si iscrive a una partita gia' iniziata.** Si impediva di crearne una
+   nel passato, ma non di infilarsi in una gia' finita chiamando l'API.
+
+### Come ti nomini amministratore
+
+Dal browser non e' possibile, ed e' voluto: la colonna `role` non e' scrivibile
+dall'app. Si fa una volta sola dall'**Editor SQL di Supabase**, sostituendo
+l'email con la tua:
+
+```sql
+update public.profiles
+set role = 'admin'
+where id = (select id from auth.users where email = 'tua@email.it');
+```
+
+Poi esci e rientra nell'app: i pulsanti di gestione compaiono su tutte le
+partite, non solo sulle tue.
+
 ## Cosa resta aperto
 
 - **Privacy — da chiudere prima di aprire al pubblico.** In `public/privacy.html`
@@ -125,3 +159,8 @@ da un `if`: se non carica, l'app non se ne accorge).
   dell'account.
 - **Font di Google sul percorso critico** (vedi sopra): si possono servire in
   locale, ma la degradazione attuale e' accettabile.
+- **Nessun limite alla creazione di partite**: un utente puo' crearne centinaia
+  di fila e riempire il feed. Ora almeno l'amministratore puo' ripulire.
+- **Il gestore di circolo** oggi gestisce solo le partite che ha creato lui,
+  come qualunque altro utente. Dargli poteri sulle partite del proprio circolo
+  create da altri e' il passo successivo, ancora da definire.

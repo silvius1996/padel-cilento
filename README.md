@@ -130,6 +130,9 @@ capitato due volte con il conteggio dei posti occupati.
   registrati: il permesso e concesso colonna per colonna, escludendo `telefono`.
   L'unica eccezione e tra chi condivide una partita, tramite la funzione
   `contatti_partita`.
+- L'**amministratore** (ruolo `admin`) puo' moderare qualunque partita:
+  modificarla, eliminarla, togliere un giocatore, annullare un risultato. Si
+  nomina solo dall'Editor SQL di Supabase, mai dall'app.
 - Il **ruolo di gestore** si ottiene solo con un codice circolo valido: le colonne
   `role` e `circolo` non sono scrivibili dall'app, e un trigger le protegge una
   seconda volta.

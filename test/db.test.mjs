@@ -32,6 +32,9 @@ const U = {
 
 const PARTITA = 'aaaaaaaa-0000-0000-0000-000000000001';
 const PARTITA_FUTURA = 'aaaaaaaa-0000-0000-0000-000000000002';
+const PARTITA_VECCHIA = 'aaaaaaaa-0000-0000-0000-000000000003';    // iscrizioni tardive
+const PARTITA_CORREZIONE = 'aaaaaaaa-0000-0000-0000-000000000004'; // correzione del punteggio
+const PARTITA_ADMIN = 'aaaaaaaa-0000-0000-0000-000000000005';      // moderazione
 
 let db;
 let passati = 0;
@@ -985,6 +988,216 @@ async function testEliminaAccount() {
   );
 }
 
+/**
+ * Non ci si iscrive a una partita gia' iniziata (aggiornamento n.9).
+ */
+async function testIscrizioneTardiva() {
+  console.log('\nNON CI SI ISCRIVE A PARTITE GIA GIOCATE');
+
+  await db.exec('reset role');
+  await db.query(
+    `insert into public.matches (id, club, zona, match_date, match_time, level, created_by)
+     values ($1, 'Campo vecchio', 'paestum', current_date - 30, '20:00', 'intermedio', $2)`,
+    [PARTITA_VECCHIA, U.aldo],
+  );
+
+  await come(U.bea);
+  await db.exec('set role authenticated');
+
+  await deveFallire(
+    'una partita di un mese fa non accetta iscrizioni',
+    () => db.query(
+      'insert into public.match_players (match_id, user_id, spot) values ($1, $2, 0)',
+      [PARTITA_VECCHIA, U.bea],
+    ),
+    'gia',
+  );
+
+  // Bea occupa gia' un posto in PARTITA_FUTURA (test della formazione):
+  // per il caso positivo serve un giocatore che non ci sia ancora.
+  await come(U.carlo);
+  await db.exec('set role authenticated');
+  await deveRiuscire('una partita futura le accetta', () => db.query(
+    'insert into public.match_players (match_id, user_id, spot) values ($1, $2, 3)',
+    [PARTITA_FUTURA, U.carlo],
+  ));
+
+  await db.exec('reset role');
+  await db.query('delete from public.match_players where match_id = $1 and user_id = $2',
+    [PARTITA_FUTURA, U.carlo]);
+}
+
+/**
+ * La correzione del punteggio (aggiornamento n.9): prima, se si
+ * sbagliava a digitare, non c'era rimedio.
+ */
+async function testCorrezioneRisultato() {
+  console.log('\nCORREZIONE DEL PUNTEGGIO');
+
+  // Partita conclusa a se stante, per non disturbare le statistiche
+  await db.exec('reset role');
+  await db.query(
+    `insert into public.matches (id, club, zona, match_date, match_time, level, created_by)
+     values ($1, 'Campo prova', 'capaccio', current_date - 1, '19:00', 'intermedio', $2)`,
+    [PARTITA_CORREZIONE, U.aldo],
+  );
+  for (const [uid, spot] of [[U.aldo, 0], [U.bea, 1], [U.carlo, 2], [U.ester, 3]]) {
+    await db.query(
+      'insert into public.match_players (match_id, user_id, spot) values ($1, $2, $3)',
+      [PARTITA_CORREZIONE, uid, spot],
+    );
+  }
+
+  await come(U.aldo);
+  await db.query('select public.registra_risultato($1, $2::jsonb)',
+    [PARTITA_CORREZIONE, '[[6, 4], [6, 3]]']);
+
+  await come(U.bea);
+  await deveFallire(
+    'il punteggio altrui non si corregge, si contesta',
+    () => db.query('select public.correggi_risultato($1, $2::jsonb)',
+      [PARTITA_CORREZIONE, '[[1, 6], [1, 6]]']),
+    'contestalo',
+  );
+
+  await come(U.aldo);
+  await deveRiuscire('chi ha sbagliato corregge il proprio punteggio', () => db.query(
+    'select public.correggi_risultato($1, $2::jsonb)', [PARTITA_CORREZIONE, '[[6, 4], [3, 6], [6, 2]]'],
+  ));
+
+  const { rows: dopo } = await db.query(
+    'select sets, winner_team, stato from public.match_results where match_id = $1',
+    [PARTITA_CORREZIONE],
+  );
+  uguale('il punteggio e aggiornato', 3, dopo[0].sets.length);
+  uguale('il vincitore viene ricalcolato', 'A', dopo[0].winner_team);
+  uguale('torna in attesa di conferma', 'in_attesa', dopo[0].stato);
+
+  // Il caso che prima non aveva uscita: risultato contestato
+  await come(U.carlo);
+  await db.query('select public.contesta_risultato($1, $2)',
+    [PARTITA_CORREZIONE, 'il terzo set fu 6-4']);
+
+  await deveRiuscire('da una contestazione si esce correggendo', () => db.query(
+    'select public.correggi_risultato($1, $2::jsonb)', [PARTITA_CORREZIONE, '[[6, 4], [3, 6], [6, 4]]'],
+  ));
+
+  const { rows: risolto } = await db.query(
+    'select stato, registrato_da, nota_contestazione from public.match_results where match_id = $1',
+    [PARTITA_CORREZIONE],
+  );
+  uguale('la contestazione e sciolta', 'in_attesa', risolto[0].stato);
+  uguale('il punteggio e ora di chi ha corretto', U.carlo, risolto[0].registrato_da);
+  uguale('la nota di contestazione viene azzerata', null, risolto[0].nota_contestazione);
+
+  // Una volta confermato, non si torna indietro
+  await come(U.aldo);
+  await db.query('select public.conferma_risultato($1)', [PARTITA_CORREZIONE]);
+
+  await come(U.carlo);
+  await deveFallire(
+    'un risultato confermato non si corregge',
+    () => db.query('select public.correggi_risultato($1, $2::jsonb)',
+      [PARTITA_CORREZIONE, '[[6, 0], [6, 0]]']),
+    'confermato',
+  );
+
+  await come(U.ester);
+  await deveFallire(
+    'chi non ha giocato non corregge',
+    () => db.query('select public.correggi_risultato($1, $2::jsonb)',
+      [PARTITA, '[[6, 0], [6, 0]]']),
+    'ha giocato',
+  );
+}
+
+/**
+ * L'amministratore (aggiornamento n.9).
+ */
+async function testAmministratore() {
+  console.log('\nL AMMINISTRATORE');
+
+  // Il ruolo si assegna solo da fuori: dal browser e' bloccato
+  await come(U.bea);
+  await db.exec('set role authenticated');
+  await deveFallire(
+    'nessuno si nomina amministratore da solo',
+    () => db.query(`update public.profiles set role = 'admin' where id = $1`, [U.bea]),
+    'permission denied',
+  );
+
+  await db.exec('reset role');
+  await db.query(`update public.profiles set role = 'admin' where id = $1`, [U.bea]);
+
+  await come(U.bea);
+  await db.exec('set role authenticated');
+  const { rows: chi } = await db.query('select public.e_amministratore() as si');
+  uguale('viene riconosciuto come amministratore', true, chi[0].si);
+
+  // Una partita di un altro utente
+  await db.exec('reset role');
+  await db.query(
+    `insert into public.matches (id, club, zona, match_date, match_time, level, created_by)
+     values ($1, 'Partita da moderare', 'agropoli', current_date + 2, '20:00', 'open', $2)`,
+    [PARTITA_ADMIN, U.aldo],
+  );
+
+  await come(U.carlo);
+  await db.exec('set role authenticated');
+  await db.query(`update public.matches set club = 'Manomessa' where id = $1`, [PARTITA_ADMIN]);
+  const { rows: intatta } = await db.query(
+    'select club from public.matches where id = $1', [PARTITA_ADMIN],
+  );
+  uguale('un utente qualunque non modifica le partite altrui', 'Partita da moderare', intatta[0].club);
+
+  await come(U.bea);
+  await db.exec('set role authenticated');
+  await deveRiuscire('l amministratore corregge una partita altrui', () => db.query(
+    `update public.matches set club = 'Nome corretto' where id = $1`, [PARTITA_ADMIN],
+  ));
+  const { rows: corretta } = await db.query(
+    'select club from public.matches where id = $1', [PARTITA_ADMIN],
+  );
+  uguale('la correzione viene salvata', 'Nome corretto', corretta[0].club);
+
+  await deveRiuscire('l amministratore elimina una partita altrui', () => db.query(
+    'delete from public.matches where id = $1', [PARTITA_ADMIN],
+  ));
+  const { rows: sparita } = await db.query(
+    'select id from public.matches where id = $1', [PARTITA_ADMIN],
+  );
+  uguale('la partita e sparita', 0, sparita.length);
+
+  // Il caso che prima era impossibile per chiunque
+  await deveRiuscire('l amministratore elimina una partita CONCLUSA', () => db.query(
+    'delete from public.matches where id = $1', [PARTITA_CORREZIONE],
+  ));
+
+  const { rows: iscrizioni } = await db.query(
+    'select id from public.match_players where match_id = $1', [PARTITA_CORREZIONE],
+  );
+  uguale('spariscono anche le iscrizioni', 0, iscrizioni.length);
+
+  // Annullare un risultato: l'uscita di sicurezza da una contestazione
+  await db.exec('reset role');
+  await db.query(`update public.match_results set stato = 'contestato' where match_id = $1`, [PARTITA]);
+
+  await come(U.bea);
+  await db.exec('set role authenticated');
+  await deveRiuscire('l amministratore annulla un risultato', () => db.query(
+    'delete from public.match_results where match_id = $1', [PARTITA],
+  ));
+
+  await db.exec('reset role');
+  const { rows: senzaRisultato } = await db.query(
+    'select match_id from public.match_results where match_id = $1', [PARTITA],
+  );
+  uguale('il risultato e stato annullato', 0, senzaRisultato.length);
+
+  // Bea torna giocatrice, per non lasciare in giro poteri nei test futuri
+  await db.query(`update public.profiles set role = 'giocatore' where id = $1`, [U.bea]);
+}
+
 // ---------------------------------------------------------
 // Avvio
 // ---------------------------------------------------------
@@ -1015,6 +1228,9 @@ async function main() {
   await testPostiNonFalsificabili();
   await testCreazionePartita();
   await testAvatar();
+  await testIscrizioneTardiva();
+  await testCorrezioneRisultato();
+  await testAmministratore();
   await testEliminaAccount();
 
   console.log('\n' + '='.repeat(60));
