@@ -66,44 +66,16 @@
   }
 </script>
 
-<!-- Tailwind CSS via CDN -->
-<script src="https://cdn.tailwindcss.com"></script>
-<script>
-  tailwind.config = {
-    theme: {
-      extend: {
-        colors: {
-          lime: { neon: '#C6FF3D' },
-          electric: { DEFAULT: '#3D7FFF' },
-          court: {
-            900: '#0B0F0E',
-            800: '#111613',
-            700: '#171D19',
-            600: '#222A25',
-            500: '#333D36',
-          },
-        },
-        fontFamily: {
-          display: ['"Space Grotesk"', 'sans-serif'],
-          body: ['Inter', 'sans-serif'],
-        },
-        boxShadow: {
-          'neon': '0 0 0 1px rgba(198,255,61,0.4), 0 0 24px -4px rgba(198,255,61,0.35)',
-          'neon-sm': '0 0 0 1px rgba(198,255,61,0.5)',
-        },
-        animation: {
-          'pulse-slot': 'pulseSlot 1.8s ease-in-out infinite',
-        },
-        keyframes: {
-          pulseSlot: {
-            '0%, 100%': { opacity: 1 },
-            '50%': { opacity: 0.35 },
-          }
-        }
-      }
-    }
-  }
-</script>
+<!-- Tailwind CSS, generato in locale.
+     Prima arrivava dal CDN: un file JavaScript di ~400 KB che compilava
+     gli stili nel browser a ogni apertura. Se il CDN era lento o
+     bloccato, l'app si apriva come testo nudo, illeggibile.
+     Adesso e' un foglio di stile di 17 KB servito dallo stesso dominio.
+
+     Se aggiungi o cambi delle classi in questa pagina, rigeneralo:
+         npm run build:css
+     La configurazione (colori, font, ombre) sta in tailwind.config.js. -->
+<link rel="stylesheet" href="/styles.css">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -588,6 +560,35 @@
                 class="w-full text-center text-sm text-red-400 hover:text-red-300 font-semibold py-2">
           Disconnetti
         </button>
+
+        <div class="border-t border-court-600 pt-4 mt-2">
+          <button type="button" id="btn-delete-account"
+                  class="w-full text-center text-xs text-court-500 hover:text-red-400 font-semibold py-1">
+            Elimina il mio account
+          </button>
+
+          <!-- Conferma in due passaggi: cancellare l'account non si annulla -->
+          <div id="delete-account-confirm" class="hidden mt-3 rounded-xl border border-red-400/40 bg-red-400/5 p-3">
+            <p class="text-sm text-white font-semibold mb-1">Eliminare l'account?</p>
+            <p class="text-xs text-court-500 leading-snug mb-3">
+              Nome, cognome, telefono e foto vengono cancellati, e non potrai piu accedere.
+              Le partite che hai già giocato restano, senza il tuo nome: i risultati e le
+              statistiche degli altri giocatori non si possono riscrivere. L'operazione non
+              si può annullare.
+            </p>
+            <p id="delete-account-error" class="hidden text-sm text-red-400 font-medium mb-2"></p>
+            <div class="flex gap-2">
+              <button type="button" id="btn-delete-account-cancel"
+                      class="flex-1 bg-court-700 border border-court-500 text-white text-sm font-semibold py-2.5 rounded-xl">
+                Annulla
+              </button>
+              <button type="button" id="btn-delete-account-confirm"
+                      class="flex-1 bg-red-500 text-white text-sm font-display font-700 py-2.5 rounded-xl">
+                Elimina
+              </button>
+            </div>
+          </div>
+        </div>
       </form>
     </div>
   </div>
@@ -722,7 +723,13 @@
   <div id="toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] bg-court-700 border border-lime-neon text-white text-sm font-semibold px-5 py-3 rounded-full shadow-neon-sm max-w-[90vw] text-center"></div>
 
   <!-- Supabase JS Client v2 -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- Libreria Supabase servita dal nostro dominio (versione 2.110.8).
+       Prima arrivava da jsdelivr: con il CDN irraggiungibile la pagina si
+       apriva ma non riusciva a leggere nulla, nemmeno l'elenco delle
+       partite. Per aggiornarla:
+           npm install @supabase/supabase-js@2
+           cp node_modules/@supabase/supabase-js/dist/umd/supabase.js public/vendor/supabase-js-2.js -->
+  <script src="/vendor/supabase-js-2.js"></script>
   <script>
 /* =========================================================
    PADEL CILENTO — Logica applicativa
@@ -880,6 +887,11 @@ const el = {
   profileError: document.getElementById('profile-error'),
   btnSubmitProfile: document.getElementById('btn-submit-profile'),
   btnLogout: document.getElementById('btn-logout'),
+  btnDeleteAccount: document.getElementById('btn-delete-account'),
+  deleteAccountConfirm: document.getElementById('delete-account-confirm'),
+  deleteAccountError: document.getElementById('delete-account-error'),
+  btnDeleteAccountCancel: document.getElementById('btn-delete-account-cancel'),
+  btnDeleteAccountConfirm: document.getElementById('btn-delete-account-confirm'),
 
   modalMatch: document.getElementById('modal-match'),
   modalMatchBackdrop: document.getElementById('modal-match-backdrop'),
@@ -1190,6 +1202,13 @@ function openProfileModal() {
   }
 
   el.profileError.classList.add('hidden');
+
+  // La conferma di eliminazione riparte sempre chiusa: non deve restare
+  // aperta da una visita precedente al profilo.
+  el.deleteAccountConfirm.classList.add('hidden');
+  el.deleteAccountError.classList.add('hidden');
+  el.btnDeleteAccount.classList.remove('hidden');
+
   openModal(el.modalProfile);
   renderProfileStats();
 }
@@ -1218,9 +1237,35 @@ el.btnAvatar.addEventListener('click', openProfileModal);
 el.btnCloseProfile.addEventListener('click', () => closeModal(el.modalProfile));
 el.modalProfileBackdrop.addEventListener('click', () => closeModal(el.modalProfile));
 
+// Gli stessi limiti sono applicati dal bucket "avatars" su Supabase
+// (aggiornamento SQL n.8): il controllo qui serve a dare subito un errore
+// comprensibile, invece di far caricare 20 MB per poi rifiutarli.
+const AVATAR_MAX_BYTE = 2 * 1024 * 1024;
+const AVATAR_TIPI = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'];
+
 el.profileAvatarFile.addEventListener('change', (e) => {
   const file = e.target.files?.[0];
   if (!file) return;
+
+  const mostraErrore = (messaggio) => {
+    el.profileError.textContent = messaggio;
+    el.profileError.classList.remove('hidden');
+    e.target.value = '';
+    profileAvatarFile = null;
+  };
+
+  if (!AVATAR_TIPI.includes(file.type)) {
+    mostraErrore('La foto deve essere un\'immagine (JPG, PNG, WEBP o HEIC).');
+    return;
+  }
+
+  if (file.size > AVATAR_MAX_BYTE) {
+    const mb = (file.size / 1024 / 1024).toFixed(1);
+    mostraErrore(`La foto non puo superare 2 MB (questa pesa ${mb} MB).`);
+    return;
+  }
+
+  el.profileError.classList.add('hidden');
   profileAvatarFile = file;
   const reader = new FileReader();
   reader.onload = (ev) => {
@@ -1308,6 +1353,48 @@ el.btnLogout.addEventListener('click', async () => {
 });
 
 // ---------------------------------------------------------
+// Cancellazione dell'account
+// I dati personali li cancella il database (funzione
+// elimina_mio_account), che elimina anche le credenziali di accesso.
+// Le partite gia' giocate restano, senza il nome: i risultati degli
+// avversari non si riscrivono.
+// ---------------------------------------------------------
+el.btnDeleteAccount.addEventListener('click', () => {
+  el.deleteAccountError.classList.add('hidden');
+  el.deleteAccountConfirm.classList.remove('hidden');
+  el.btnDeleteAccount.classList.add('hidden');
+});
+
+el.btnDeleteAccountCancel.addEventListener('click', () => {
+  el.deleteAccountConfirm.classList.add('hidden');
+  el.btnDeleteAccount.classList.remove('hidden');
+});
+
+el.btnDeleteAccountConfirm.addEventListener('click', async () => {
+  el.deleteAccountError.classList.add('hidden');
+  el.btnDeleteAccountConfirm.disabled = true;
+  el.btnDeleteAccountConfirm.textContent = 'Eliminazione...';
+
+  try {
+    const { error } = await supabaseClient.rpc('elimina_mio_account');
+    if (error) throw error;
+
+    closeModal(el.modalProfile);
+    await logoutUtente();
+    showToast('Account eliminato.');
+  } catch (err) {
+    console.error(err);
+    el.deleteAccountError.textContent = messaggioErrore(
+      err, 'Non e stato possibile eliminare l\'account. Riprova.',
+    );
+    el.deleteAccountError.classList.remove('hidden');
+  } finally {
+    el.btnDeleteAccountConfirm.disabled = false;
+    el.btnDeleteAccountConfirm.textContent = 'Elimina';
+  }
+});
+
+// ---------------------------------------------------------
 // 7. PARTITE: CARICAMENTO / CREAZIONE / JOIN / LEAVE
 // ---------------------------------------------------------
 async function caricaPartite() {
@@ -1369,36 +1456,20 @@ async function caricaMieIscrizioniERisultati() {
 async function creaPartita(payload) {
   if (!currentUser) throw new Error('Devi accedere per creare una partita.');
 
-  const { data, error } = await supabaseClient
-    .from('matches')
-    .insert({
-      club: payload.club,
-      zona: payload.zona,
-      match_date: payload.match_date,
-      match_time: payload.match_time,
-      level: payload.level,
-      total_slots: 4,
-      filled_slots: 0, // lo calcola il database contando gli iscritti
-      created_by: currentUser.id,
-    })
-    .select()
-    .single();
-
-  if (error) throw error;
-
-  // Il creatore occupa il posto che ha scelto in fase di creazione
-  const { error: iscrizioneErr } = await supabaseClient.from('match_players').insert({
-    match_id: data.id,
-    user_id: currentUser.id,
-    spot: payload.spot,
+  // La partita e l'iscrizione dell'organizzatore al posto scelto nascono
+  // insieme, dentro un'unica transazione del database: o entrambe, o
+  // nessuna. Prima erano due chiamate in sequenza, e una connessione
+  // caduta a meta' poteva lasciare nel feed una partita a zero giocatori.
+  const { data, error } = await supabaseClient.rpc('crea_partita', {
+    p_club: payload.club,
+    p_zona: payload.zona,
+    p_match_date: payload.match_date,
+    p_match_time: payload.match_time,
+    p_level: payload.level,
+    p_spot: payload.spot,
   });
 
-  // Senza organizzatore in campo la partita non ha senso: se l'iscrizione
-  // non riesce, si annulla anche la partita per non lasciarne una vuota.
-  if (iscrizioneErr) {
-    await supabaseClient.from('matches').delete().eq('id', data.id);
-    throw iscrizioneErr;
-  }
+  if (error) throw error;
 
   return data;
 }

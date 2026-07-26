@@ -8,7 +8,7 @@ Online su **https://padelcilento.silvius13-bet.workers.dev**
 
 | | |
 |---|---|
-| Interfaccia | `public/index.html` — una sola pagina, Tailwind via CDN, JavaScript senza framework |
+| Interfaccia | `public/index.html` — una sola pagina, JavaScript senza framework. Tailwind e la libreria Supabase sono serviti dal nostro dominio, non da CDN esterni |
 | Database | Supabase (PostgreSQL) — tabelle, permessi e regole in `supabase/migrations/` |
 | Pubblicazione | Cloudflare Workers — viene pubblicata **solo** la cartella `public/` |
 | Test | `test/db.test.mjs` — esegue le migrazioni su un PostgreSQL in WebAssembly |
@@ -23,11 +23,25 @@ non permette di aggirare nulla.
 
 ```bash
 npm test            # verifica la logica del database (non tocca la produzione)
-npm run deploy      # pubblica il sito
+npm run deploy      # rigenera il CSS e pubblica il sito
+npm run build:css   # rigenera public/styles.css (lo fa già il deploy)
 npm run db:push     # applica al database le migrazioni mancanti
 npm run db:status   # mostra lo stato delle migrazioni
 npm run db:verify   # controlla com'e fatto il database di produzione
 ```
+
+### Il foglio di stile
+
+Le classi Tailwind vengono compilate in `public/styles.css` da `npm run build:css`,
+che legge la configurazione (colori, font, ombre) da `tailwind.config.js`. Il
+`deploy` lo rigenera da solo, quindi normalmente non serve lanciarlo a mano: serve
+solo se vuoi vedere l'effetto di una classe nuova aprendo il file in locale.
+
+Prima Tailwind arrivava dal CDN e compilava gli stili nel browser a ogni apertura:
+comodo, ma se il CDN era lento o bloccato la pagina si apriva come testo nudo,
+illeggibile. Stesso discorso per la libreria Supabase, che ora sta in
+`public/vendor/`: senza quella l'app si apriva ma non riusciva a leggere nemmeno
+l'elenco delle partite.
 
 ## Prima configurazione
 
@@ -116,3 +130,11 @@ capitato due volte con il conteggio dei posti occupati.
   registrati: il permesso e concesso colonna per colonna, escludendo `telefono`.
   L'unica eccezione e tra chi condivide una partita, tramite la funzione
   `contatti_partita`.
+- Il **ruolo di gestore** si ottiene solo con un codice circolo valido: le colonne
+  `role` e `circolo` non sono scrivibili dall'app, e un trigger le protegge una
+  seconda volta.
+- L'**account si cancella dall'app** (Il tuo profilo → Elimina il mio account).
+  I dati personali vengono cancellati e le credenziali eliminate, ma le partite
+  giocate restano intestate a "Giocatore eliminato": un risultato e un fatto
+  condiviso fra quattro persone, e cancellarlo altererebbe le statistiche degli
+  altri tre. E un'anonimizzazione, non una rimozione delle righe.

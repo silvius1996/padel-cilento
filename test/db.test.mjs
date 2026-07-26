@@ -116,12 +116,16 @@ const IMPALCATURA = `
     select nullif(current_setting('test.uid', true), '')::uuid
   $fn$;
 
-  -- Schema di archiviazione file (usato dalle policy sugli avatar)
+  -- Schema di archiviazione file (usato dalle policy sugli avatar).
+  -- file_size_limit e allowed_mime_types esistono anche su Supabase: sono
+  -- le colonne su cui l'aggiornamento n.8 impone i limiti agli avatar.
   create schema storage;
   create table storage.buckets (
     id text primary key,
     name text,
-    public boolean default false
+    public boolean default false,
+    file_size_limit bigint,
+    allowed_mime_types text[]
   );
   create table storage.objects (
     id uuid primary key default gen_random_uuid(),
@@ -130,6 +134,13 @@ const IMPALCATURA = `
     name text
   );
   alter table storage.objects enable row level security;
+
+  -- Supabase concede l'accesso allo schema storage ai ruoli pubblici:
+  -- e' l'API Storage a passare da qui, quindi le policy sugli oggetti
+  -- vanno verificate con questi permessi attivi.
+  grant usage on schema storage to anon, authenticated;
+  grant select, insert, update, delete on storage.objects to anon, authenticated;
+  grant select on storage.buckets to anon, authenticated;
 `;
 
 // ---------------------------------------------------------
@@ -761,6 +772,219 @@ async function testPrivacyAnonimi() {
   await db.exec('reset role');
 }
 
+/**
+ * La partita e l'iscrizione dell'organizzatore nascono insieme
+ * (aggiornamento n.8): prima erano due scritture separate, e una
+ * connessione caduta a meta' lasciava una partita a zero giocatori.
+ */
+async function testCreazionePartita() {
+  console.log('\nLA PARTITA NASCE CON IL SUO ORGANIZZATORE');
+
+  await come(U.ester);
+  await db.exec('set role authenticated');
+
+  const { rows: creata } = await db.query(
+    `select * from public.crea_partita('Padel Village', 'paestum',
+       current_date + 4, '18:30', 'intermedio', 2::smallint)`,
+  );
+  uguale('la partita viene creata', 'Padel Village', creata[0].club);
+  uguale('l organizzatore e gia in campo', 1, creata[0].filled_slots);
+
+  const { rows: iscritti } = await db.query(
+    'select user_id, spot from public.match_players where match_id = $1', [creata[0].id],
+  );
+  uguale('c e un solo iscritto', 1, iscritti.length);
+  uguale('occupa il posto che ha scelto', 2, iscritti[0].spot);
+  uguale('ed e chi ha creato la partita', U.ester, iscritti[0].user_id);
+
+  await deveFallire(
+    'un posto fuori dal campo viene rifiutato',
+    () => db.query(
+      `select public.crea_partita('X', 'paestum', current_date + 4, '18:30',
+         'intermedio', 9::smallint)`,
+    ),
+    'fra 0 e 3',
+  );
+
+  await deveFallire(
+    'un circolo vuoto viene rifiutato',
+    () => db.query(
+      `select public.crea_partita('   ', 'paestum', current_date + 4, '18:30',
+         'intermedio', 0::smallint)`,
+    ),
+    'obbligatorio',
+  );
+
+  await deveFallire(
+    'la data passata viene rifiutata anche da qui',
+    () => db.query(
+      `select public.crea_partita('X', 'paestum', current_date - 1, '18:30',
+         'intermedio', 0::smallint)`,
+    ),
+    'data passata',
+  );
+
+  // Il punto della transazione: se la seconda scrittura fallisce, la
+  // prima non deve restare. Il posto 2 e' gia' occupato da Ester, quindi
+  // ricrearla identica fa fallire l'iscrizione.
+  const { rows: prima } = await db.query('select count(*)::int as n from public.matches');
+
+  await come(U.aldo);
+  await db.exec('set role authenticated');
+  await db.query(
+    `insert into public.match_players (match_id, user_id, spot) values ($1, $2, 3)`,
+    [creata[0].id, U.aldo],
+  );
+
+  // Aldo occupa gia' il posto 3 di quella partita: un secondo tentativo
+  // sulla stessa partita non e' possibile, quindi si prova il caso
+  // equivalente con un posto duplicato in una partita nuova.
+  await db.exec('reset role');
+  await db.exec(`create or replace function public.crea_partita_rotta()
+    returns void language plpgsql security definer set search_path = public as $fn$
+    declare p public.matches;
+    begin
+      insert into public.matches (club, zona, match_date, match_time, level, created_by)
+      values ('Partita che non deve restare', 'paestum', current_date + 5, '19:00',
+              'intermedio', auth.uid())
+      returning * into p;
+      -- Iscrizione impossibile: lo stesso giocatore su due posti
+      insert into public.match_players (match_id, user_id, spot) values (p.id, auth.uid(), 0);
+      insert into public.match_players (match_id, user_id, spot) values (p.id, auth.uid(), 1);
+    end; $fn$;`);
+  await db.exec('grant execute on function public.crea_partita_rotta() to authenticated');
+
+  await come(U.aldo);
+  await db.exec('set role authenticated');
+  await deveFallire(
+    'una seconda iscrizione impossibile annulla tutto',
+    () => db.query('select public.crea_partita_rotta()'),
+    'duplicate key',
+  );
+
+  await db.exec('reset role');
+  const { rows: dopo } = await db.query('select count(*)::int as n from public.matches');
+  uguale('nessuna partita fantasma e rimasta', prima[0].n, dopo[0].n);
+
+  await db.exec('drop function public.crea_partita_rotta()');
+  await db.query('delete from public.matches where id = $1', [creata[0].id]);
+}
+
+/**
+ * Limiti sugli avatar e proprieta' dei file (aggiornamento n.8).
+ */
+async function testAvatar() {
+  console.log('\nLIMITI SUGLI AVATAR');
+
+  const { rows: bucket } = await db.query(
+    `select file_size_limit, allowed_mime_types from storage.buckets where id = 'avatars'`,
+  );
+  uguale('il bucket accetta al massimo 2 MB', 2097152, bucket[0].file_size_limit);
+  esito(
+    'il bucket accetta solo immagini',
+    bucket[0].allowed_mime_types.includes('image/jpeg')
+      && !bucket[0].allowed_mime_types.some((t) => !t.startsWith('image/')),
+    `tipi ammessi: ${bucket[0].allowed_mime_types}`,
+  );
+
+  await come(U.aldo);
+  await db.exec('set role authenticated');
+
+  await deveRiuscire('si carica un file col proprio identificativo', () => db.query(
+    `insert into storage.objects (bucket_id, owner, name) values ('avatars', $1, $2)`,
+    [U.aldo, `${U.aldo}-1700000000.png`],
+  ));
+
+  await deveFallire(
+    'non si carica un file a nome di un altro',
+    () => db.query(
+      `insert into storage.objects (bucket_id, owner, name) values ('avatars', $1, $2)`,
+      [U.aldo, `${U.bea}-1700000000.png`],
+    ),
+    'row-level security',
+  );
+
+  // La policy filtra le righe: la delete non solleva un errore,
+  // semplicemente non trova nulla da cancellare. Si verifica quindi il
+  // risultato, non l'eccezione.
+  await db.exec('reset role');
+  await db.query(
+    `insert into storage.objects (bucket_id, owner, name) values ('avatars', $1, $2)`,
+    [U.bea, `${U.bea}-1700000001.png`],
+  );
+
+  await come(U.aldo);
+  await db.exec('set role authenticated');
+  await db.query(`delete from storage.objects where name = $1`, [`${U.bea}-1700000001.png`]);
+
+  await db.exec('reset role');
+  const { rows: superstite } = await db.query(
+    `select name from storage.objects where name = $1`, [`${U.bea}-1700000001.png`],
+  );
+  uguale('l avatar di un altro non si cancella', 1, superstite.length);
+}
+
+/**
+ * Cancellazione dell'account (aggiornamento n.8): i dati personali
+ * spariscono e l'accesso viene distrutto, ma le partite giocate
+ * restano, altrimenti si riscriverebbe la storia degli avversari.
+ */
+async function testEliminaAccount() {
+  console.log('\nCANCELLAZIONE DELL ACCOUNT');
+
+  // Dina ha giocato la partita conclusa e ne ha una futura in programma
+  await come(U.dina);
+  await db.exec('set role authenticated');
+  const { rows: futura } = await db.query(
+    `select * from public.crea_partita('Padel Village', 'agropoli',
+       current_date + 6, '21:00', 'avanzato', 0::smallint)`,
+  );
+
+  const statPrima = await db.query('select * from public.statistiche_giocatore($1)', [U.carlo]);
+
+  await deveRiuscire('un utente cancella il proprio account', () => db.query(
+    'select public.elimina_mio_account()',
+  ));
+
+  await db.exec('reset role');
+
+  const { rows: profilo } = await db.query(
+    'select nome, cognome, telefono, avatar_url, eliminato_il from public.profiles where id = $1',
+    [U.dina],
+  );
+  uguale('il nome viene sostituito', 'Giocatore', profilo[0].nome);
+  uguale('il telefono sparisce', null, profilo[0].telefono);
+  uguale('la foto sparisce', null, profilo[0].avatar_url);
+  esito('resta la data di cancellazione', Boolean(profilo[0].eliminato_il));
+
+  const { rows: utente } = await db.query('select id from auth.users where id = $1', [U.dina]);
+  uguale('l accesso non esiste piu', 0, utente.length);
+
+  const { rows: partitaFutura } = await db.query(
+    'select id from public.matches where id = $1', [futura[0].id],
+  );
+  uguale('la partita futura rimasta vuota viene rimossa', 0, partitaFutura.length);
+
+  const { rows: ancoraInCampo } = await db.query(
+    'select spot from public.match_players where match_id = $1 and user_id = $2',
+    [PARTITA, U.dina],
+  );
+  uguale('resta in campo nella partita gia giocata', 1, ancoraInCampo.length);
+
+  const statDopo = await db.query('select * from public.statistiche_giocatore($1)', [U.carlo]);
+  uguale(
+    'le statistiche del compagno non cambiano',
+    statPrima.rows[0].partite, statDopo.rows[0].partite,
+  );
+
+  const { rows: classifica } = await db.query('select * from public.classifica(1)');
+  esito(
+    'chi ha cancellato l account non compare in classifica',
+    !classifica.some((r) => r.user_id === U.dina),
+    `in classifica: ${classifica.length} giocatori`,
+  );
+}
+
 // ---------------------------------------------------------
 // Avvio
 // ---------------------------------------------------------
@@ -789,6 +1013,9 @@ async function main() {
   await testRuoloGestore();
   await testDataPartita();
   await testPostiNonFalsificabili();
+  await testCreazionePartita();
+  await testAvatar();
+  await testEliminaAccount();
 
   console.log('\n' + '='.repeat(60));
   if (falliti.length === 0) {

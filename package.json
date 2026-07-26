@@ -5,7 +5,8 @@
   "description": "Trova e organizza partite di Padel nel Cilento",
   "scripts": {
     "dev": "wrangler dev",
-    "deploy": "wrangler deploy",
+    "deploy": "npm run build:css && wrangler deploy",
+    "build:css": "tailwindcss -c tailwind.config.js -i src/tailwind.css -o public/styles.css --minify",
     "test": "node test/db.test.mjs",
     "db:baseline": "node scripts/db.mjs baseline",
     "db:push": "node scripts/db.mjs push",
@@ -16,6 +17,7 @@
     "@electric-sql/pglite": "^0.5.4",
     "pg": "^8.22.0",
     "supabase": "^2.109.1",
+    "tailwindcss": "^3.4.19",
     "wrangler": "^4.0.0"
   }
 }
