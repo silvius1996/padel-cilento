@@ -1124,11 +1124,27 @@ async function creaProfiloDaMetadati(user) {
  * Attiva il ruolo "gestore" tramite codice circolo.
  * La verifica avviene interamente lato database (funzione security definer):
  * dal browser non e' possibile aggirarla.
+ *
+ * Dall'aggiornamento n.8 la funzione SQL restituisce l'esito invece di
+ * sollevare un'eccezione: serve a far sopravvivere il contatore dei
+ * tentativi, che un'eccezione annullerebbe insieme alla transazione.
+ * Qui l'esito negativo torna a essere un errore, cosi' per chi chiama
+ * questa funzione non cambia nulla.
  */
 async function usaCodiceCircolo(codice) {
   const { data, error } = await supabaseClient.rpc('usa_codice_circolo', { p_code: codice });
   if (error) throw error;
-  return data; // nome del circolo
+
+  if (!data || !data.ok) {
+    const errore = new Error(data?.errore || 'Codice circolo non valido.');
+    // I messaggi arrivano dal nostro database e sono gia' scritti per
+    // l'utente: si marcano come tali perche' messaggioErrore() li mostri
+    // invece di sostituirli con il testo generico.
+    errore.code = 'P0001';
+    throw errore;
+  }
+
+  return data.circolo; // nome del circolo
 }
 
 async function logoutUtente() {

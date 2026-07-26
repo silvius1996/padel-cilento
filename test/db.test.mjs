@@ -120,7 +120,12 @@ const IMPALCATURA = `
   create table storage.buckets (
     id text primary key,
     name text,
-    public boolean default false
+    public boolean default false,
+    -- Colonne con cui Supabase applica i limiti di caricamento:
+    -- il servizio Storage le legge PRIMA di scrivere il file, quindi
+    -- il controllo non e' aggirabile dal browser.
+    file_size_limit bigint,
+    allowed_mime_types text[]
   );
   create table storage.objects (
     id uuid primary key default gen_random_uuid(),
@@ -487,6 +492,122 @@ async function testPrivacyAnonimi() {
   await db.exec('reset role');
 }
 
+async function testLimitiAvatar() {
+  console.log('\nLIMITI DI CARICAMENTO DEGLI AVATAR');
+
+  const { rows } = await db.query(
+    'select file_size_limit, allowed_mime_types from storage.buckets where id = $1',
+    ['avatars'],
+  );
+
+  esito('il bucket avatars esiste', rows.length === 1);
+
+  const limite = rows[0]?.file_size_limit;
+  uguale('la dimensione massima e 2 MB', 2097152, limite);
+
+  const tipi = rows[0]?.allowed_mime_types || [];
+  esito('sono ammesse le immagini JPEG', tipi.includes('image/jpeg'), `tipi: ${tipi}`);
+  esito('sono ammesse le immagini PNG', tipi.includes('image/png'), `tipi: ${tipi}`);
+  esito('sono ammesse le immagini WebP', tipi.includes('image/webp'), `tipi: ${tipi}`);
+  esito('i PDF non sono ammessi', !tipi.includes('application/pdf'), `tipi: ${tipi}`);
+  esito(
+    'gli SVG non sono ammessi (possono contenere script)',
+    !tipi.includes('image/svg+xml'),
+    `tipi: ${tipi}`,
+  );
+}
+
+/** Legge l'esito jsonb restituito da usa_codice_circolo. */
+async function provaCodice(codice) {
+  const { rows } = await db.query('select public.usa_codice_circolo($1) as esito', [codice]);
+  const e = rows[0].esito;
+  return typeof e === 'string' ? JSON.parse(e) : e;
+}
+
+async function testCodiceCircolo() {
+  console.log('\nCODICE CIRCOLO E PROTEZIONE DAI TENTATIVI RIPETUTI');
+
+  await db.query(
+    `insert into public.club_codes (code, circolo, uso_singolo)
+     values ('PAESTUM-2026', 'Padel Club Paestum', false)`,
+  );
+
+  // ----- Il registro dei tentativi non e' leggibile dal browser -----
+  await come(U.ester);
+  await db.exec('set role authenticated');
+  await deveFallire(
+    'il registro dei tentativi non e leggibile da un utente registrato',
+    () => db.query('select * from public.tentativi_codice_circolo'),
+    'permission denied',
+  );
+  await db.exec('reset role');
+
+  // ----- Quattro tentativi sbagliati: si puo' ancora riprovare -----
+  await come(U.ester);
+  let esitoCorrente;
+  for (let i = 1; i <= 4; i++) {
+    esitoCorrente = await provaCodice('CODICE-INVENTATO');
+  }
+  esito('dopo 4 tentativi sbagliati non si e ancora bloccati',
+    esitoCorrente.ok === false && /non valido/i.test(esitoCorrente.errore),
+    `esito: ${JSON.stringify(esitoCorrente)}`);
+
+  // ----- Il quinto fa scattare il blocco -----
+  esitoCorrente = await provaCodice('CODICE-INVENTATO');
+  esito('al quinto tentativo sbagliato scatta il blocco',
+    esitoCorrente.ok === false && /troppi tentativi/i.test(esitoCorrente.errore),
+    `esito: ${JSON.stringify(esitoCorrente)}`);
+
+  // ----- Il blocco vale anche per il codice CORRETTO -----
+  // E' la proprieta' che rende utile la protezione: se il codice giusto
+  // continuasse a funzionare, basterebbe insistere per aggirarla.
+  esitoCorrente = await provaCodice('PAESTUM-2026');
+  esito('durante il blocco non funziona nemmeno il codice corretto',
+    esitoCorrente.ok === false && /troppi tentativi/i.test(esitoCorrente.errore),
+    `esito: ${JSON.stringify(esitoCorrente)}`);
+
+  const { rows: ruoloEster } = await db.query(
+    'select role from public.profiles where id = $1', [U.ester],
+  );
+  uguale('chi e bloccato non diventa gestore', 'giocatore', ruoloEster[0].role);
+
+  // ----- Il blocco riguarda solo chi ha sbagliato -----
+  await come(U.dina);
+  const esitoDina = await provaCodice('PAESTUM-2026');
+  esito('un altro utente non e coinvolto dal blocco',
+    esitoDina.ok === true && esitoDina.circolo === 'Padel Club Paestum',
+    `esito: ${JSON.stringify(esitoDina)}`);
+
+  const { rows: ruoloDina } = await db.query(
+    'select role, circolo from public.profiles where id = $1', [U.dina],
+  );
+  uguale('il codice valido promuove a gestore', 'gestore', ruoloDina[0].role);
+  uguale('il circolo viene assegnato', 'Padel Club Paestum', ruoloDina[0].circolo);
+
+  // ----- Un uso riuscito azzera il contatore -----
+  const { rows: registro } = await db.query(
+    'select count(*)::int as n from public.tentativi_codice_circolo where user_id = $1',
+    [U.dina],
+  );
+  uguale('un uso riuscito azzera il contatore', 0, registro[0].n);
+
+  // ----- Un codice disattivato non funziona -----
+  await db.query(`update public.club_codes set attivo = false where code = 'PAESTUM-2026'`);
+  await come(U.carlo);
+  const esitoDisattivato = await provaCodice('PAESTUM-2026');
+  esito('un codice disattivato viene rifiutato',
+    esitoDisattivato.ok === false && /attivo/i.test(esitoDisattivato.errore),
+    `esito: ${JSON.stringify(esitoDisattivato)}`);
+
+  // ----- Senza autenticazione la funzione rifiuta -----
+  await come(null);
+  await deveFallire(
+    'senza autenticazione il codice non e utilizzabile',
+    () => db.query(`select public.usa_codice_circolo('PAESTUM-2026')`),
+    'autenticato',
+  );
+}
+
 // ---------------------------------------------------------
 // Avvio
 // ---------------------------------------------------------
@@ -511,6 +632,8 @@ async function main() {
   await testContatti();
   await testPrivacyTelefono();
   await testPrivacyAnonimi();
+  await testLimitiAvatar();
+  await testCodiceCircolo();
 
   console.log('\n' + '='.repeat(60));
   if (falliti.length === 0) {
