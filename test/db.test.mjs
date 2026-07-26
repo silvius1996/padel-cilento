@@ -37,6 +37,8 @@ const PARTITA_CORREZIONE = 'aaaaaaaa-0000-0000-0000-000000000004'; // correzione
 const PARTITA_ADMIN = 'aaaaaaaa-0000-0000-0000-000000000005';      // moderazione
 
 const CIRCOLO_NOME = 'Padel Agropoli';
+const TORNEO = 'cccccccc-0000-0000-0000-000000000001';
+const TORNEO_PARITA = 'cccccccc-0000-0000-0000-000000000002';
 
 let db;
 let passati = 0;
@@ -1470,6 +1472,296 @@ async function testCircoli() {
   await db.query(`update public.profiles set role = 'giocatore' where id = $1`, [U.carlo]);
 }
 
+/**
+ * La modalita' torneo (aggiornamenti n.14 e n.15): un torneo intero,
+ * dalla creazione alla classifica, come lo userebbe un circolo.
+ */
+async function testTornei() {
+  console.log('\nMODALITA TORNEO');
+
+  // Bea e' gestore di CIRCOLO_NOME dal blocco precedente
+  await db.exec('reset role');
+  const { rows: c } = await db.query('select id from public.circoli where nome = $1', [CIRCOLO_NOME]);
+  const idCircolo = c[0].id;
+
+  // ----- Creazione -----
+  await come(U.aldo);
+  await db.exec('set role authenticated');
+  await deveFallire(
+    'un giocatore non crea tornei',
+    () => db.query(
+      `insert into public.tornei (circolo_id, nome, creato_da) values ($1, 'Torneo abusivo', $2)`,
+      [idCircolo, U.aldo],
+    ),
+    'row-level security',
+  );
+
+  await come(U.bea);
+  await db.exec('set role authenticated');
+  await deveRiuscire('il circolo crea il proprio torneo', () => db.query(
+    `insert into public.tornei (id, circolo_id, nome, livello, creato_da)
+     values ($1, $2, 'Torneo d estate', 'intermedio', $3)`,
+    [TORNEO, idCircolo, U.bea],
+  ));
+
+  // ----- Un torneo in bozza non e' pubblico -----
+  await come(null);
+  await db.exec('set role anon');
+  const { rows: bozzaAnon } = await db.query('select id from public.tornei where id = $1', [TORNEO]);
+  uguale('un torneo in bozza non si vede da fuori', 0, bozzaAnon.length);
+  await db.exec('reset role');
+
+  // ----- Gironi e squadre -----
+  await come(U.bea);
+  await db.exec('set role authenticated');
+
+  for (const [nome, ordine] of [['A', 1], ['B', 2]]) {
+    await db.query(
+      `insert into public.tornei_gironi (torneo_id, nome, ordine) values ($1, $2, $3)`,
+      [TORNEO, nome, ordine],
+    );
+  }
+  const { rows: gironi } = await db.query(
+    'select id, nome from public.tornei_gironi where torneo_id = $1 order by ordine', [TORNEO],
+  );
+  uguale('i gironi sono due', 2, gironi.length);
+  const gironeA = gironi[0].id;
+
+  // Quattro coppie nel girone A, due nel B: nomi scritti a mano dal
+  // circolo, senza che i giocatori abbiano un account.
+  const coppieA = [
+    ['Rossi Mario', 'Bianchi Luca'],
+    ['Verdi Anna', 'Neri Sara'],
+    ['Gialli Paolo', 'Blu Marco'],
+    ['Viola Elena', 'Grigi Ugo'],
+  ];
+  for (const [g1, g2] of coppieA) {
+    await db.query(
+      `insert into public.torneo_squadre (torneo_id, giocatore_1, giocatore_2, girone_id)
+       values ($1, $2, $3, $4)`, [TORNEO, g1, g2, gironeA],
+    );
+  }
+  await db.query(
+    `insert into public.torneo_squadre (torneo_id, giocatore_1, giocatore_2, girone_id)
+     values ($1, 'Alfa Uno', 'Alfa Due', $2), ($1, 'Beta Uno', 'Beta Due', $2)`,
+    [TORNEO, gironi[1].id],
+  );
+
+  await deveRiuscire('si iscrive una coppia collegata a due account', () => db.query(
+    `insert into public.torneo_squadre
+       (torneo_id, giocatore_1, giocatore_2, user_id_1, user_id_2, girone_id)
+     values ($1, 'Aldo Rossi', 'Carlo Verdi', $2, $3, $4)`,
+    [TORNEO, U.aldo, U.carlo, gironi[1].id],
+  ));
+
+  await deveFallire(
+    'lo stesso giocatore non entra in due coppie',
+    () => db.query(
+      `insert into public.torneo_squadre (torneo_id, giocatore_1, giocatore_2, user_id_1, girone_id)
+       values ($1, 'Aldo Rossi', 'Altro Tizio', $2, $3)`,
+      [TORNEO, U.aldo, gironi[1].id],
+    ),
+    'gia',
+  );
+
+  await deveFallire(
+    'una coppia non gioca con se stessa',
+    () => db.query(
+      `insert into public.torneo_squadre (torneo_id, giocatore_1, giocatore_2, user_id_1, user_id_2)
+       values ($1, 'X', 'Y', $2, $2)`, [TORNEO, U.dina],
+    ),
+    'violates check constraint',
+  );
+
+  // ----- Il calendario -----
+  await deveFallire(
+    'il torneo non parte senza calendario',
+    () => db.query(`select public.torneo_cambia_stato($1, 'in_corso')`, [TORNEO]),
+    'iscrizioni',
+  );
+
+  await deveRiuscire('si aprono le iscrizioni', () => db.query(
+    `select public.torneo_cambia_stato($1, 'iscrizioni')`, [TORNEO],
+  ));
+
+  const { rows: gen } = await db.query('select public.torneo_genera_calendario($1) as n', [TORNEO]);
+  // Girone A: 4 squadre = 6 incontri. Girone B: 3 squadre = 3 incontri.
+  uguale('il calendario genera 9 incontri', 9, gen[0].n);
+
+  const { rows: turniA } = await db.query(
+    `select turno, count(*)::int as n from public.torneo_incontri
+     where girone_id = $1 group by turno order by turno`, [gironeA],
+  );
+  uguale('il girone da 4 squadre ha 3 turni', 3, turniA.length);
+  esito('in ogni turno si giocano 2 incontri', turniA.every((t) => t.n === 2),
+    JSON.stringify(turniA));
+
+  // Nessuna squadra gioca due volte nello stesso turno: e' il punto
+  // del metodo all'italiana.
+  const { rows: doppioni } = await db.query(
+    `select turno, sq, count(*)::int as n from (
+       select turno, squadra_casa as sq from public.torneo_incontri where girone_id = $1
+       union all
+       select turno, squadra_ospite from public.torneo_incontri where girone_id = $1
+     ) x group by turno, sq having count(*) > 1`, [gironeA],
+  );
+  uguale('nessuna squadra gioca due volte nello stesso turno', 0, doppioni.length);
+
+  const { rows: coppie } = await db.query(
+    `select count(distinct least(squadra_casa::text, squadra_ospite::text)
+              || greatest(squadra_casa::text, squadra_ospite::text))::int as n
+     from public.torneo_incontri where girone_id = $1`, [gironeA],
+  );
+  uguale('ogni coppia di squadre si incontra una volta sola', 6, coppie[0].n);
+
+  // ----- Avvio e risultati -----
+  await deveRiuscire('il torneo si avvia', () => db.query(
+    `select public.torneo_cambia_stato($1, 'in_corso')`, [TORNEO],
+  ));
+
+  await deveFallire(
+    'lo stato non si cambia scrivendolo a mano',
+    () => db.query(`update public.tornei set stato = 'concluso' where id = $1`, [TORNEO]),
+    'torneo_cambia_stato',
+  );
+
+  const { rows: incontriA } = await db.query(
+    `select id, squadra_casa, squadra_ospite from public.torneo_incontri
+     where girone_id = $1 order by turno, ordine`, [gironeA],
+  );
+
+  await deveRiuscire('il circolo registra un risultato', () => db.query(
+    'select public.torneo_registra_risultato($1, $2::jsonb)',
+    [incontriA[0].id, '[[6,4],[6,3]]'],
+  ));
+
+  const { rows: primo } = await db.query(
+    'select vincitore, registrato_da from public.torneo_incontri where id = $1', [incontriA[0].id],
+  );
+  uguale('il vincitore lo calcola il database', 'C', primo[0].vincitore);
+  uguale('resta scritto chi lo ha inserito', U.bea, primo[0].registrato_da);
+
+  await deveFallire(
+    'un punteggio impossibile viene rifiutato',
+    () => db.query('select public.torneo_registra_risultato($1, $2::jsonb)',
+      [incontriA[1].id, '[[6,4]]']),
+    '2 o 3 set',
+  );
+
+  await come(U.dina);
+  await deveFallire(
+    'un estraneo non inserisce risultati',
+    () => db.query('select public.torneo_registra_risultato($1, $2::jsonb)',
+      [incontriA[1].id, '[[6,0],[6,0]]']),
+    'solo il circolo',
+  );
+
+  // ----- La classifica -----
+  await come(U.bea);
+  await db.exec('set role authenticated');
+  for (let i = 1; i < incontriA.length; i++) {
+    await db.query('select public.torneo_registra_risultato($1, $2::jsonb)',
+      [incontriA[i].id, '[[6,2],[6,2]]']);
+  }
+
+  await db.exec('reset role');
+  const { rows: cls } = await db.query('select * from public.classifica_girone($1)', [gironeA]);
+  uguale('la classifica ha una riga per squadra', 4, cls.length);
+  uguale('la prima e in posizione 1', 1, cls[0].posizione);
+  uguale('chi ha giocato 3 partite le ha tutte contate', 3, cls[0].partite);
+  esito('i punti sono 3 per vittoria',
+    cls.every((r) => r.punti === r.vittorie * 3), JSON.stringify(cls.map((r) => [r.punti, r.vittorie])));
+  esito('la classifica e ordinata per punti',
+    cls.every((r, i) => i === 0 || cls[i - 1].punti >= r.punti),
+    JSON.stringify(cls.map((r) => r.punti)));
+  esito('il nome della squadra si compone dai due giocatori',
+    cls.every((r) => r.nome.includes(' / ')), cls[0].nome);
+
+  // Somma di controllo: 6 incontri, 12 partecipazioni, 6 vittorie
+  const totPartite = cls.reduce((s, r) => s + r.partite, 0);
+  const totVittorie = cls.reduce((s, r) => s + r.vittorie, 0);
+  uguale('le partite giocate tornano', 12, totPartite);
+  uguale('le vittorie tornano', 6, totVittorie);
+
+  // ----- Ora il torneo e' pubblico -----
+  await come(null);
+  await db.exec('set role anon');
+  const { rows: pubblico } = await db.query('select nome from public.tornei where id = $1', [TORNEO]);
+  uguale('un torneo avviato lo vedono tutti', 1, pubblico.length);
+  const { rows: clsAnon } = await db.query('select * from public.classifica_girone($1)', [gironeA]);
+  uguale('e la classifica si legge anche senza account', 4, clsAnon.length);
+  await db.exec('reset role');
+}
+
+/**
+ * Il criterio di parita' con tre squadre a pari punti: e' il caso che
+ * rompe quasi tutte le classifiche fatte in casa.
+ */
+async function testParitaClassifica() {
+  console.log('\nCLASSIFICA: TRE SQUADRE A PARI PUNTI');
+
+  await db.exec('reset role');
+  const { rows: c } = await db.query('select id from public.circoli where nome = $1', [CIRCOLO_NOME]);
+
+  await come(U.bea);
+  await db.exec('set role authenticated');
+  await db.query(
+    `insert into public.tornei (id, circolo_id, nome, creato_da) values ($1, $2, 'Torneo parita', $3)`,
+    [TORNEO_PARITA, c[0].id, U.bea],
+  );
+  await db.query(
+    `insert into public.tornei_gironi (torneo_id, nome, ordine) values ($1, 'A', 1)`, [TORNEO_PARITA],
+  );
+  const { rows: g } = await db.query(
+    'select id from public.tornei_gironi where torneo_id = $1', [TORNEO_PARITA],
+  );
+  const girone = g[0].id;
+
+  // Tre squadre che si battono in cerchio: A>B, B>C, C>A.
+  // Tutte a 3 punti: lo scontro diretto singolo non decide niente,
+  // e la classifica ridotta deve guardare set e game.
+  const squadre = {};
+  for (const nome of ['Alfa', 'Beta', 'Gamma']) {
+    const { rows } = await db.query(
+      `insert into public.torneo_squadre (torneo_id, nome, giocatore_1, giocatore_2, girone_id)
+       values ($1, $2, $3, $4, $5) returning id`,
+      [TORNEO_PARITA, nome, `${nome} Uno`, `${nome} Due`, girone],
+    );
+    squadre[nome] = rows[0].id;
+  }
+
+  const incontro = async (casa, ospite, sets) => {
+    const { rows } = await db.query(
+      `insert into public.torneo_incontri
+         (torneo_id, girone_id, fase, turno, squadra_casa, squadra_ospite)
+       values ($1, $2, 'girone', 1, $3, $4) returning id`,
+      [TORNEO_PARITA, girone, squadre[casa], squadre[ospite]],
+    );
+    await db.query(`update public.torneo_incontri set sets = $2::jsonb where id = $1`,
+      [rows[0].id, sets]);
+  };
+
+  await db.exec('reset role');
+  await incontro('Alfa', 'Beta', '[[6,0],[6,0]]');   // Alfa +12 game
+  await incontro('Beta', 'Gamma', '[[6,4],[6,4]]');  // Beta +4
+  await incontro('Gamma', 'Alfa', '[[7,5],[7,5]]');  // Gamma +4
+
+  const { rows: cls } = await db.query('select * from public.classifica_girone($1)', [girone]);
+
+  esito('tutte e tre hanno gli stessi punti',
+    cls.every((r) => r.punti === 3), JSON.stringify(cls.map((r) => [r.nome, r.punti])));
+
+  // Con tutte e tre a pari punti la classifica ridotta coincide con
+  // quella totale: decide la differenza game. Alfa ha fatto 24 game e
+  // ne ha subiti 18 (+6), Gamma 22 subiti 22 (0), Beta 20 subiti 24 (-4).
+  uguale('davanti c e chi ha la differenza game migliore', 'Alfa', cls[0].nome);
+  uguale('e in fondo chi ce l ha peggiore', 'Beta', cls[2].nome);
+
+  const diff = cls.map((r) => r.game_fatti - r.game_subiti);
+  esito('l ordine segue la differenza game',
+    diff[0] >= diff[1] && diff[1] >= diff[2], JSON.stringify(diff));
+}
+
 // ---------------------------------------------------------
 // Avvio
 // ---------------------------------------------------------
@@ -1506,6 +1798,8 @@ async function main() {
   await testCorrezioneRisultato();
   await testAmministratore();
   await testCircoli();
+  await testTornei();
+  await testParitaClassifica();
   await testEliminaAccount();
 
   console.log('\n' + '='.repeat(60));

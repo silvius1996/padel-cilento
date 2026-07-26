@@ -346,6 +346,7 @@ funziona.
 |---|---|---|
 | ~~**0**~~ | ~~`valida_punteggio` estratta e condivisa~~ | **fatta** — aggiornamento n.12 |
 | ~~**1**~~ | ~~Tabella `circoli` + collegamenti a profili e codici~~ | **fatta** — aggiornamento n.13 |
+| ~~**2**~~ | ~~Tornei, squadre, gironi, calendario, risultati, classifica~~ | **fatta** — aggiornamenti n.14 e n.15 (database; l'interfaccia manca) |
 | **2** | Tornei, squadre, gironi, calendario, risultati, classifica | È il cuore: da qui un torneo si gioca per intero |
 | **3** | Fasi finali e tabellone | Completa il torneo |
 | **4** | Rifiniture: collegamento ai giocatori, condivisione, stampa | Rende piacevole ciò che già funziona |
@@ -358,10 +359,8 @@ intreccio con le statistiche.
 
 ## 10. Decisioni ancora aperte
 
-1. **Il calendario ha orari veri o solo l'ordine degli incontri?** Un torneo di
-   paese spesso si gioca a scorrimento: si gioca quando si libera il campo. Nel
-   modello qui sopra data e ora sono **facoltative** proprio per questo — dimmi
-   se è giusto o se servono orari veri.
+1. ~~Il calendario ha orari veri o solo l'ordine?~~ **Deciso: basta l'ordine.**
+   Data e ora restano facoltative, il calendario è fatto di turni.
 
 2. **Un giocatore può stare in due tornei contemporaneamente?** Direi di sì,
    senza vincoli. Da confermare. (Dentro **lo stesso** torneo invece no: una
@@ -370,9 +369,7 @@ intreccio con le statistiche.
 3. **Le squadre hanno un nome proprio?** Facoltativo, con "Rossi / Bianchi" come
    ripiego automatico. Da confermare.
 
-4. **Serve il formato "americano"** — coppie che cambiano a ogni turno,
-   classifica individuale? È un modello di dati **diverso**, non una variante di
-   questo: se serve, va progettato a parte. Dimmi se dalle tue parti si gioca.
+4. ~~Serve il formato "americano"?~~ **Deciso: no, le coppie sono fisse.**
 
 5. **Un torneo può essere cancellato dopo essere iniziato?** Qui è previsto lo
    stato `annullato` che lo congela in sola lettura, senza cancellare niente.
