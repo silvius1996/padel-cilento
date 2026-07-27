@@ -790,6 +790,16 @@
           </div>
         </div>
 
+        <!-- Un torneo appartiene sempre a un circolo. Il gestore ha il suo e
+             non deve sceglierlo; l'amministratore puo' organizzare per conto
+             di chiunque, quindi deve dire per chi. -->
+        <div id="torneo-circolo-riga" class="hidden">
+          <label class="block text-[11px] font-semibold text-court-500 uppercase tracking-wide mb-1.5" for="torneo-circolo">Circolo</label>
+          <select id="torneo-circolo"
+                  class="w-full bg-court-700 border border-court-500 rounded-xl px-4 py-3 text-sm text-white focus:border-lime-neon outline-none">
+          </select>
+        </div>
+
         <div>
           <label class="block text-[11px] font-semibold text-court-500 uppercase tracking-wide mb-1.5" for="torneo-livello">Livello</label>
           <select id="torneo-livello"
@@ -981,6 +991,8 @@ const el = {
   tabCountConcluse: document.getElementById('tab-count-concluse'),
   createTitle: document.getElementById('create-title'),
   authCodice: document.getElementById('auth-codice'),
+  torneoCircolo: document.getElementById('torneo-circolo'),
+  torneoCircoloRiga: document.getElementById('torneo-circolo-riga'),
   matchOwnerActions: document.getElementById('match-owner-actions'),
   btnEditMatch: document.getElementById('btn-edit-match'),
   btnDeleteMatch: document.getElementById('btn-delete-match'),
@@ -1159,6 +1171,17 @@ function messaggioErrore(err, fallback) {
   if (!err) return fallback;
 
   if (err.code === 'P0001' && err.message) return err.message;
+
+  // Violazioni di vincolo del database. Senza queste righe un dato
+  // mancante o un permesso negato finivano nel messaggio generico di
+  // chi chiama, che non dice niente a nessuno: ne' all'utente, ne' a
+  // chi deve capire cosa sia successo.
+  if (err.code === '23502') return 'Manca un dato obbligatorio per completare l\'operazione.';
+  if (err.code === '23503') return 'Un elemento collegato non esiste piu\'. Ricarica la pagina e riprova.';
+  if (err.code === '23505') return 'Esiste gia\' un elemento con questi dati.';
+  if (err.code === '42501' || /permission denied|row-level security/i.test(err.message || '')) {
+    return 'Non hai i permessi per questa operazione.';
+  }
 
   const messaggio = err.message || '';
 
@@ -3793,20 +3816,68 @@ el.btnGeneraCalendario.addEventListener('click', async () => {
 });
 
 // ----- Creazione di un torneo -----
-el.btnNuovoTorneo.addEventListener('click', () => {
+/**
+ * Riempie l'elenco dei circoli per cui l'amministratore puo' organizzare.
+ * Il gestore non lo vede: il suo circolo e' uno solo e lo sa gia' il database.
+ */
+async function preparaSceltaCircolo() {
+  if (!sonoAmministratore()) {
+    el.torneoCircoloRiga.classList.add('hidden');
+    return;
+  }
+
+  el.torneoCircoloRiga.classList.remove('hidden');
+  el.torneoCircolo.innerHTML = '';
+
+  const { data, error } = await supabaseClient
+    .from('circoli')
+    .select('id, nome, attivo')
+    .order('nome');
+
+  if (error) {
+    console.error('Errore caricamento circoli:', error);
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    el.creaTorneoError.textContent =
+      'Non c e ancora nessun circolo. Un torneo appartiene sempre a un circolo: creane uno prima.';
+    el.creaTorneoError.classList.remove('hidden');
+    return;
+  }
+
+  for (const circolo of data) {
+    const opzione = document.createElement('option');
+    opzione.value = circolo.id;
+    opzione.textContent = circolo.attivo ? circolo.nome : `${circolo.nome} (sospeso)`;
+    el.torneoCircolo.appendChild(opzione);
+  }
+}
+
+el.btnNuovoTorneo.addEventListener('click', async () => {
   el.creaTorneoError.classList.add('hidden');
   el.formCreaTorneo.reset();
   el.torneoLivello.value = 'intermedio';
   closeModal(el.modalTornei);
   openModal(el.modalCreaTorneo);
+  await preparaSceltaCircolo();
 });
 
 el.formCreaTorneo.addEventListener('submit', async (e) => {
   e.preventDefault();
   el.creaTorneoError.classList.add('hidden');
 
-  if (!currentProfile?.circolo_id && !sonoAmministratore()) {
-    el.creaTorneoError.textContent = 'Solo un circolo puo organizzare tornei.';
+  // Il gestore organizza per il proprio circolo; l'amministratore sceglie
+  // per quale. In entrambi i casi il torneo deve avere un circolo: senza,
+  // non esiste nessuno che possa gestirlo.
+  const circoloId = sonoAmministratore()
+    ? el.torneoCircolo.value
+    : currentProfile?.circolo_id;
+
+  if (!circoloId) {
+    el.creaTorneoError.textContent = sonoAmministratore()
+      ? 'Scegli per quale circolo organizzare il torneo.'
+      : 'Solo un circolo puo organizzare tornei.';
     el.creaTorneoError.classList.remove('hidden');
     return;
   }
@@ -3816,7 +3887,7 @@ el.formCreaTorneo.addEventListener('submit', async (e) => {
 
   try {
     const { data, error } = await supabaseClient.from('tornei').insert({
-      circolo_id: currentProfile.circolo_id,
+      circolo_id: circoloId,
       nome: el.torneoNome.value.trim(),
       livello: el.torneoLivello.value,
       data_inizio: el.torneoInizio.value || null,
