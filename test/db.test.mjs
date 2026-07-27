@@ -1992,6 +1992,95 @@ async function testTabellone() {
  * chieda. Da qui la regola, la stessa del calendario: finche' non c'e'
  * nessun risultato si rifa' tutto, dopo si annulla soltanto.
  */
+/**
+ * I tornei a set unico.
+ *
+ * Un circolo che organizza in una serata gioca un set secco: prima
+ * valida_punteggio() rifiutava qualunque punteggio con meno di due set,
+ * quindi quei tornei non si potevano registrare. Ora e' il torneo a
+ * dichiarare come si vince, e il database controlla di conseguenza.
+ *
+ * Le partite normali NON cambiano: li' non c'e' un organizzatore che
+ * stabilisca il formato, e la regola dei due set su tre resta fissa.
+ */
+async function testSetUnico() {
+  console.log('\nTORNEI A SET UNICO');
+
+  await db.exec('reset role');
+  const { rows: c } = await db.query('select id from public.circoli where nome = $1', [CIRCOLO_NOME]);
+
+  await come(U.bea);
+  await db.exec('set role authenticated');
+
+  const { rows: t } = await db.query(
+    `insert into public.tornei (circolo_id, nome, creato_da, formato_punteggio, formato)
+     values ($1, 'Serata a set unico', $2, 'set_unico', 'solo_gironi') returning id`,
+    [c[0].id, U.bea],
+  );
+  const torneo = t[0].id;
+
+  const { rows: g } = await db.query(
+    `insert into public.tornei_gironi (torneo_id, nome, ordine) values ($1, 'A', 1) returning id`,
+    [torneo],
+  );
+
+  const squadre = [];
+  for (const [a, b] of [['Tizio', 'Caio'], ['Sempronio', 'Mevio']]) {
+    const { rows } = await db.query(
+      `insert into public.torneo_squadre (torneo_id, giocatore_1, giocatore_2, girone_id)
+       values ($1, $2, $3, $4) returning id`, [torneo, a, b, g[0].id],
+    );
+    squadre.push(rows[0].id);
+  }
+
+  await db.query('select public.torneo_genera_calendario($1)', [torneo]);
+  await db.query("select public.torneo_cambia_stato($1, 'iscrizioni')", [torneo]);
+  await db.query("select public.torneo_cambia_stato($1, 'in_corso')", [torneo]);
+
+  const { rows: inc } = await db.query(
+    `select id from public.torneo_incontri where torneo_id = $1 limit 1`, [torneo],
+  );
+
+  await deveRiuscire('un set solo basta a decidere l incontro', () => db.query(
+    'select public.torneo_registra_risultato($1, $2::jsonb)', [inc[0].id, '[[6,4]]'],
+  ));
+
+  const { rows: dopo } = await db.query(
+    'select vincitore, sets from public.torneo_incontri where id = $1', [inc[0].id],
+  );
+  uguale('il vincitore e la squadra di casa', 'C', dopo[0].vincitore);
+
+  await deveFallire(
+    'due set in un torneo a set unico vengono rifiutati',
+    () => db.query('select public.torneo_registra_risultato($1, $2::jsonb)',
+      [inc[0].id, '[[6,4],[6,3]]']),
+    'set unico',
+  );
+
+  await deveFallire(
+    'il formato non si cambia a torneo iniziato',
+    () => db.query("update public.tornei set formato_punteggio = 'due_su_tre' where id = $1",
+      [torneo]),
+    'gia\' giocato',
+  );
+
+  // Le partite normali restano come prima: due set su tre, sempre.
+  await deveFallire(
+    'una partita normale continua a pretendere due set',
+    () => db.query('select public.valida_punteggio($1::jsonb)', ['[[6,4]]']),
+    '2 o 3 set',
+  );
+
+  // E un torneo normale non accetta il set secco.
+  await deveFallire(
+    'un torneo a due set su tre rifiuta il set secco',
+    () => db.query('select public.valida_punteggio($1::jsonb, 2, 3)', ['[[6,4]]']),
+    '2 o 3 set',
+  );
+
+  await db.exec('reset role');
+}
+
 async function testCorrezioniTorneo() {
   console.log('\nCORREGGERE UN ERRORE NEL TORNEO');
 
@@ -2263,6 +2352,7 @@ async function main() {
   await testTornei();
   await testParitaClassifica();
   await testTabellone();
+  await testSetUnico();
   await testCorrezioniTorneo();
   await testCollegamentoGiocatori();
   await testBacheca();
