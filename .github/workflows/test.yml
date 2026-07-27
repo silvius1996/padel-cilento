@@ -26,6 +26,12 @@ jobs:
         with:
           node-version: 22
 
+      # Playwright sta fra le dipendenze perche' scripts/marchio.mjs e
+      # scripts/spot.mjs lo usano, ma qui non si apre nessun browser:
+      # senza questa variabile ogni installazione scaricherebbe
+      # centinaia di megabyte per non usarli.
       - run: npm ci
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
 
       - run: npm test
