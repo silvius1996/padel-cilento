@@ -159,7 +159,7 @@
     </div>
   </header>
 
-  <main class="max-w-2xl mx-auto px-4 pb-28">
+  <main id="pagina-home" class="max-w-2xl mx-auto px-4 pb-28">
 
     <!-- ============ HERO / CTA ============ -->
     <section class="pt-6 pb-4">
@@ -728,184 +728,190 @@
     </div>
   </div>
 
-  <!-- ============ TORNEI: ELENCO ============ -->
-  <div id="modal-tornei" class="hidden fixed inset-0 z-50 items-end sm:items-center justify-center">
-    <div id="modal-tornei-backdrop" class="absolute inset-0 bg-black/70 modal-backdrop"></div>
-    <div class="relative w-full sm:max-w-md bg-court-800 border border-court-600 rounded-t-3xl sm:rounded-3xl p-6 pb-8 max-h-[92vh] overflow-y-auto">
-      <div class="flex items-center justify-between mb-1">
-        <h3 class="font-display font-700 text-xl">Tornei</h3>
-        <button id="btn-close-tornei" class="w-8 h-8 rounded-full bg-court-700 flex items-center justify-center text-white/60 hover:text-white">
-          <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
-        </button>
-      </div>
-      <p class="text-xs text-court-500 mb-4">Organizzati dai circoli del Cilento.</p>
-
-      <button type="button" id="btn-nuovo-torneo"
-              class="hidden w-full mb-4 bg-lime-neon text-court-900 font-display font-700 py-3 rounded-xl shadow-neon">
-        + Crea un torneo
+  <!-- ============ PAGINA TORNEI ============
+       I tornei non stanno in una finestra sopra la home: hanno una
+       pagina loro, con lo spazio che serve a gestirli davvero.
+  ============================================================= -->
+  <section id="pagina-tornei" class="hidden max-w-2xl mx-auto px-4 pb-28">
+    <div class="pt-6 pb-4">
+      <button type="button" id="btn-tornei-indietro"
+              class="text-xs text-court-500 hover:text-lime-neon transition-colors mb-3">
+        &larr; Torna alle partite
       </button>
-
-      <div id="tornei-loading" class="space-y-2">
-        <div class="h-16 rounded-xl bg-court-700 animate-pulse"></div>
-        <div class="h-16 rounded-xl bg-court-700 animate-pulse"></div>
-      </div>
-
-      <div id="tornei-empty" class="hidden text-center py-10 px-2 rounded-2xl border border-dashed border-court-500">
-        <p class="font-display font-700 text-base mb-1">Nessun torneo</p>
-        <p id="tornei-empty-text" class="text-court-500 text-sm">Quando un circolo ne pubblica uno, lo trovi qui.</p>
-      </div>
-
-      <div id="tornei-list" class="space-y-2"></div>
+      <h1 class="font-display text-3xl font-700 leading-tight">Tornei</h1>
+      <p class="text-court-500 text-sm mt-1">Organizzati dai circoli del Cilento.</p>
     </div>
-  </div>
+
+    <button type="button" id="btn-nuovo-torneo"
+            class="hidden w-full mb-4 bg-lime-neon text-court-900 font-display font-700 py-3 rounded-xl shadow-neon">
+      + Crea un torneo
+    </button>
+
+    <div id="tornei-loading" class="space-y-2">
+      <div class="h-16 rounded-xl bg-court-700 animate-pulse"></div>
+      <div class="h-16 rounded-xl bg-court-700 animate-pulse"></div>
+    </div>
+
+    <div id="tornei-empty" class="hidden text-center py-10 px-2 rounded-2xl border border-dashed border-court-500">
+      <p class="font-display font-700 text-base mb-1">Nessun torneo</p>
+      <p id="tornei-empty-text" class="text-court-500 text-sm">Quando un circolo ne pubblica uno, lo trovi qui.</p>
+    </div>
+
+    <div id="tornei-list" class="space-y-2"></div>
+  </section>
 
   <!-- ============ TORNEO: CREAZIONE ============ -->
   <div id="modal-crea-torneo" class="hidden fixed inset-0 z-50 items-end sm:items-center justify-center">
     <div id="modal-crea-torneo-backdrop" class="absolute inset-0 bg-black/70 modal-backdrop"></div>
     <div class="relative w-full sm:max-w-md bg-court-800 border border-court-600 rounded-t-3xl sm:rounded-3xl p-6 pb-8 max-h-[92vh] overflow-y-auto">
-      <div class="flex items-center justify-between mb-4">
-        <h3 class="font-display font-700 text-xl">Crea un torneo</h3>
-        <button id="btn-close-crea-torneo" class="w-8 h-8 rounded-full bg-court-700 flex items-center justify-center text-white/60 hover:text-white">
-          <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
-        </button>
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="font-display font-700 text-xl">Crea un torneo</h3>
+      <button id="btn-close-crea-torneo" class="w-8 h-8 rounded-full bg-court-700 flex items-center justify-center text-white/60 hover:text-white">
+        <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+
+    <form id="form-crea-torneo" class="space-y-4">
+      <div>
+        <label class="block text-[11px] font-semibold text-court-500 uppercase tracking-wide mb-1.5" for="torneo-nome">Nome del torneo</label>
+        <input id="torneo-nome" type="text" required maxlength="80" placeholder="Torneo d'estate 2026"
+               class="w-full bg-court-700 border border-court-500 rounded-xl px-4 py-3 text-sm text-white focus:border-lime-neon outline-none">
       </div>
 
-      <form id="form-crea-torneo" class="space-y-4">
+      <div class="grid grid-cols-2 gap-3">
         <div>
-          <label class="block text-[11px] font-semibold text-court-500 uppercase tracking-wide mb-1.5" for="torneo-nome">Nome del torneo</label>
-          <input id="torneo-nome" type="text" required maxlength="80" placeholder="Torneo d'estate 2026"
+          <label class="block text-[11px] font-semibold text-court-500 uppercase tracking-wide mb-1.5" for="torneo-inizio">Dal</label>
+          <input id="torneo-inizio" type="date"
                  class="w-full bg-court-700 border border-court-500 rounded-xl px-4 py-3 text-sm text-white focus:border-lime-neon outline-none">
         </div>
-
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="block text-[11px] font-semibold text-court-500 uppercase tracking-wide mb-1.5" for="torneo-inizio">Dal</label>
-            <input id="torneo-inizio" type="date"
-                   class="w-full bg-court-700 border border-court-500 rounded-xl px-4 py-3 text-sm text-white focus:border-lime-neon outline-none">
-          </div>
-          <div>
-            <label class="block text-[11px] font-semibold text-court-500 uppercase tracking-wide mb-1.5" for="torneo-fine">Al</label>
-            <input id="torneo-fine" type="date"
-                   class="w-full bg-court-700 border border-court-500 rounded-xl px-4 py-3 text-sm text-white focus:border-lime-neon outline-none">
-          </div>
-        </div>
-
-        <!-- Un torneo appartiene sempre a un circolo. Il gestore ha il suo e
-             non deve sceglierlo; l'amministratore puo' organizzare per conto
-             di chiunque, quindi deve dire per chi. -->
-        <div id="torneo-circolo-riga" class="hidden">
-          <label class="block text-[11px] font-semibold text-court-500 uppercase tracking-wide mb-1.5" for="torneo-circolo">Circolo</label>
-          <select id="torneo-circolo"
-                  class="w-full bg-court-700 border border-court-500 rounded-xl px-4 py-3 text-sm text-white focus:border-lime-neon outline-none">
-          </select>
-        </div>
-
         <div>
-          <label class="block text-[11px] font-semibold text-court-500 uppercase tracking-wide mb-1.5" for="torneo-livello">Livello</label>
-          <select id="torneo-livello"
-                  class="w-full bg-court-700 border border-court-500 rounded-xl px-4 py-3 text-sm text-white focus:border-lime-neon outline-none">
-            <option value="open">Open · tutti i livelli</option>
-            <option value="principiante">Principiante · 1.0-2.0</option>
-            <option value="intermedio" selected>Intermedio · 2.5-3.5</option>
-            <option value="avanzato">Avanzato · 4.0+</option>
-          </select>
+          <label class="block text-[11px] font-semibold text-court-500 uppercase tracking-wide mb-1.5" for="torneo-fine">Al</label>
+          <input id="torneo-fine" type="date"
+                 class="w-full bg-court-700 border border-court-500 rounded-xl px-4 py-3 text-sm text-white focus:border-lime-neon outline-none">
         </div>
+      </div>
 
-        <p id="crea-torneo-error" class="hidden text-sm text-red-400 font-medium"></p>
+      <!-- Un torneo appartiene sempre a un circolo. Il gestore ha il suo e
+           non deve sceglierlo; l'amministratore puo' organizzare per conto
+           di chiunque, quindi deve dire per chi. -->
+      <div id="torneo-circolo-riga" class="hidden">
+        <label class="block text-[11px] font-semibold text-court-500 uppercase tracking-wide mb-1.5" for="torneo-circolo">Circolo</label>
+        <select id="torneo-circolo"
+                class="w-full bg-court-700 border border-court-500 rounded-xl px-4 py-3 text-sm text-white focus:border-lime-neon outline-none">
+        </select>
+      </div>
 
-        <button type="submit" id="btn-submit-torneo"
-                class="w-full bg-lime-neon text-court-900 font-display font-700 py-3.5 rounded-xl shadow-neon">
-          Crea il torneo
-        </button>
-        <p class="text-[11px] text-court-500 leading-snug">
-          Nasce come bozza: lo vedi solo tu finché non apri le iscrizioni.
-        </p>
-      </form>
+      <div>
+        <label class="block text-[11px] font-semibold text-court-500 uppercase tracking-wide mb-1.5" for="torneo-livello">Livello</label>
+        <select id="torneo-livello"
+                class="w-full bg-court-700 border border-court-500 rounded-xl px-4 py-3 text-sm text-white focus:border-lime-neon outline-none">
+          <option value="open">Open · tutti i livelli</option>
+          <option value="principiante">Principiante · 1.0-2.0</option>
+          <option value="intermedio" selected>Intermedio · 2.5-3.5</option>
+          <option value="avanzato">Avanzato · 4.0+</option>
+        </select>
+      </div>
+
+      <p id="crea-torneo-error" class="hidden text-sm text-red-400 font-medium"></p>
+
+      <button type="submit" id="btn-submit-torneo"
+              class="w-full bg-lime-neon text-court-900 font-display font-700 py-3.5 rounded-xl shadow-neon">
+        Crea il torneo
+      </button>
+      <p class="text-[11px] text-court-500 leading-snug">
+        Nasce come bozza: lo vedi solo tu finché non apri le iscrizioni.
+      </p>
+    </form>
     </div>
   </div>
 
-  <!-- ============ TORNEO: DETTAGLIO ============ -->
-  <div id="modal-torneo" class="hidden fixed inset-0 z-50 items-end sm:items-center justify-center">
-    <div id="modal-torneo-backdrop" class="absolute inset-0 bg-black/70 modal-backdrop"></div>
-    <div class="relative w-full sm:max-w-lg bg-court-800 border border-court-600 rounded-t-3xl sm:rounded-3xl p-6 pb-8 max-h-[92vh] overflow-y-auto">
-      <div class="flex items-start justify-between gap-3 mb-1">
-        <div class="min-w-0">
-          <h3 id="torneo-titolo" class="font-display font-700 text-xl leading-tight truncate">Torneo</h3>
-          <p id="torneo-sottotitolo" class="text-xs text-court-500 mt-0.5"></p>
-        </div>
-        <button id="btn-close-torneo" class="w-8 h-8 rounded-full bg-court-700 flex items-center justify-center text-white/60 hover:text-white shrink-0">
-          <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
-        </button>
-      </div>
-
-      <p id="torneo-detail-error" class="hidden text-sm text-red-400 font-medium mt-3"></p>
-
-      <!-- Pannello di gestione: compare solo al circolo che organizza -->
-      <div id="torneo-gestione" class="hidden mt-4 rounded-2xl border border-court-600 bg-court-900/60 p-3 space-y-3">
-        <p class="text-[11px] font-semibold text-court-500 uppercase tracking-wide">Gestione del torneo</p>
-        <div id="torneo-azioni-stato" class="grid grid-cols-2 gap-2"></div>
-
-        <button type="button" id="btn-genera-tabellone"
-                class="hidden w-full py-2.5 rounded-xl border border-court-500 text-sm font-semibold text-white/80 hover:border-lime-neon hover:text-lime-neon transition-colors">
-          Genera il tabellone
-        </button>
-
-        <div id="torneo-gestione-preparazione" class="space-y-3">
-          <div class="flex gap-2">
-            <button type="button" id="btn-aggiungi-girone"
-                    class="flex-1 py-2.5 rounded-xl border border-court-500 text-sm font-semibold text-white/80 hover:border-lime-neon hover:text-lime-neon transition-colors">
-              + Girone
-            </button>
-            <button type="button" id="btn-genera-calendario"
-                    class="flex-1 py-2.5 rounded-xl border border-court-500 text-sm font-semibold text-white/80 hover:border-lime-neon hover:text-lime-neon transition-colors">
-              Genera calendario
-            </button>
-          </div>
-
-          <div class="rounded-xl border border-court-600 p-3 space-y-2">
-            <p class="text-[11px] font-semibold text-court-500 uppercase tracking-wide">Iscrivi una coppia</p>
-            <div class="grid grid-cols-2 gap-2">
-              <input id="squadra-g1" type="text" maxlength="60" placeholder="Giocatore 1" list="iscritti-app"
-                     class="w-full bg-court-700 border border-court-500 rounded-lg px-3 py-2 text-sm text-white focus:border-lime-neon outline-none">
-              <input id="squadra-g2" type="text" maxlength="60" placeholder="Giocatore 2" list="iscritti-app"
-                     class="w-full bg-court-700 border border-court-500 rounded-lg px-3 py-2 text-sm text-white focus:border-lime-neon outline-none">
-            </div>
-            <!-- I nomi si scrivono liberi: un torneo ha anche giocatori che
-                 l'app non ce l'hanno. Chi invece e' iscritto viene suggerito
-                 qui, e collegato al suo account: e' cio' che fa comparire la
-                 medaglia sul suo profilo se vince. -->
-            <datalist id="iscritti-app"></datalist>
-            <p class="text-[11px] text-court-500 leading-snug">
-              Se il giocatore ha l'app, scegli il suo nome dai suggerimenti: viene collegato
-              al suo account e la vittoria gli comparira' sul profilo.
-            </p>
-            <select id="squadra-girone"
-                    class="w-full bg-court-700 border border-court-500 rounded-lg px-3 py-2 text-sm text-white focus:border-lime-neon outline-none"></select>
-            <button type="button" id="btn-aggiungi-squadra"
-                    class="w-full bg-lime-neon text-court-900 font-display font-700 py-2.5 rounded-lg">
-              Iscrivi la coppia
-            </button>
-          </div>
-
-          <div id="torneo-collegamenti" class="rounded-xl border border-court-600 p-3 space-y-2 hidden">
-            <p class="text-[11px] font-semibold text-court-500 uppercase tracking-wide">Coppie iscritte</p>
-            <p class="text-[11px] text-court-500 leading-snug">
-              Chi e' collegato al proprio account riceve la medaglia sul profilo se vince.
-              Gli altri giocano lo stesso: il collegamento e' facoltativo.
-            </p>
-            <div id="collegamenti-lista" class="space-y-2"></div>
-          </div>
-        </div>
-      </div>
-
-      <div id="torneo-loading" class="mt-4 space-y-2">
-        <div class="h-24 rounded-xl bg-court-700 animate-pulse"></div>
-        <div class="h-24 rounded-xl bg-court-700 animate-pulse"></div>
-      </div>
-
-      <div id="torneo-contenuto" class="mt-4 space-y-5"></div>
+  <!-- ============ PAGINA DEL SINGOLO TORNEO ============ -->
+  <section id="pagina-torneo" class="hidden max-w-3xl mx-auto px-4 pb-28">
+    <div class="pt-6 pb-2">
+      <button type="button" id="btn-close-torneo"
+              class="text-xs text-court-500 hover:text-lime-neon transition-colors mb-3">
+        &larr; Tutti i tornei
+      </button>
+      <h1 id="torneo-titolo" class="font-display text-3xl font-700 leading-tight">Torneo</h1>
+      <p id="torneo-sottotitolo" class="text-sm text-court-500 mt-1"></p>
     </div>
-  </div>
+
+    <p id="torneo-detail-error" class="hidden text-sm text-red-400 font-medium mb-3"></p>
+
+    <!-- Pannello di gestione: compare solo al circolo che organizza -->
+    <div id="torneo-gestione" class="hidden mt-4 rounded-2xl border border-court-600 bg-court-900/60 p-3 space-y-3">
+      <p class="text-[11px] font-semibold text-court-500 uppercase tracking-wide">Gestione del torneo</p>
+      <div id="torneo-azioni-stato" class="grid grid-cols-2 gap-2"></div>
+
+      <button type="button" id="btn-genera-tabellone"
+              class="hidden w-full py-2.5 rounded-xl border border-court-500 text-sm font-semibold text-white/80 hover:border-lime-neon hover:text-lime-neon transition-colors">
+        Genera il tabellone
+      </button>
+
+      <!-- Il passo che non si intuisce: i punteggi si inseriscono solo a
+           torneo avviato. Detto qui, dove serve, invece che lasciato
+           indovinare. -->
+      <p id="torneo-suggerimento"
+         class="hidden text-xs text-lime-neon bg-lime-neon/10 border border-lime-neon/30 rounded-xl px-3 py-2 leading-snug"></p>
+
+      <div id="torneo-gestione-preparazione" class="grid sm:grid-cols-2 gap-3 items-start">
+        <div class="space-y-3">
+        <div class="flex gap-2">
+          <button type="button" id="btn-aggiungi-girone"
+                  class="flex-1 py-2.5 rounded-xl border border-court-500 text-sm font-semibold text-white/80 hover:border-lime-neon hover:text-lime-neon transition-colors">
+            + Girone
+          </button>
+          <button type="button" id="btn-genera-calendario"
+                  class="flex-1 py-2.5 rounded-xl border border-court-500 text-sm font-semibold text-white/80 hover:border-lime-neon hover:text-lime-neon transition-colors">
+            Genera calendario
+          </button>
+        </div>
+
+        <div class="rounded-xl border border-court-600 p-3 space-y-2">
+          <p class="text-[11px] font-semibold text-court-500 uppercase tracking-wide">Iscrivi una coppia</p>
+          <div class="grid grid-cols-2 gap-2">
+            <input id="squadra-g1" type="text" maxlength="60" placeholder="Giocatore 1" list="iscritti-app"
+                   class="w-full bg-court-700 border border-court-500 rounded-lg px-3 py-2 text-sm text-white focus:border-lime-neon outline-none">
+            <input id="squadra-g2" type="text" maxlength="60" placeholder="Giocatore 2" list="iscritti-app"
+                   class="w-full bg-court-700 border border-court-500 rounded-lg px-3 py-2 text-sm text-white focus:border-lime-neon outline-none">
+          </div>
+          <!-- I nomi si scrivono liberi: un torneo ha anche giocatori che
+               l'app non ce l'hanno. Chi invece e' iscritto viene suggerito
+               qui, e collegato al suo account: e' cio' che fa comparire la
+               medaglia sul suo profilo se vince. -->
+          <datalist id="iscritti-app"></datalist>
+          <p class="text-[11px] text-court-500 leading-snug">
+            Se il giocatore ha l'app, scegli il suo nome dai suggerimenti: viene collegato
+            al suo account e la vittoria gli comparira' sul profilo.
+          </p>
+          <select id="squadra-girone"
+                  class="w-full bg-court-700 border border-court-500 rounded-lg px-3 py-2 text-sm text-white focus:border-lime-neon outline-none"></select>
+          <button type="button" id="btn-aggiungi-squadra"
+                  class="w-full bg-lime-neon text-court-900 font-display font-700 py-2.5 rounded-lg">
+            Iscrivi la coppia
+          </button>
+        </div>
+
+        </div><!-- fine colonna dei comandi -->
+
+        <div id="torneo-collegamenti" class="rounded-xl border border-court-600 p-3 space-y-2 hidden">
+          <p class="text-[11px] font-semibold text-court-500 uppercase tracking-wide">Coppie iscritte</p>
+          <p class="text-[11px] text-court-500 leading-snug">
+            Chi e' collegato al proprio account riceve la medaglia sul profilo se vince.
+            Gli altri giocano lo stesso: il collegamento e' facoltativo.
+          </p>
+          <div id="collegamenti-lista" class="space-y-2"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="torneo-loading" class="mt-4 space-y-2">
+      <div class="h-24 rounded-xl bg-court-700 animate-pulse"></div>
+      <div class="h-24 rounded-xl bg-court-700 animate-pulse"></div>
+    </div>
+
+    <div id="torneo-contenuto" class="mt-4 space-y-5"></div>
+  </section>
 
   <!-- ============ TOAST ============ -->
   <div id="toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] bg-court-700 border border-lime-neon text-white text-sm font-semibold px-5 py-3 rounded-full shadow-neon-sm max-w-[90vw] text-center"></div>
@@ -1079,9 +1085,11 @@ const el = {
   btnLogout: document.getElementById('btn-logout'),
   // Tornei
   btnOpenTornei: document.getElementById('btn-open-tornei'),
-  modalTornei: document.getElementById('modal-tornei'),
-  modalTorneiBackdrop: document.getElementById('modal-tornei-backdrop'),
-  btnCloseTornei: document.getElementById('btn-close-tornei'),
+  paginaHome: document.getElementById('pagina-home'),
+  paginaTornei: document.getElementById('pagina-tornei'),
+  paginaTorneo: document.getElementById('pagina-torneo'),
+  btnTorneiIndietro: document.getElementById('btn-tornei-indietro'),
+  torneoSuggerimento: document.getElementById('torneo-suggerimento'),
   btnNuovoTorneo: document.getElementById('btn-nuovo-torneo'),
   torneiLoading: document.getElementById('tornei-loading'),
   torneiEmpty: document.getElementById('tornei-empty'),
@@ -1099,8 +1107,6 @@ const el = {
   creaTorneoError: document.getElementById('crea-torneo-error'),
   btnSubmitTorneo: document.getElementById('btn-submit-torneo'),
 
-  modalTorneo: document.getElementById('modal-torneo'),
-  modalTorneoBackdrop: document.getElementById('modal-torneo-backdrop'),
   btnCloseTorneo: document.getElementById('btn-close-torneo'),
   torneoTitolo: document.getElementById('torneo-titolo'),
   torneoSottotitolo: document.getElementById('torneo-sottotitolo'),
@@ -1227,6 +1233,21 @@ function messaggioErrore(err, fallback) {
   }
 
   return fallback;
+}
+
+/**
+ * Le pagine dell'app. Non sono finestre sovrapposte: se ne vede una
+ * per volta, a tutta larghezza, come la home. Un torneo ha bisogno di
+ * spazio — gironi, calendario, punteggi — e in un riquadro da telefono
+ * dentro un altro riquadro non ci sta.
+ */
+const PAGINE = ['paginaHome', 'paginaTornei', 'paginaTorneo'];
+
+function mostraPagina(nome) {
+  for (const p of PAGINE) {
+    el[p].classList.toggle('hidden', p !== nome);
+  }
+  window.scrollTo({ top: 0, behavior: 'instant' });
 }
 
 function openModal(modalEl) {
@@ -3245,7 +3266,7 @@ async function eliminaTorneo() {
     if (error) throw error;
     torneoCorrente = null;
     torneoDati = null;
-    closeModal(el.modalTorneo);
+    mostraPagina('paginaTornei');
     showToast('Torneo cancellato.');
     await caricaTornei();
   } catch (e) {
@@ -3435,7 +3456,7 @@ async function caricaDatiTorneo(torneoId) {
 
 // ----- Elenco dei tornei -----
 async function apriTornei() {
-  openModal(el.modalTornei);
+  mostraPagina('paginaTornei');
   el.torneiLoading.classList.remove('hidden');
   el.torneiEmpty.classList.add('hidden');
   el.torneiList.innerHTML = '';
@@ -3506,8 +3527,7 @@ function formattaDataTorneo(iso) {
 
 // ----- Dettaglio del torneo -----
 async function apriTorneo(torneoId) {
-  closeModal(el.modalTornei);
-  openModal(el.modalTorneo);
+  mostraPagina('paginaTorneo');
 
   el.torneoDetailError.classList.add('hidden');
   el.torneoLoading.classList.remove('hidden');
@@ -3737,7 +3757,7 @@ function creaRigaIncontro(incontro) {
   const ospite = squadra(incontro.squadra_ospite);
 
   const riga = document.createElement('div');
-  riga.className = 'rounded-lg bg-court-700 border border-court-600 px-2.5 py-2';
+  riga.className = 'rounded-xl bg-court-700 border border-court-600 px-3 py-2.5';
 
   const linea = document.createElement('div');
   linea.className = 'flex items-center gap-2';
@@ -3746,12 +3766,12 @@ function creaRigaIncontro(incontro) {
   nomi.className = 'flex-1 min-w-0';
 
   const c = document.createElement('p');
-  c.className = 'text-xs truncate '
+  c.className = 'text-sm truncate leading-relaxed '
     + (incontro.vincitore === 'C' ? 'font-bold text-lime-neon' : 'text-white/80');
   c.textContent = nomeSquadra(casa);
 
   const o = document.createElement('p');
-  o.className = 'text-xs truncate '
+  o.className = 'text-sm truncate leading-relaxed '
     + (incontro.vincitore === 'O' ? 'font-bold text-lime-neon' : 'text-white/80');
   o.textContent = nomeSquadra(ospite);
 
@@ -3759,7 +3779,7 @@ function creaRigaIncontro(incontro) {
   nomi.appendChild(o);
 
   const punteggio = document.createElement('span');
-  punteggio.className = 'text-xs font-display font-700 shrink-0 '
+  punteggio.className = 'text-sm font-display font-700 shrink-0 '
     + (incontro.sets ? 'text-white' : 'text-court-500');
   punteggio.textContent = incontro.sets ? formattaSet(incontro.sets) : 'da giocare';
 
@@ -3785,7 +3805,10 @@ function creaAzioniIncontro(incontro, riga) {
 
   const bottone = document.createElement('button');
   bottone.type = 'button';
-  bottone.className = 'w-full py-1.5 rounded-lg border border-court-500 text-[11px] font-semibold text-white/70 hover:border-lime-neon hover:text-lime-neon transition-colors';
+  bottone.className = incontro.sets
+    ? 'w-full py-2 rounded-lg border border-court-500 text-xs font-semibold text-white/70 '
+      + 'hover:border-lime-neon hover:text-lime-neon transition-colors'
+    : 'w-full py-2.5 rounded-lg bg-lime-neon text-court-900 font-display font-700 text-xs';
   bottone.textContent = incontro.sets ? 'Correggi il punteggio' : 'Inserisci il punteggio';
 
   bottone.addEventListener('click', () => {
@@ -3917,6 +3940,31 @@ function renderGestioneTorneo() {
 
   el.torneoCollegamenti.classList.toggle('hidden', !inPreparazione);
   if (inPreparazione) renderCollegamenti();
+
+  // Il passo successivo, scritto per esteso. Sono tre cose in fila e
+  // saltarne una lascia bloccati senza capire perche'.
+  const haCalendario = torneoDati.incontri.some((i) => i.fase === 'girone');
+  const haSquadre = torneoDati.squadre.length > 0;
+  let suggerimento = '';
+
+  if (t.stato === 'bozza' || t.stato === 'iscrizioni') {
+    if (torneoDati.gironi.length === 0) {
+      suggerimento = 'Passo 1 di 4: crea i gironi.';
+    } else if (!haSquadre) {
+      suggerimento = 'Passo 2 di 4: iscrivi le coppie e assegnale ai gironi.';
+    } else if (!haCalendario) {
+      suggerimento = 'Passo 3 di 4: genera il calendario.';
+    } else {
+      suggerimento = 'Passo 4 di 4: avvia il torneo. I punteggi si inseriscono '
+        + 'solo da li in poi, direttamente sotto ogni incontro del calendario.';
+    }
+  } else if (t.stato === 'in_corso') {
+    suggerimento = 'Torneo avviato: inserisci i punteggi sotto ogni incontro, '
+      + 'qui sotto nel calendario.';
+  }
+
+  el.torneoSuggerimento.textContent = suggerimento;
+  el.torneoSuggerimento.classList.toggle('hidden', !suggerimento);
 
   if (inPreparazione) {
     el.squadraGirone.innerHTML = '';
@@ -4151,7 +4199,6 @@ el.btnNuovoTorneo.addEventListener('click', async () => {
   el.creaTorneoError.classList.add('hidden');
   el.formCreaTorneo.reset();
   el.torneoLivello.value = 'intermedio';
-  closeModal(el.modalTornei);
   openModal(el.modalCreaTorneo);
   await preparaSceltaCircolo();
 });
@@ -4203,10 +4250,12 @@ el.formCreaTorneo.addEventListener('submit', async (e) => {
 });
 
 el.btnOpenTornei.addEventListener('click', apriTornei);
-el.btnCloseTornei.addEventListener('click', () => closeModal(el.modalTornei));
-el.modalTorneiBackdrop.addEventListener('click', () => closeModal(el.modalTornei));
-el.btnCloseTorneo.addEventListener('click', () => closeModal(el.modalTorneo));
-el.modalTorneoBackdrop.addEventListener('click', () => closeModal(el.modalTorneo));
+el.btnTorneiIndietro.addEventListener('click', () => mostraPagina('paginaHome'));
+el.btnCloseTorneo.addEventListener('click', () => {
+  torneoCorrente = null;
+  torneoDati = null;
+  mostraPagina('paginaTornei');
+});
 el.btnCloseCreaTorneo.addEventListener('click', () => closeModal(el.modalCreaTorneo));
 el.modalCreaTorneoBackdrop.addEventListener('click', () => closeModal(el.modalCreaTorneo));
 
