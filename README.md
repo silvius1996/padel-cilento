@@ -2,7 +2,7 @@
 
 App per organizzare e trovare partite di padel nel Cilento (Paestum, Capaccio, Agropoli).
 
-Online su **https://padelcilento.silvius13-bet.workers.dev**
+Online su **https://padel-cilento.vercel.app**
 
 ## Com'e fatto
 
@@ -10,7 +10,7 @@ Online su **https://padelcilento.silvius13-bet.workers.dev**
 |---|---|
 | Interfaccia | `public/index.html` — una sola pagina, JavaScript senza framework. Tailwind e la libreria Supabase sono serviti dal nostro dominio, non da CDN esterni |
 | Database | Supabase (PostgreSQL) — tabelle, permessi e regole in `supabase/migrations/` |
-| Pubblicazione | Cloudflare Workers — viene pubblicata **solo** la cartella `public/` |
+| Pubblicazione | Vercel — viene pubblicata **solo** la cartella `public/` |
 | Test | `test/db.test.mjs` — esegue le migrazioni su un PostgreSQL in WebAssembly |
 
 Il principio di fondo: **le regole stanno nel database, non nell'interfaccia.** Chi
@@ -32,19 +32,37 @@ Perche l'ordine conta: il database va aggiornato **prima** del sito, altrimenti
 per qualche minuto la pagina nuova cerca funzioni che nel database non esistono
 ancora. I tre passi sono legati fra loro, quindi quell'ordine e garantito.
 
-Servono due segreti, impostati una volta sola in
+Servono quattro segreti, impostati una volta sola in
 *Settings -> Secrets and variables -> Actions*:
 
 | Segreto | Cos'e |
 |---|---|
 | `SUPABASE_DB_URL` | la stringa di connessione al database, la stessa che sta in `.env` |
-| `CLOUDFLARE_API_TOKEN` | una chiave creata dal pannello Cloudflare, modello "Edit Cloudflare Workers" |
+| `VERCEL_TOKEN` | una chiave creata su [vercel.com/account/tokens](https://vercel.com/account/tokens) |
+| `VERCEL_ORG_ID` | identificativo dell'account Vercel |
+| `VERCEL_PROJECT_ID` | identificativo del progetto Vercel |
 
-C'e anche un terzo segreto **facoltativo**, `CLOUDFLARE_ACCOUNT_ID`: serve solo
-se la chiave ha accesso a piu di un account Cloudflare, perche in quel caso la
-pubblicazione non saprebbe su quale andare. Con un account solo si puo omettere.
-Se serve, e la sequenza di lettere e numeri che compare nell'indirizzo del
-pannello Cloudflare subito dopo `dash.cloudflare.com/`.
+Gli ultimi due si leggono dal file `.vercel/project.json`, che compare sul
+computer dopo aver lanciato una volta `npx vercel link` (il file resta locale:
+e nell'elenco di quelli ignorati da git).
+
+### Perche il deploy lo fa GitHub e non Vercel
+
+Vercel e collegato al repository e, di suo, pubblicherebbe a ogni push. Ma
+pubblicherebbe **subito**, senza aspettare le migrazioni: per qualche minuto il
+sito nuovo cercherebbe funzioni che nel database non esistono ancora. E
+esattamente il problema che l'ordine dei tre passi evita.
+
+Per questo in `vercel.json` la pubblicazione automatica sul ramo `master` e
+disattivata:
+
+```json
+"git": { "deploymentEnabled": { "master": false } }
+```
+
+L'unica strada che porta in produzione e quindi il workflow, che pubblica solo
+dopo che test e migrazioni sono andati a buon fine. Gli altri rami restano
+liberi: se ne apri uno, Vercel genera come sempre la sua anteprima.
 
 ## Comandi
 
@@ -89,8 +107,9 @@ per cui la modalita torneo funziona senza obbligare nessuno a registrarsi.
 
 Le classi Tailwind vengono compilate in `public/styles.css` da `npm run build:css`,
 che legge la configurazione (colori, font, ombre) da `tailwind.config.js`. Il
-`deploy` lo rigenera da solo, quindi normalmente non serve lanciarlo a mano: serve
-solo se vuoi vedere l'effetto di una classe nuova aprendo il file in locale.
+`deploy` lo rigenera da solo — e' il `buildCommand` scritto in `vercel.json` —
+quindi normalmente non serve lanciarlo a mano: serve solo se vuoi vedere
+l'effetto di una classe nuova aprendo il file in locale.
 
 Prima Tailwind arrivava dal CDN e compilava gli stili nel browser a ogni apertura:
 comodo, ma se il CDN era lento o bloccato la pagina si apriva come testo nudo,
@@ -108,11 +127,17 @@ Serve una volta sola, su un computer nuovo.
    npm install
    ```
 
-2. **Accesso a Cloudflare** (si apre il browser)
+2. **Accesso a Vercel** (si apre il browser, poi collega la cartella al
+   progetto gia esistente)
 
    ```bash
-   npx wrangler login
+   npx vercel login
+   npx vercel link
    ```
+
+   `link` crea `.vercel/project.json`, da cui si leggono `VERCEL_ORG_ID` e
+   `VERCEL_PROJECT_ID`. Serve solo per lavorare o pubblicare a mano: se ti
+   limiti a fare `push`, questo passo si puo saltare.
 
 3. **Accesso al database**: copia `.env.example` in `.env` e incolla la stringa di
    connessione (pannello Supabase, pulsante **Connect**).

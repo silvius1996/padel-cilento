@@ -5,10 +5,11 @@
 # Dipendenze
 node_modules/
 
-# File di lavoro di Supabase e Wrangler
+# File di lavoro di Supabase e Vercel
 supabase/.temp/
 supabase/.branches/
-.wrangler/
+# Contiene gli identificativi del progetto e la compilazione locale
+.vercel/
 
 # Impostazioni locali di Claude Code (contengono percorsi di questo computer)
 .claude/settings.local.json

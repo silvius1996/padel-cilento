@@ -16,13 +16,20 @@
 # SERVONO TRE SEGRETI, da impostare una volta sola in
 # Settings -> Secrets and variables -> Actions:
 #
-#   SUPABASE_DB_URL         la stringa di connessione al database
-#                           (la stessa che sta nel file .env)
-#   CLOUDFLARE_API_TOKEN    token con permesso "Edit Cloudflare Workers"
-#   CLOUDFLARE_ACCOUNT_ID   l'identificativo dell'account Cloudflare
+#   SUPABASE_DB_URL     la stringa di connessione al database
+#                       (la stessa che sta nel file .env)
+#   VERCEL_TOKEN        token personale creato su vercel.com/account/tokens
+#   VERCEL_ORG_ID       identificativo dell'account Vercel
+#   VERCEL_PROJECT_ID   identificativo del progetto Vercel
 #
 # Finche' non ci sono, il passo corrispondente si ferma spiegando
 # quale manca.
+#
+# Perche' il deploy lo fa GitHub e non Vercel da solo: Vercel, collegato
+# al repository, pubblicherebbe a ogni push senza aspettare le migrazioni,
+# e per qualche minuto il sito nuovo cercherebbe funzioni che nel database
+# non esistono ancora. Per questo in vercel.json la pubblicazione
+# automatica sul ramo principale e' disattivata: l'unica strada e' questa.
 # =========================================================
 
 name: Pubblica
@@ -48,8 +55,6 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          # Non e' un capriccio: wrangler, lo strumento che pubblica su
-          # Cloudflare, si rifiuta di partire con meno della 22.
           node-version: 22
       # Playwright sta fra le dipendenze perche' scripts/marchio.mjs e
       # scripts/spot.mjs lo usano, ma qui non si apre nessun browser:
@@ -68,8 +73,6 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          # Non e' un capriccio: wrangler, lo strumento che pubblica su
-          # Cloudflare, si rifiuta di partire con meno della 22.
           node-version: 22
 
       - name: Controllo del segreto
@@ -109,30 +112,24 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          # Non e' un capriccio: wrangler, lo strumento che pubblica su
-          # Cloudflare, si rifiuta di partire con meno della 22.
           node-version: 22
 
       - name: Controllo dei segreti
         env:
-          TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          ORG: ${{ secrets.VERCEL_ORG_ID }}
+          PROGETTO: ${{ secrets.VERCEL_PROJECT_ID }}
         run: |
           if [ -z "$TOKEN" ]; then
-            echo "Manca il segreto CLOUDFLARE_API_TOKEN."
-            echo "Si crea dal pannello Cloudflare, sezione token API,"
-            echo "con il modello \"Edit Cloudflare Workers\"."
+            echo "Manca il segreto VERCEL_TOKEN."
+            echo "Si crea su https://vercel.com/account/tokens."
             exit 1
           fi
-          # L'identificativo dell'account e' facoltativo: se la chiave ha
-          # accesso a un solo account, Cloudflare lo ricava da sola. Serve
-          # indicarlo solo quando gli account sono piu' di uno, perche' li'
-          # la pubblicazione non saprebbe su quale andare.
-          if [ -z "$ACCOUNT" ]; then
-            echo "CLOUDFLARE_ACCOUNT_ID non impostato: si lascia decidere alla chiave."
-            echo "Se la pubblicazione qui sotto dice di non sapere quale account usare,"
-            echo "aggiungi il segreto: e' la sequenza di lettere e numeri che compare"
-            echo "nell'indirizzo del pannello Cloudflare, subito dopo dash.cloudflare.com/"
+          if [ -z "$ORG" ] || [ -z "$PROGETTO" ]; then
+            echo "Mancano VERCEL_ORG_ID o VERCEL_PROJECT_ID."
+            echo "Si leggono dal file .vercel/project.json che compare sul"
+            echo "computer dopo aver lanciato una volta:  npx vercel link"
+            exit 1
           fi
 
       # Playwright sta fra le dipendenze perche' scripts/marchio.mjs e
@@ -143,10 +140,23 @@ jobs:
         env:
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
 
-      # Rigenera il foglio di stile e pubblica: e' esattamente il
-      # comando "npm run deploy" che si usava dal computer.
+      # Tre comandi invece di uno perche' la compilazione avviene qui,
+      # non sui server di Vercel: si carica il risultato gia' pronto
+      # ("--prebuilt"). Cosi' se il foglio di stile non compila, il
+      # workflow si ferma e in produzione non arriva niente.
+      #
+      #   pull    scarica le impostazioni del progetto (senza questo,
+      #           "build" non saprebbe che si sta preparando la produzione)
+      #   build   rigenera public/styles.css e prepara .vercel/output
+      #   deploy  carica e mette online
       - name: Pubblica il sito
         env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: npm run deploy
+          TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          # I due identificativi vanno passati con questi nomi esatti:
+          # sono quelli che la CLI cerca da sola.
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          npx vercel pull --yes --environment=production --token="$TOKEN"
+          npx vercel build --prod --token="$TOKEN"
+          npx vercel deploy --prebuilt --prod --token="$TOKEN"
