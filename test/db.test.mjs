@@ -2003,6 +2003,133 @@ async function testTabellone() {
  * Le partite normali NON cambiano: li' non c'e' un organizzatore che
  * stabilisca il formato, e la regola dei due set su tre resta fissa.
  */
+/**
+ * Gironi a set secco e finali a due set su tre.
+ *
+ * E' il modo in cui i circoli organizzano davvero: tanti incontri
+ * veloci nei gironi, e poi le finali giocate per bene. Il formato
+ * delle finali puo' restare vuoto, e allora vale quello dei gironi:
+ * cosi' i tornei gia' esistenti non cambiano comportamento.
+ */
+async function testFormatoFinali() {
+  console.log('\nGIRONI E FINALI CON FORMATI DIVERSI');
+
+  await db.exec('reset role');
+  const { rows: c } = await db.query('select id from public.circoli where nome = $1', [CIRCOLO_NOME]);
+
+  await come(U.bea);
+  await db.exec('set role authenticated');
+
+  // Due gironi da due coppie: quattro qualificate, quindi semifinali e finale.
+  const { rows: t } = await db.query(
+    `insert into public.tornei
+       (circolo_id, nome, creato_da, formato_punteggio, formato_punteggio_finali,
+        qualificate_per_girone)
+     values ($1, 'Gironi secchi, finali lunghe', $2, 'set_unico', 'due_su_tre', 2)
+     returning id`,
+    [c[0].id, U.bea],
+  );
+  const torneo = t[0].id;
+
+  const gironi = [];
+  for (const [nome, ordine] of [['A', 1], ['B', 2]]) {
+    const { rows } = await db.query(
+      `insert into public.tornei_gironi (torneo_id, nome, ordine) values ($1, $2, $3) returning id`,
+      [torneo, nome, ordine],
+    );
+    gironi.push(rows[0].id);
+  }
+
+  const coppie = [['Aldo', 'Bea'], ['Carlo', 'Dina'], ['Ester', 'Fabio'], ['Gino', 'Ilde']];
+  for (let i = 0; i < coppie.length; i++) {
+    await db.query(
+      `insert into public.torneo_squadre (torneo_id, giocatore_1, giocatore_2, girone_id)
+       values ($1, $2, $3, $4)`,
+      [torneo, coppie[i][0], coppie[i][1], gironi[Math.floor(i / 2)]],
+    );
+  }
+
+  await db.query('select public.torneo_genera_calendario($1)', [torneo]);
+  await db.query("select public.torneo_cambia_stato($1, 'iscrizioni')", [torneo]);
+  await db.query("select public.torneo_cambia_stato($1, 'in_corso')", [torneo]);
+
+  // I gironi: un set basta.
+  const { rows: incontriGirone } = await db.query(
+    `select id from public.torneo_incontri where torneo_id = $1 and fase = 'girone' order by ordine`,
+    [torneo],
+  );
+
+  await deveRiuscire('nei gironi un set solo basta', () => db.query(
+    'select public.torneo_registra_risultato($1, $2::jsonb)', [incontriGirone[0].id, '[[6,3]]'],
+  ));
+
+  for (let i = 1; i < incontriGirone.length; i++) {
+    await db.query('select public.torneo_registra_risultato($1, $2::jsonb)',
+      [incontriGirone[i].id, '[[6,2]]']);
+  }
+
+  // Le finali: il set secco non basta piu'.
+  await db.query('select public.torneo_genera_tabellone($1)', [torneo]);
+  const { rows: semifinali } = await db.query(
+    `select id from public.torneo_incontri where torneo_id = $1 and fase = 'semifinale' order by ordine`,
+    [torneo],
+  );
+
+  esito('il tabellone e stato generato', semifinali.length === 2, `${semifinali.length} semifinali`);
+
+  await deveFallire(
+    'in semifinale un set solo viene rifiutato',
+    () => db.query('select public.torneo_registra_risultato($1, $2::jsonb)',
+      [semifinali[0].id, '[[6,3]]']),
+    '2 o 3 set',
+  );
+
+  await deveRiuscire('in semifinale servono due set', () => db.query(
+    'select public.torneo_registra_risultato($1, $2::jsonb)', [semifinali[0].id, '[[6,3],[6,4]]'],
+  ));
+
+  // E la funzione che risponde alla domanda, direttamente.
+  const { rows: fg } = await db.query(
+    "select public.torneo_formato_incontro($1, 'girone') f", [torneo],
+  );
+  uguale('il formato del girone e set unico', 'set_unico', fg[0].f);
+  const { rows: ff } = await db.query(
+    "select public.torneo_formato_incontro($1, 'finale') f", [torneo],
+  );
+  uguale('il formato della finale e due su tre', 'due_su_tre', ff[0].f);
+
+  await db.exec('reset role');
+}
+
+/**
+ * Chi non distingue non deve scegliere due volte: con il formato delle
+ * finali vuoto vale quello dei gironi, ovunque.
+ */
+async function testFormatoFinaliEreditato() {
+  console.log('\nFORMATO DELLE FINALI NON INDICATO');
+
+  await db.exec('reset role');
+  const { rows: c } = await db.query('select id from public.circoli where nome = $1', [CIRCOLO_NOME]);
+
+  await come(U.bea);
+  await db.exec('set role authenticated');
+
+  const { rows: t } = await db.query(
+    `insert into public.tornei (circolo_id, nome, creato_da, formato_punteggio)
+     values ($1, 'Tutto a set unico', $2, 'set_unico') returning id, formato_punteggio_finali`,
+    [c[0].id, U.bea],
+  );
+
+  uguale('il formato delle finali resta vuoto', null, t[0].formato_punteggio_finali);
+
+  const { rows: f } = await db.query(
+    "select public.torneo_formato_incontro($1, 'finale') f", [t[0].id],
+  );
+  uguale('e le finali ereditano il set unico', 'set_unico', f[0].f);
+
+  await db.exec('reset role');
+}
+
 async function testSetUnico() {
   console.log('\nTORNEI A SET UNICO');
 
@@ -2353,6 +2480,8 @@ async function main() {
   await testParitaClassifica();
   await testTabellone();
   await testSetUnico();
+  await testFormatoFinali();
+  await testFormatoFinaliEreditato();
   await testCorrezioniTorneo();
   await testCollegamentoGiocatori();
   await testBacheca();
