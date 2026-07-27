@@ -17,6 +17,12 @@ module.exports = {
           700: '#171D19',
           600: '#222A25',
           500: '#333D36',
+          // I toni sopra sono superfici e bordi: come TESTO su fondo scuro
+          // court-500 dava 1.71:1, quando il minimo leggibile e' 4.5:1.
+          // Questi due sono nati per il testo secondario: 7.25:1 sulla
+          // pagina e 6.44:1 sulle schede.
+          400: '#6F7C75',
+          300: '#94A29A',
         },
       },
       fontFamily: {

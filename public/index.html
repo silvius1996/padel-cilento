@@ -122,27 +122,32 @@
   <!-- ============ HEADER / NAVBAR ============ -->
   <header class="sticky top-0 z-40 bg-court-900/90 backdrop-blur border-b border-court-600">
     <div class="max-w-2xl mx-auto px-4 h-16 flex items-center justify-between">
-      <div class="flex items-center gap-2">
+      <!-- Il marchio riporta alla home: e' cio' che ci si aspetta cliccandolo.
+           Su schermo stretto resta la sola icona, per lasciare spazio alle
+           etichette dei pulsanti qui accanto. -->
+      <button type="button" id="btn-home" class="flex items-center gap-2 shrink-0" aria-label="Torna alla home">
         <!-- Il marchio arriva dallo stesso file dell'icona dell'app (npm run marchio),
              cosi' header e home screen non possono divergere. -->
         <img src="/icons/icon.svg" alt="" width="36" height="36" class="w-9 h-9 rounded-lg shadow-neon">
-        <span class="font-display font-700 text-lg tracking-tight">Padel <span class="text-lime-neon">Cilento</span></span>
-      </div>
+        <span class="hidden min-[560px]:inline font-display font-700 text-lg tracking-tight">Padel <span class="text-lime-neon">Cilento</span></span>
+      </button>
 
-      <div id="auth-area" class="flex items-center gap-2">
-        <button id="btn-open-ranking" title="Classifica" aria-label="Classifica"
-                class="w-9 h-9 rounded-full bg-court-700 border border-court-500 flex items-center justify-center text-white/70 hover:border-lime-neon hover:text-lime-neon transition-colors shrink-0">
-          <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <div id="auth-area" class="flex items-center gap-1.5 sm:gap-2">
+        <button id="btn-open-ranking" title="Classifica"
+                class="h-9 px-2 sm:px-2.5 gap-1 sm:gap-1.5 rounded-full bg-court-700 border border-court-500 flex items-center justify-center text-white/70 hover:border-lime-neon hover:text-lime-neon transition-colors shrink-0">
+          <svg viewBox="0 0 24 24" class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M8 21h8M12 17v4M7 4h10v4a5 5 0 01-10 0V4z"/><path d="M17 5h2a2 2 0 01-2 3M7 5H5a2 2 0 002 3"/>
           </svg>
+          <span class="text-xs font-semibold">Classifica</span>
         </button>
-        <button id="btn-open-tornei" title="Tornei" aria-label="Tornei"
-                class="w-9 h-9 rounded-full bg-court-700 border border-court-500 flex items-center justify-center text-white/70 hover:border-lime-neon hover:text-lime-neon transition-colors shrink-0">
-          <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <button id="btn-open-tornei" title="Tornei"
+                class="h-9 px-2 sm:px-2.5 gap-1 sm:gap-1.5 rounded-full bg-court-700 border border-court-500 flex items-center justify-center text-white/70 hover:border-lime-neon hover:text-lime-neon transition-colors shrink-0">
+          <svg viewBox="0 0 24 24" class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M4 4v5a3 3 0 003 3h3M4 20v-5a3 3 0 013-3h3M20 4v5a3 3 0 01-3 3h-3M20 20v-5a3 3 0 00-3-3h-3"/>
           </svg>
+          <span class="text-xs font-semibold">Tornei</span>
         </button>
-        <button id="btn-login" class="px-4 py-2 rounded-full bg-court-700 border border-court-500 text-sm font-semibold hover:border-lime-neon hover:text-lime-neon transition-colors">
+        <button id="btn-login" class="px-3 sm:px-4 py-2 rounded-full bg-court-700 border border-court-500 text-sm font-semibold hover:border-lime-neon hover:text-lime-neon transition-colors shrink-0">
           Accedi
         </button>
         <div id="user-chip" class="hidden items-center gap-2">
@@ -163,7 +168,7 @@
 
     <!-- ============ HERO / CTA ============ -->
     <section class="pt-6 pb-4">
-      <p class="text-court-500 text-sm font-medium mb-1">Paestum · Capaccio · Agropoli e dintorni</p>
+      <p class="text-court-300 text-sm font-medium mb-1">Paestum · Capaccio · Agropoli e dintorni</p>
       <h1 class="font-display text-3xl font-700 leading-tight mb-4">
         Gioca a <span class="text-lime-neon">Padel</span> nel Cilento, quando vuoi.
       </h1>
@@ -203,7 +208,7 @@
     <!-- ============ LISTA PARTITE ============ -->
     <section class="mt-4">
       <div class="flex items-center justify-between mb-3">
-        <h2 class="font-display font-700 text-sm uppercase tracking-wide text-court-500">Prossime partite</h2>
+        <h2 class="font-display font-700 text-sm uppercase tracking-wide text-court-300">Prossime partite</h2>
         <button id="btn-refresh" class="text-xs font-semibold text-electric hover:text-lime-neon transition-colors flex items-center gap-1">
           <svg viewBox="0 0 24 24" class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M4 4v5h5M20 20v-5h-5M4 9a8 8 0 0114-5.3M20 15a8 8 0 01-14 5.3"/></svg>
           Aggiorna
@@ -217,7 +222,7 @@
 
       <div id="matches-empty" class="hidden text-center py-16 px-4 rounded-2xl border border-dashed border-court-500">
         <p class="font-display font-700 text-lg mb-1">Nessuna partita in programma</p>
-        <p class="text-court-500 text-sm mb-4">Sii il primo a organizzarne una in zona.</p>
+        <p class="text-court-300 text-sm mb-4">Sii il primo a organizzarne una in zona.</p>
         <button class="btn-open-create-empty px-5 py-2.5 rounded-full bg-lime-neon text-court-900 font-semibold text-sm">
           + Crea la prima partita
         </button>
@@ -233,7 +238,7 @@
       <div class="flex items-start justify-between gap-3">
         <div>
           <p class="match-datetime font-display font-700 text-xl leading-none">18:30</p>
-          <p class="match-date text-xs text-court-500 mt-1 font-medium">Gio 24 Lug</p>
+          <p class="match-date text-xs text-court-300 mt-1 font-medium">Gio 24 Lug</p>
         </div>
         <span class="match-level shrink-0 text-xs font-bold px-2.5 py-1 rounded-full bg-electric/15 text-electric border border-electric/30">
           Intermedio · 2.5-3.5
@@ -271,13 +276,13 @@
 
       <form id="form-create-match" class="space-y-4">
         <div>
-          <label class="block text-xs font-semibold text-court-500 uppercase tracking-wide mb-1.5" for="input-club">Circolo / Campo</label>
+          <label class="block text-xs font-semibold text-court-300 uppercase tracking-wide mb-1.5" for="input-club">Circolo / Campo</label>
           <input id="input-club" name="club" type="text" required placeholder="Es. Padel Arena"
                  class="w-full bg-court-700 border border-court-500 rounded-xl px-4 py-3 text-sm text-white placeholder-court-500 focus:border-lime-neon outline-none" />
         </div>
 
         <div>
-          <label class="block text-xs font-semibold text-court-500 uppercase tracking-wide mb-1.5" for="input-zona">Zona</label>
+          <label class="block text-xs font-semibold text-court-300 uppercase tracking-wide mb-1.5" for="input-zona">Zona</label>
           <select id="input-zona" name="zona" required
                   class="w-full bg-court-700 border border-court-500 rounded-xl px-4 py-3 text-sm text-white focus:border-lime-neon outline-none">
             <option value="paestum">Paestum</option>
@@ -289,12 +294,12 @@
 
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="block text-xs font-semibold text-court-500 uppercase tracking-wide mb-1.5" for="input-date">Data</label>
+            <label class="block text-xs font-semibold text-court-300 uppercase tracking-wide mb-1.5" for="input-date">Data</label>
             <input id="input-date" name="date" type="date" required
                    class="w-full bg-court-700 border border-court-500 rounded-xl px-4 py-3 text-sm text-white focus:border-lime-neon outline-none" />
           </div>
           <div>
-            <label class="block text-xs font-semibold text-court-500 uppercase tracking-wide mb-1.5" for="input-time">Ora</label>
+            <label class="block text-xs font-semibold text-court-300 uppercase tracking-wide mb-1.5" for="input-time">Ora</label>
             <select id="input-time" name="time" required
                     class="w-full bg-court-700 border border-court-500 rounded-xl px-4 py-3 text-sm text-white focus:border-lime-neon outline-none">
               <!-- opzioni generate via JS: slot di 30 minuti -->
@@ -303,7 +308,7 @@
         </div>
 
         <div>
-          <label class="block text-xs font-semibold text-court-500 uppercase tracking-wide mb-1.5" for="input-level">Livello richiesto</label>
+          <label class="block text-xs font-semibold text-court-300 uppercase tracking-wide mb-1.5" for="input-level">Livello richiesto</label>
           <select id="input-level" name="level" required
                   class="w-full bg-court-700 border border-court-500 rounded-xl px-4 py-3 text-sm text-white focus:border-lime-neon outline-none">
             <option value="principiante">Principiante · 1.0-2.0</option>
@@ -314,14 +319,14 @@
         </div>
 
         <div id="slots-section">
-          <label class="block text-xs font-semibold text-court-500 uppercase tracking-wide mb-1.5">Il tuo posto in campo</label>
+          <label class="block text-xs font-semibold text-court-300 uppercase tracking-wide mb-1.5">Il tuo posto in campo</label>
           <div class="grid grid-cols-2 gap-2">
             <button type="button" data-slots="0" class="slots-btn py-2.5 rounded-xl border border-court-500 text-xs font-display font-700">Squadra A · sinistra</button>
             <button type="button" data-slots="1" class="slots-btn py-2.5 rounded-xl border border-court-500 text-xs font-display font-700">Squadra A · destra</button>
             <button type="button" data-slots="2" class="slots-btn py-2.5 rounded-xl border border-court-500 text-xs font-display font-700">Squadra B · sinistra</button>
             <button type="button" data-slots="3" class="slots-btn py-2.5 rounded-xl border border-court-500 text-xs font-display font-700">Squadra B · destra</button>
           </div>
-          <p class="text-[11px] text-court-500 mt-1.5">Gli altri giocatori scelgono il proprio posto iscrivendosi: le squadre sono reali e servono per registrare il risultato.</p>
+          <p class="text-[11px] text-court-300 mt-1.5">Gli altri giocatori scelgono il proprio posto iscrivendosi: le squadre sono reali e servono per registrare il risultato.</p>
           <input type="hidden" id="input-missing" name="missing" value="0" />
         </div>
 
@@ -350,23 +355,23 @@
         <div id="auth-signup-fields" class="hidden space-y-4">
           <div class="grid grid-cols-2 gap-3">
             <div>
-              <label class="block text-xs font-semibold text-court-500 uppercase tracking-wide mb-1.5" for="auth-nome">Nome</label>
+              <label class="block text-xs font-semibold text-court-300 uppercase tracking-wide mb-1.5" for="auth-nome">Nome</label>
               <input id="auth-nome" type="text" placeholder="Mario"
                      class="w-full bg-court-700 border border-court-500 rounded-xl px-4 py-3 text-sm text-white placeholder-court-500 focus:border-lime-neon outline-none" />
             </div>
             <div>
-              <label class="block text-xs font-semibold text-court-500 uppercase tracking-wide mb-1.5" for="auth-cognome">Cognome</label>
+              <label class="block text-xs font-semibold text-court-300 uppercase tracking-wide mb-1.5" for="auth-cognome">Cognome</label>
               <input id="auth-cognome" type="text" placeholder="Rossi"
                      class="w-full bg-court-700 border border-court-500 rounded-xl px-4 py-3 text-sm text-white placeholder-court-500 focus:border-lime-neon outline-none" />
             </div>
           </div>
           <div>
-            <label class="block text-xs font-semibold text-court-500 uppercase tracking-wide mb-1.5" for="auth-telefono">Numero di telefono</label>
+            <label class="block text-xs font-semibold text-court-300 uppercase tracking-wide mb-1.5" for="auth-telefono">Numero di telefono</label>
             <input id="auth-telefono" type="tel" placeholder="333 1234567"
                    class="w-full bg-court-700 border border-court-500 rounded-xl px-4 py-3 text-sm text-white placeholder-court-500 focus:border-lime-neon outline-none" />
           </div>
           <div>
-            <label class="block text-xs font-semibold text-court-500 uppercase tracking-wide mb-1.5" for="auth-level">Il tuo livello</label>
+            <label class="block text-xs font-semibold text-court-300 uppercase tracking-wide mb-1.5" for="auth-level">Il tuo livello</label>
             <select id="auth-level" class="w-full bg-court-700 border border-court-500 rounded-xl px-4 py-3 text-sm text-white focus:border-lime-neon outline-none">
               <option value="principiante">Principiante · 1.0-2.0</option>
               <option value="intermedio" selected>Intermedio · 2.5-3.5</option>
@@ -375,32 +380,32 @@
           </div>
 
           <div class="pt-1 border-t border-court-600">
-            <label class="block text-xs font-semibold text-court-500 uppercase tracking-wide mb-1.5 mt-3" for="auth-codice">
+            <label class="block text-xs font-semibold text-court-300 uppercase tracking-wide mb-1.5 mt-3" for="auth-codice">
               Codice circolo <span class="normal-case font-normal">(solo per i gestori)</span>
             </label>
             <input id="auth-codice" type="text" placeholder="Lascia vuoto se sei un giocatore"
                    class="w-full bg-court-700 border border-court-500 rounded-xl px-4 py-3 text-sm text-white placeholder-court-500 focus:border-lime-neon outline-none uppercase" />
           </div>
 
-          <p class="text-[11px] text-court-500 leading-relaxed">
+          <p class="text-[11px] text-court-300 leading-relaxed">
             Registrandoti accetti la
             <a href="/privacy.html" target="_blank" rel="noopener" class="text-lime-neon hover:underline">Privacy Policy</a>.
           </p>
         </div>
 
         <div>
-          <label class="block text-xs font-semibold text-court-500 uppercase tracking-wide mb-1.5" for="auth-email">Email</label>
+          <label class="block text-xs font-semibold text-court-300 uppercase tracking-wide mb-1.5" for="auth-email">Email</label>
           <input id="auth-email" type="email" required placeholder="nome@email.com"
                  class="w-full bg-court-700 border border-court-500 rounded-xl px-4 py-3 text-sm text-white placeholder-court-500 focus:border-lime-neon outline-none" />
         </div>
         <div>
-          <label class="block text-xs font-semibold text-court-500 uppercase tracking-wide mb-1.5" for="auth-password">Password</label>
+          <label class="block text-xs font-semibold text-court-300 uppercase tracking-wide mb-1.5" for="auth-password">Password</label>
           <input id="auth-password" type="password" required minlength="6" placeholder="••••••••"
                  class="w-full bg-court-700 border border-court-500 rounded-xl px-4 py-3 text-sm text-white placeholder-court-500 focus:border-lime-neon outline-none" />
         </div>
 
         <div class="text-right -mt-2">
-          <button type="button" id="btn-forgot-password" class="text-xs text-court-500 hover:text-lime-neon font-medium">
+          <button type="button" id="btn-forgot-password" class="text-xs text-court-300 hover:text-lime-neon font-medium">
             Password dimenticata?
           </button>
         </div>
@@ -412,16 +417,16 @@
           Accedi
         </button>
 
-        <button type="button" id="btn-toggle-auth-mode" class="w-full text-center text-sm text-court-500 hover:text-white font-medium">
+        <button type="button" id="btn-toggle-auth-mode" class="w-full text-center text-sm text-court-300 hover:text-white font-medium">
           Non hai un account? <span class="text-lime-neon">Registrati</span>
         </button>
       </form>
 
       <!-- Vista "recupera password": stesso modale, form separato -->
       <form id="form-auth-forgot" class="hidden space-y-4">
-        <p class="text-sm text-court-500">Inserisci la tua email: se esiste un account associato, riceverai un link per reimpostare la password.</p>
+        <p class="text-sm text-court-300">Inserisci la tua email: se esiste un account associato, riceverai un link per reimpostare la password.</p>
         <div>
-          <label class="block text-xs font-semibold text-court-500 uppercase tracking-wide mb-1.5" for="forgot-email">Email</label>
+          <label class="block text-xs font-semibold text-court-300 uppercase tracking-wide mb-1.5" for="forgot-email">Email</label>
           <input id="forgot-email" type="email" required placeholder="nome@email.com"
                  class="w-full bg-court-700 border border-court-500 rounded-xl px-4 py-3 text-sm text-white placeholder-court-500 focus:border-lime-neon outline-none" />
         </div>
@@ -434,7 +439,7 @@
           Invia link di recupero
         </button>
 
-        <button type="button" id="btn-back-to-login" class="w-full text-center text-sm text-court-500 hover:text-white font-medium">
+        <button type="button" id="btn-back-to-login" class="w-full text-center text-sm text-court-300 hover:text-white font-medium">
           Torna al login
         </button>
       </form>
@@ -449,14 +454,14 @@
       </div>
 
       <form id="form-reset-password" class="space-y-4">
-        <p class="text-sm text-court-500">Hai seguito un link di recupero. Scegli una nuova password per il tuo account.</p>
+        <p class="text-sm text-court-300">Hai seguito un link di recupero. Scegli una nuova password per il tuo account.</p>
         <div>
-          <label class="block text-xs font-semibold text-court-500 uppercase tracking-wide mb-1.5" for="reset-password-new">Nuova password</label>
+          <label class="block text-xs font-semibold text-court-300 uppercase tracking-wide mb-1.5" for="reset-password-new">Nuova password</label>
           <input id="reset-password-new" type="password" required minlength="6" placeholder="••••••••"
                  class="w-full bg-court-700 border border-court-500 rounded-xl px-4 py-3 text-sm text-white placeholder-court-500 focus:border-lime-neon outline-none" />
         </div>
         <div>
-          <label class="block text-xs font-semibold text-court-500 uppercase tracking-wide mb-1.5" for="reset-password-confirm">Conferma password</label>
+          <label class="block text-xs font-semibold text-court-300 uppercase tracking-wide mb-1.5" for="reset-password-confirm">Conferma password</label>
           <input id="reset-password-confirm" type="password" required minlength="6" placeholder="••••••••"
                  class="w-full bg-court-700 border border-court-500 rounded-xl px-4 py-3 text-sm text-white placeholder-court-500 focus:border-lime-neon outline-none" />
         </div>
@@ -468,7 +473,7 @@
           Salva nuova password
         </button>
 
-        <button type="button" id="btn-cancel-reset-password" class="w-full text-center text-sm text-court-500 hover:text-white font-medium">
+        <button type="button" id="btn-cancel-reset-password" class="w-full text-center text-sm text-court-300 hover:text-white font-medium">
           Annulla
         </button>
       </form>
@@ -503,53 +508,53 @@
           <div class="grid grid-cols-4 gap-1.5 text-center">
             <div class="bg-court-700 rounded-xl py-2.5">
               <p id="stat-partite" class="font-display font-700 text-lg leading-none">0</p>
-              <p class="text-[9px] text-court-500 font-semibold uppercase tracking-wide mt-1">Partite</p>
+              <p class="text-[9px] text-court-300 font-semibold uppercase tracking-wide mt-1">Partite</p>
             </div>
             <div class="bg-court-700 rounded-xl py-2.5">
               <p id="stat-vittorie" class="font-display font-700 text-lg leading-none text-lime-neon">0</p>
-              <p class="text-[9px] text-court-500 font-semibold uppercase tracking-wide mt-1">Vinte</p>
+              <p class="text-[9px] text-court-300 font-semibold uppercase tracking-wide mt-1">Vinte</p>
             </div>
             <div class="bg-court-700 rounded-xl py-2.5">
               <p id="stat-sconfitte" class="font-display font-700 text-lg leading-none text-white/70">0</p>
-              <p class="text-[9px] text-court-500 font-semibold uppercase tracking-wide mt-1">Perse</p>
+              <p class="text-[9px] text-court-300 font-semibold uppercase tracking-wide mt-1">Perse</p>
             </div>
             <div class="bg-court-700 rounded-xl py-2.5">
               <p id="stat-percentuale" class="font-display font-700 text-lg leading-none text-electric">0%</p>
-              <p class="text-[9px] text-court-500 font-semibold uppercase tracking-wide mt-1">Vittorie</p>
+              <p class="text-[9px] text-court-300 font-semibold uppercase tracking-wide mt-1">Vittorie</p>
             </div>
           </div>
-          <p id="stat-vuoto" class="hidden text-[11px] text-court-500 text-center mt-2">
+          <p id="stat-vuoto" class="hidden text-[11px] text-court-300 text-center mt-2">
             Le statistiche compaiono dopo la prima partita con un risultato confermato.
           </p>
         </div>
 
         <!-- Bacheca: i tornei in cui si e' saliti sul podio -->
         <div id="profile-bacheca" class="hidden">
-          <p class="text-[11px] font-semibold text-court-500 uppercase tracking-wide mb-2">Bacheca</p>
+          <p class="text-[11px] font-semibold text-court-300 uppercase tracking-wide mb-2">Bacheca</p>
           <div id="bacheca-list" class="space-y-1.5"></div>
         </div>
 
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="block text-xs font-semibold text-court-500 uppercase tracking-wide mb-1.5" for="profile-nome">Nome</label>
+            <label class="block text-xs font-semibold text-court-300 uppercase tracking-wide mb-1.5" for="profile-nome">Nome</label>
             <input id="profile-nome" type="text" required
                    class="w-full bg-court-700 border border-court-500 rounded-xl px-4 py-3 text-sm text-white focus:border-lime-neon outline-none" />
           </div>
           <div>
-            <label class="block text-xs font-semibold text-court-500 uppercase tracking-wide mb-1.5" for="profile-cognome">Cognome</label>
+            <label class="block text-xs font-semibold text-court-300 uppercase tracking-wide mb-1.5" for="profile-cognome">Cognome</label>
             <input id="profile-cognome" type="text" required
                    class="w-full bg-court-700 border border-court-500 rounded-xl px-4 py-3 text-sm text-white focus:border-lime-neon outline-none" />
           </div>
         </div>
 
         <div>
-          <label class="block text-xs font-semibold text-court-500 uppercase tracking-wide mb-1.5" for="profile-phone">Numero di telefono</label>
+          <label class="block text-xs font-semibold text-court-300 uppercase tracking-wide mb-1.5" for="profile-phone">Numero di telefono</label>
           <input id="profile-phone" type="tel"
                  class="w-full bg-court-700 border border-court-500 rounded-xl px-4 py-3 text-sm text-white focus:border-lime-neon outline-none" />
         </div>
 
         <div>
-          <label class="block text-xs font-semibold text-court-500 uppercase tracking-wide mb-1.5" for="profile-level">Livello</label>
+          <label class="block text-xs font-semibold text-court-300 uppercase tracking-wide mb-1.5" for="profile-level">Livello</label>
           <select id="profile-level"
                   class="w-full bg-court-700 border border-court-500 rounded-xl px-4 py-3 text-sm text-white focus:border-lime-neon outline-none">
             <option value="principiante">Principiante · 1.0-2.0</option>
@@ -572,14 +577,14 @@
 
         <div class="border-t border-court-600 pt-4 mt-2">
           <button type="button" id="btn-delete-account"
-                  class="w-full text-center text-xs text-court-500 hover:text-red-400 font-semibold py-1">
+                  class="w-full text-center text-xs text-court-300 hover:text-red-400 font-semibold py-1">
             Elimina il mio account
           </button>
 
           <!-- Conferma in due passaggi: cancellare l'account non si annulla -->
           <div id="delete-account-confirm" class="hidden mt-3 rounded-xl border border-red-400/40 bg-red-400/5 p-3">
             <p class="text-sm text-white font-semibold mb-1">Eliminare l'account?</p>
-            <p class="text-xs text-court-500 leading-snug mb-3">
+            <p class="text-xs text-court-300 leading-snug mb-3">
               Nome, cognome, telefono e foto vengono cancellati, e non potrai piu accedere.
               Le partite che hai già giocato restano, senza il tuo nome: i risultati e le
               statistiche degli altri giocatori non si possono riscrivere. L'operazione non
@@ -616,7 +621,7 @@
       <div class="flex items-start justify-between gap-3 mb-3">
         <div>
           <p id="match-detail-time" class="font-display font-700 text-2xl leading-none">18:30</p>
-          <p id="match-detail-date" class="text-xs text-court-500 mt-1 font-medium">Gio 24 Lug</p>
+          <p id="match-detail-date" class="text-xs text-court-300 mt-1 font-medium">Gio 24 Lug</p>
         </div>
         <span id="match-detail-level" class="shrink-0 text-xs font-bold px-2.5 py-1 rounded-full bg-electric/15 text-electric border border-electric/30">
           Intermedio · 2.5-3.5
@@ -632,7 +637,7 @@
         <span id="match-detail-origin" class="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-1 rounded-md"></span>
       </div>
 
-      <p class="text-xs font-semibold text-court-500 uppercase tracking-wide mb-2">In campo (<span id="match-detail-count">0/4</span>)</p>
+      <p class="text-xs font-semibold text-court-300 uppercase tracking-wide mb-2">In campo (<span id="match-detail-count">0/4</span>)</p>
 
       <!-- Mini campo da padel: 4 posizioni, 2 per lato -->
       <div id="match-court" class="relative rounded-2xl border border-court-500 bg-court-900 p-3 mb-6 overflow-hidden">
@@ -677,7 +682,7 @@
       <div id="match-result" class="hidden mb-4"></div>
 
       <p id="match-detail-error" class="hidden text-sm text-red-400 font-medium mb-3"></p>
-      <p id="match-detail-hint" class="hidden text-xs text-court-500 mb-3"></p>
+      <p id="match-detail-hint" class="hidden text-xs text-court-300 mb-3"></p>
 
       <button id="btn-match-detail-action"
               class="w-full font-display font-700 py-3.5 rounded-xl transition-colors">
@@ -697,36 +702,36 @@
   </div>
 
   <!-- ============ MODALE: CLASSIFICA ============ -->
-  <div id="modal-ranking" class="hidden fixed inset-0 z-50 items-end sm:items-center justify-center">
-    <div id="modal-ranking-backdrop" class="absolute inset-0 bg-black/70 modal-backdrop"></div>
-    <div class="relative w-full sm:max-w-md bg-court-800 border border-court-600 rounded-t-3xl sm:rounded-3xl p-6 pb-8 max-h-[92vh] overflow-y-auto">
-      <div class="flex items-center justify-between mb-1">
-        <h3 class="font-display font-700 text-xl">Classifica</h3>
-        <button id="btn-close-ranking" class="w-8 h-8 rounded-full bg-court-700 flex items-center justify-center text-white/60 hover:text-white">
-          <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
-        </button>
-      </div>
-      <p id="ranking-subtitle" class="text-xs text-court-500 mb-4">Solo risultati confermati dagli avversari.</p>
-
-      <div id="ranking-loading" class="space-y-2">
-        <div class="h-14 rounded-xl bg-court-700 animate-pulse"></div>
-        <div class="h-14 rounded-xl bg-court-700 animate-pulse"></div>
-        <div class="h-14 rounded-xl bg-court-700 animate-pulse"></div>
-      </div>
-
-      <div id="ranking-empty" class="hidden text-center py-10 px-2 rounded-2xl border border-dashed border-court-500">
-        <p id="ranking-empty-title" class="font-display font-700 text-base mb-1">Classifica ancora vuota</p>
-        <p id="ranking-empty-text" class="text-court-500 text-sm">Servono almeno 3 partite con risultato confermato.</p>
-      </div>
-
-      <div id="ranking-list" class="space-y-2"></div>
-
-      <button type="button" id="btn-toggle-ranking-min"
-              class="hidden w-full mt-4 text-xs font-semibold text-electric hover:text-lime-neon py-2.5 rounded-xl border border-court-600 transition-colors">
-        Mostra anche chi ha giocato meno di 3 partite
+  <!-- ============ PAGINA CLASSIFICA ============ -->
+  <section id="pagina-classifica" class="hidden max-w-2xl mx-auto px-4 pb-28">
+    <div class="pt-6 pb-4">
+      <button type="button" id="btn-classifica-indietro"
+              class="text-xs text-court-300 hover:text-lime-neon transition-colors mb-3">
+        &larr; Torna alle partite
       </button>
+      <h1 class="font-display text-3xl font-700 leading-tight">Classifica</h1>
     </div>
-  </div>
+
+      <p id="ranking-subtitle" class="text-xs text-court-300 mb-4">Solo risultati confermati dagli avversari.</p>
+
+    <div id="ranking-loading" class="space-y-2">
+      <div class="h-14 rounded-xl bg-court-700 animate-pulse"></div>
+      <div class="h-14 rounded-xl bg-court-700 animate-pulse"></div>
+      <div class="h-14 rounded-xl bg-court-700 animate-pulse"></div>
+    </div>
+
+    <div id="ranking-empty" class="hidden text-center py-10 px-2 rounded-2xl border border-dashed border-court-500">
+      <p id="ranking-empty-title" class="font-display font-700 text-base mb-1">Classifica ancora vuota</p>
+      <p id="ranking-empty-text" class="text-court-300 text-sm">Servono almeno 3 partite con risultato confermato.</p>
+    </div>
+
+    <div id="ranking-list" class="space-y-2"></div>
+
+    <button type="button" id="btn-toggle-ranking-min"
+            class="hidden w-full mt-4 text-xs font-semibold text-electric hover:text-lime-neon py-2.5 rounded-xl border border-court-600 transition-colors">
+      Mostra anche chi ha giocato meno di 3 partite
+    </button>
+  </section>
 
   <!-- ============ PAGINA TORNEI ============
        I tornei non stanno in una finestra sopra la home: hanno una
@@ -735,11 +740,11 @@
   <section id="pagina-tornei" class="hidden max-w-2xl mx-auto px-4 pb-28">
     <div class="pt-6 pb-4">
       <button type="button" id="btn-tornei-indietro"
-              class="text-xs text-court-500 hover:text-lime-neon transition-colors mb-3">
+              class="text-xs text-court-300 hover:text-lime-neon transition-colors mb-3">
         &larr; Torna alle partite
       </button>
       <h1 class="font-display text-3xl font-700 leading-tight">Tornei</h1>
-      <p class="text-court-500 text-sm mt-1">Organizzati dai circoli del Cilento.</p>
+      <p class="text-court-300 text-sm mt-1">Organizzati dai circoli del Cilento.</p>
     </div>
 
     <button type="button" id="btn-nuovo-torneo"
@@ -754,7 +759,7 @@
 
     <div id="tornei-empty" class="hidden text-center py-10 px-2 rounded-2xl border border-dashed border-court-500">
       <p class="font-display font-700 text-base mb-1">Nessun torneo</p>
-      <p id="tornei-empty-text" class="text-court-500 text-sm">Quando un circolo ne pubblica uno, lo trovi qui.</p>
+      <p id="tornei-empty-text" class="text-court-300 text-sm">Quando un circolo ne pubblica uno, lo trovi qui.</p>
     </div>
 
     <div id="tornei-list" class="space-y-2"></div>
@@ -773,19 +778,19 @@
 
     <form id="form-crea-torneo" class="space-y-4">
       <div>
-        <label class="block text-[11px] font-semibold text-court-500 uppercase tracking-wide mb-1.5" for="torneo-nome">Nome del torneo</label>
+        <label class="block text-[11px] font-semibold text-court-300 uppercase tracking-wide mb-1.5" for="torneo-nome">Nome del torneo</label>
         <input id="torneo-nome" type="text" required maxlength="80" placeholder="Torneo d'estate 2026"
                class="w-full bg-court-700 border border-court-500 rounded-xl px-4 py-3 text-sm text-white focus:border-lime-neon outline-none">
       </div>
 
       <div class="grid grid-cols-2 gap-3">
         <div>
-          <label class="block text-[11px] font-semibold text-court-500 uppercase tracking-wide mb-1.5" for="torneo-inizio">Dal</label>
+          <label class="block text-[11px] font-semibold text-court-300 uppercase tracking-wide mb-1.5" for="torneo-inizio">Dal</label>
           <input id="torneo-inizio" type="date"
                  class="w-full bg-court-700 border border-court-500 rounded-xl px-4 py-3 text-sm text-white focus:border-lime-neon outline-none">
         </div>
         <div>
-          <label class="block text-[11px] font-semibold text-court-500 uppercase tracking-wide mb-1.5" for="torneo-fine">Al</label>
+          <label class="block text-[11px] font-semibold text-court-300 uppercase tracking-wide mb-1.5" for="torneo-fine">Al</label>
           <input id="torneo-fine" type="date"
                  class="w-full bg-court-700 border border-court-500 rounded-xl px-4 py-3 text-sm text-white focus:border-lime-neon outline-none">
         </div>
@@ -795,14 +800,14 @@
            non deve sceglierlo; l'amministratore puo' organizzare per conto
            di chiunque, quindi deve dire per chi. -->
       <div id="torneo-circolo-riga" class="hidden">
-        <label class="block text-[11px] font-semibold text-court-500 uppercase tracking-wide mb-1.5" for="torneo-circolo">Circolo</label>
+        <label class="block text-[11px] font-semibold text-court-300 uppercase tracking-wide mb-1.5" for="torneo-circolo">Circolo</label>
         <select id="torneo-circolo"
                 class="w-full bg-court-700 border border-court-500 rounded-xl px-4 py-3 text-sm text-white focus:border-lime-neon outline-none">
         </select>
       </div>
 
       <div>
-        <label class="block text-[11px] font-semibold text-court-500 uppercase tracking-wide mb-1.5" for="torneo-livello">Livello</label>
+        <label class="block text-[11px] font-semibold text-court-300 uppercase tracking-wide mb-1.5" for="torneo-livello">Livello</label>
         <select id="torneo-livello"
                 class="w-full bg-court-700 border border-court-500 rounded-xl px-4 py-3 text-sm text-white focus:border-lime-neon outline-none">
           <option value="open">Open · tutti i livelli</option>
@@ -818,7 +823,7 @@
               class="w-full bg-lime-neon text-court-900 font-display font-700 py-3.5 rounded-xl shadow-neon">
         Crea il torneo
       </button>
-      <p class="text-[11px] text-court-500 leading-snug">
+      <p class="text-[11px] text-court-300 leading-snug">
         Nasce come bozza: lo vedi solo tu finché non apri le iscrizioni.
       </p>
     </form>
@@ -829,18 +834,18 @@
   <section id="pagina-torneo" class="hidden max-w-3xl mx-auto px-4 pb-28">
     <div class="pt-6 pb-2">
       <button type="button" id="btn-close-torneo"
-              class="text-xs text-court-500 hover:text-lime-neon transition-colors mb-3">
+              class="text-xs text-court-300 hover:text-lime-neon transition-colors mb-3">
         &larr; Tutti i tornei
       </button>
       <h1 id="torneo-titolo" class="font-display text-3xl font-700 leading-tight">Torneo</h1>
-      <p id="torneo-sottotitolo" class="text-sm text-court-500 mt-1"></p>
+      <p id="torneo-sottotitolo" class="text-sm text-court-300 mt-1"></p>
     </div>
 
     <p id="torneo-detail-error" class="hidden text-sm text-red-400 font-medium mb-3"></p>
 
     <!-- Pannello di gestione: compare solo al circolo che organizza -->
     <div id="torneo-gestione" class="hidden mt-4 rounded-2xl border border-court-600 bg-court-900/60 p-3 space-y-3">
-      <p class="text-[11px] font-semibold text-court-500 uppercase tracking-wide">Gestione del torneo</p>
+      <p class="text-[11px] font-semibold text-court-300 uppercase tracking-wide">Gestione del torneo</p>
       <div id="torneo-azioni-stato" class="grid grid-cols-2 gap-2"></div>
 
       <button type="button" id="btn-genera-tabellone"
@@ -868,7 +873,7 @@
         </div>
 
         <div class="rounded-xl border border-court-600 p-3 space-y-2">
-          <p class="text-[11px] font-semibold text-court-500 uppercase tracking-wide">Iscrivi una coppia</p>
+          <p class="text-[11px] font-semibold text-court-300 uppercase tracking-wide">Iscrivi una coppia</p>
           <div class="grid grid-cols-2 gap-2">
             <input id="squadra-g1" type="text" maxlength="60" placeholder="Giocatore 1" list="iscritti-app"
                    class="w-full bg-court-700 border border-court-500 rounded-lg px-3 py-2 text-sm text-white focus:border-lime-neon outline-none">
@@ -880,7 +885,7 @@
                qui, e collegato al suo account: e' cio' che fa comparire la
                medaglia sul suo profilo se vince. -->
           <datalist id="iscritti-app"></datalist>
-          <p class="text-[11px] text-court-500 leading-snug">
+          <p class="text-[11px] text-court-300 leading-snug">
             Se il giocatore ha l'app, scegli il suo nome dai suggerimenti: viene collegato
             al suo account e la vittoria gli comparira' sul profilo.
           </p>
@@ -895,8 +900,8 @@
         </div><!-- fine colonna dei comandi -->
 
         <div id="torneo-collegamenti" class="rounded-xl border border-court-600 p-3 space-y-2 hidden">
-          <p class="text-[11px] font-semibold text-court-500 uppercase tracking-wide">Coppie iscritte</p>
-          <p class="text-[11px] text-court-500 leading-snug">
+          <p class="text-[11px] font-semibold text-court-300 uppercase tracking-wide">Coppie iscritte</p>
+          <p class="text-[11px] text-court-300 leading-snug">
             Chi e' collegato al proprio account riceve la medaglia sul profilo se vince.
             Gli altri giocano lo stesso: il collegamento e' facoltativo.
           </p>
@@ -1157,10 +1162,10 @@ const el = {
   profileBacheca: document.getElementById('profile-bacheca'),
   bachecaList: document.getElementById('bacheca-list'),
 
-  modalRanking: document.getElementById('modal-ranking'),
-  modalRankingBackdrop: document.getElementById('modal-ranking-backdrop'),
+  paginaClassifica: document.getElementById('pagina-classifica'),
+  btnClassificaIndietro: document.getElementById('btn-classifica-indietro'),
   btnOpenRanking: document.getElementById('btn-open-ranking'),
-  btnCloseRanking: document.getElementById('btn-close-ranking'),
+  btnHome: document.getElementById('btn-home'),
   rankingSubtitle: document.getElementById('ranking-subtitle'),
   rankingLoading: document.getElementById('ranking-loading'),
   rankingEmpty: document.getElementById('ranking-empty'),
@@ -1241,7 +1246,7 @@ function messaggioErrore(err, fallback) {
  * spazio — gironi, calendario, punteggi — e in un riquadro da telefono
  * dentro un altro riquadro non ci sta.
  */
-const PAGINE = ['paginaHome', 'paginaTornei', 'paginaTorneo'];
+const PAGINE = ['paginaHome', 'paginaClassifica', 'paginaTornei', 'paginaTorneo'];
 
 function mostraPagina(nome) {
   for (const p of PAGINE) {
@@ -1587,7 +1592,7 @@ async function renderBacheca() {
     nome.textContent = r.torneo;
 
     const sotto = document.createElement('p');
-    sotto.className = 'text-[10px] text-court-500 truncate';
+    sotto.className = 'text-[10px] text-court-300 truncate';
     sotto.textContent = [m.testo, r.circolo, r.data ? formattaDataTorneo(r.data) : null]
       .filter(Boolean).join(' · ');
 
@@ -2186,7 +2191,7 @@ function renderMatches() {
 
     if (postiLiberi <= 0) {
       ctaLabel.textContent = 'Al completo';
-      ctaLabel.className = 'shrink-0 text-sm font-display font-700 px-4 py-2 rounded-xl bg-court-600 text-court-500';
+      ctaLabel.className = 'shrink-0 text-sm font-display font-700 px-4 py-2 rounded-xl bg-court-600 text-court-300';
     } else if (postiLiberi === 1) {
       ctaLabel.textContent = 'SOS 4° · Dettagli';
       ctaLabel.className = 'shrink-0 text-sm font-display font-700 px-4 py-2 rounded-xl bg-electric text-white';
@@ -2313,7 +2318,7 @@ function renderMatchCourt() {
       name.textContent = displayName(profile);
 
       const lvl = document.createElement('p');
-      lvl.className = 'text-[9px] text-court-500 leading-none';
+      lvl.className = 'text-[9px] text-court-300 leading-none';
       lvl.textContent = LEVEL_LABELS[profile?.level]?.split(' · ')[0] || '';
 
       spot.appendChild(avatar);
@@ -2333,11 +2338,11 @@ function renderMatchCourt() {
       const avatar = document.createElement('div');
       avatar.className = 'w-11 h-11 rounded-full bg-court-600 border border-court-500 flex items-center justify-center';
       avatar.innerHTML = anonimo
-        ? '<svg viewBox="0 0 24 24" class="w-5 h-5 text-court-500" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="11" width="16" height="9" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/></svg>'
-        : '<svg viewBox="0 0 24 24" class="w-5 h-5 text-court-500" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c0-3.5 3.1-5.5 7-5.5s7 2 7 5.5"/></svg>';
+        ? '<svg viewBox="0 0 24 24" class="w-5 h-5 text-court-300" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="11" width="16" height="9" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/></svg>'
+        : '<svg viewBox="0 0 24 24" class="w-5 h-5 text-court-300" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c0-3.5 3.1-5.5 7-5.5s7 2 7 5.5"/></svg>';
 
       const name = document.createElement('p');
-      name.className = 'text-[11px] font-semibold text-court-500 leading-tight';
+      name.className = 'text-[11px] font-semibold text-court-300 leading-tight';
       name.textContent = anonimo ? 'Occupato' : 'Ospite';
 
       spot.appendChild(avatar);
@@ -2418,7 +2423,7 @@ function renderMatchDetailAction() {
     btn.disabled = !puoDisiscriversi;
     btn.className = puoDisiscriversi
       ? 'w-full font-display font-700 py-3.5 rounded-xl bg-red-500/15 text-red-400 border border-red-500/40'
-      : 'w-full font-display font-700 py-3.5 rounded-xl bg-court-600 text-court-500 cursor-not-allowed';
+      : 'w-full font-display font-700 py-3.5 rounded-xl bg-court-600 text-court-300 cursor-not-allowed';
 
     if (!puoDisiscriversi) {
       el.matchDetailHint.textContent = 'Non è più possibile disiscriversi: manca meno di un\'ora all\'inizio.';
@@ -2444,7 +2449,7 @@ function renderMatchDetailAction() {
   } else if (postiLiberi <= 0) {
     btn.textContent = 'Partita al completo';
     btn.disabled = true;
-    btn.className = 'w-full font-display font-700 py-3.5 rounded-xl bg-court-600 text-court-500 cursor-not-allowed';
+    btn.className = 'w-full font-display font-700 py-3.5 rounded-xl bg-court-600 text-court-300 cursor-not-allowed';
     btn.onclick = null;
   } else {
     // Non si entra piu' con un pulsante generico: si tocca il posto in campo,
@@ -2548,7 +2553,7 @@ el.btnShowContacts.addEventListener('click', async () => {
         riga.appendChild(azioni);
       } else {
         const nd = document.createElement('span');
-        nd.className = 'text-[10px] text-court-500 shrink-0';
+        nd.className = 'text-[10px] text-court-300 shrink-0';
         nd.textContent = 'numero non indicato';
         riga.appendChild(nd);
       }
@@ -2596,7 +2601,7 @@ function renderMatchResult() {
 
   if (currentDetailParticipants.length !== 4) {
     const nota = document.createElement('p');
-    nota.className = 'text-xs text-court-500 text-center py-3 rounded-xl border border-dashed border-court-600';
+    nota.className = 'text-xs text-court-300 text-center py-3 rounded-xl border border-dashed border-court-600';
     nota.textContent = 'Il risultato si registra solo con una formazione completa di 4 giocatori.';
     box.appendChild(nota);
     return;
@@ -2617,7 +2622,7 @@ function creaFormRisultato(opzioni = {}) {
   const wrap = document.createElement('div');
   wrap.className = 'rounded-2xl border border-court-600 bg-court-900/60 p-3';
   wrap.innerHTML = `
-    <p class="text-xs font-semibold text-court-500 uppercase tracking-wide mb-2">${correzione ? 'Correggi il punteggio' : 'Registra il risultato'}</p>
+    <p class="text-xs font-semibold text-court-300 uppercase tracking-wide mb-2">${correzione ? 'Correggi il punteggio' : 'Registra il risultato'}</p>
     <div class="flex items-center gap-2 mb-1.5 px-1">
       <span class="w-16 shrink-0"></span>
       <span class="flex-1 text-center text-[10px] font-display font-700 text-lime-neon/70 tracking-wide">SQ. A</span>
@@ -2625,7 +2630,7 @@ function creaFormRisultato(opzioni = {}) {
       <span class="flex-1 text-center text-[10px] font-display font-700 text-electric/70 tracking-wide">SQ. B</span>
     </div>
     <div class="space-y-2" id="sets-inputs"></div>
-    <p class="text-[11px] text-court-500 mt-2 leading-snug">
+    <p class="text-[11px] text-court-300 mt-2 leading-snug">
       ${correzione
         ? 'Il punteggio corretto torna in attesa di conferma, e le 48 ore ripartono da adesso.'
         : 'Il punteggio deve essere confermato da un avversario. Se nessuno lo contesta, si convalida da solo dopo 48 ore.'}
@@ -2643,14 +2648,14 @@ function creaFormRisultato(opzioni = {}) {
     riga.className = 'flex items-center gap-2';
 
     const label = document.createElement('span');
-    label.className = 'text-[11px] font-semibold text-court-500 w-16 shrink-0';
+    label.className = 'text-[11px] font-semibold text-court-300 w-16 shrink-0';
     label.textContent = s === 3 ? 'Set 3 opz.' : `Set ${s}`;
     riga.appendChild(label);
 
     ['a', 'b'].forEach((team, idx) => {
       if (idx === 1) {
         const sep = document.createElement('span');
-        sep.className = 'text-court-500 text-xs w-3 text-center';
+        sep.className = 'text-court-300 text-xs w-3 text-center';
         sep.textContent = '-';
         riga.appendChild(sep);
       }
@@ -2745,7 +2750,7 @@ function creaRiepilogoRisultato(risultato) {
   testata.className = 'flex items-center justify-between gap-2 mb-2';
 
   const titolo = document.createElement('p');
-  titolo.className = 'text-xs font-semibold text-court-500 uppercase tracking-wide';
+  titolo.className = 'text-xs font-semibold text-court-300 uppercase tracking-wide';
   titolo.textContent = 'Risultato';
 
   const badge = document.createElement('span');
@@ -2760,7 +2765,7 @@ function creaRiepilogoRisultato(risultato) {
     badge.className += 'bg-lime-neon/15 text-lime-neon border border-lime-neon/40';
     badge.textContent = 'VALIDO';
   } else {
-    badge.className += 'bg-court-600 text-court-500 border border-court-500';
+    badge.className += 'bg-court-600 text-court-300 border border-court-500';
     badge.textContent = 'IN ATTESA';
   }
 
@@ -2901,7 +2906,7 @@ function creaRiepilogoRisultato(risultato) {
     wrap.appendChild(azioni);
   } else if (risultato.stato === 'in_attesa') {
     const nota = document.createElement('p');
-    nota.className = 'text-[11px] text-court-500 mt-2 leading-snug';
+    nota.className = 'text-[11px] text-court-300 mt-2 leading-snug';
     nota.textContent = valido
       ? 'Nessuna contestazione entro 48 ore: il risultato e valido.'
       : 'In attesa della conferma di un avversario. Senza contestazioni diventa valido dopo 48 ore.';
@@ -3037,7 +3042,7 @@ async function caricaClassifica(min) {
 
 async function apriClassifica() {
   rankingMinPartite = 3;
-  openModal(el.modalRanking);
+  mostraPagina('paginaClassifica');
   await renderClassifica();
 }
 
@@ -3095,7 +3100,7 @@ function creaRigaClassifica(r, posizione) {
 
   const pos = document.createElement('span');
   pos.className = 'w-6 text-center font-display font-700 text-sm shrink-0 ' +
-    (posizione <= 3 ? 'text-lime-neon' : 'text-court-500');
+    (posizione <= 3 ? 'text-lime-neon' : 'text-court-300');
   pos.textContent = String(posizione);
 
   const nomeCompleto = `${r.nome || ''} ${r.cognome || ''}`.trim() || 'Giocatore';
@@ -3120,7 +3125,7 @@ function creaRigaClassifica(r, posizione) {
   nome.textContent = sonoIo ? `${nomeCompleto} (tu)` : nomeCompleto;
 
   const dettaglio = document.createElement('p');
-  dettaglio.className = 'text-[10px] text-court-500';
+  dettaglio.className = 'text-[10px] text-court-300';
   dettaglio.textContent = `${r.partite} partite · ${r.vittorie} vinte`;
 
   info.appendChild(nome);
@@ -3153,7 +3158,7 @@ let torneoCorrente = null;      // il torneo aperto nel dettaglio
 let torneoDati = null;          // gironi, squadre, incontri, classifiche
 
 const STATI_TORNEO = {
-  bozza:      { etichetta: 'BOZZA',        classe: 'bg-court-600 text-court-500 border-court-500' },
+  bozza:      { etichetta: 'BOZZA',        classe: 'bg-court-600 text-court-300 border-court-500' },
   iscrizioni: { etichetta: 'ISCRIZIONI',   classe: 'bg-electric/15 text-electric border-electric/40' },
   in_corso:   { etichetta: 'IN CORSO',     classe: 'bg-lime-neon/15 text-lime-neon border-lime-neon/40' },
   concluso:   { etichetta: 'CONCLUSO',     classe: 'bg-court-600 text-white/60 border-court-500' },
@@ -3508,7 +3513,7 @@ function creaRigaTorneo(t) {
   testa.appendChild(badge);
 
   const info = document.createElement('p');
-  info.className = 'text-[11px] text-court-500';
+  info.className = 'text-[11px] text-court-300';
   const pezzi = [t.circoli?.nome || 'Circolo', LEVEL_LABELS[t.livello]?.split(' · ')[0] || t.livello];
   if (t.data_inizio) pezzi.push(formattaDataTorneo(t.data_inizio));
   info.textContent = pezzi.join(' · ');
@@ -3620,7 +3625,7 @@ function creaBloccoFinali(incontri) {
     if (dellaFase.length === 0) return;
 
     const et = document.createElement('p');
-    et.className = 'text-[10px] font-semibold text-court-500 uppercase tracking-wide mt-3 mb-1';
+    et.className = 'text-[10px] font-semibold text-court-300 uppercase tracking-wide mt-3 mb-1';
     et.textContent = NOMI_FASE[fase] || fase;
     wrap.appendChild(et);
 
@@ -3639,7 +3644,7 @@ function cartellinoVuoto(titolo, testo) {
   t.className = 'font-display font-700 text-base mb-1';
   t.textContent = titolo;
   const p = document.createElement('p');
-  p.className = 'text-court-500 text-sm';
+  p.className = 'text-court-300 text-sm';
   p.textContent = testo;
   box.appendChild(t);
   box.appendChild(p);
@@ -3658,7 +3663,7 @@ function creaBloccoGirone(girone) {
   const classifica = torneoDati.classifiche[girone.id] || [];
   if (classifica.length === 0) {
     const vuoto = document.createElement('p');
-    vuoto.className = 'text-[11px] text-court-500';
+    vuoto.className = 'text-[11px] text-court-300';
     vuoto.textContent = 'Nessuna squadra assegnata.';
     wrap.appendChild(vuoto);
   } else {
@@ -3677,7 +3682,7 @@ function creaTabellaClassifica(righe) {
   tabella.className = 'space-y-1';
 
   const intestazione = document.createElement('div');
-  intestazione.className = 'flex items-center gap-2 px-2 text-[10px] font-semibold text-court-500 uppercase tracking-wide';
+  intestazione.className = 'flex items-center gap-2 px-2 text-[10px] font-semibold text-court-300 uppercase tracking-wide';
   intestazione.innerHTML = `
     <span class="w-4 shrink-0"></span>
     <span class="flex-1">Squadra</span>
@@ -3694,7 +3699,7 @@ function creaTabellaClassifica(righe) {
 
     const pos = document.createElement('span');
     pos.className = 'w-4 text-center text-[11px] font-display font-700 shrink-0 '
-      + (r.posizione <= 2 ? 'text-lime-neon' : 'text-court-500');
+      + (r.posizione <= 2 ? 'text-lime-neon' : 'text-court-300');
     pos.textContent = String(r.posizione);
 
     const nome = document.createElement('span');
@@ -3702,15 +3707,15 @@ function creaTabellaClassifica(righe) {
     nome.textContent = r.nome;
 
     const g = document.createElement('span');
-    g.className = 'w-6 text-center text-[11px] text-court-500';
+    g.className = 'w-6 text-center text-[11px] text-court-300';
     g.textContent = String(r.partite);
 
     const v = document.createElement('span');
-    v.className = 'w-6 text-center text-[11px] text-court-500';
+    v.className = 'w-6 text-center text-[11px] text-court-300';
     v.textContent = String(r.vittorie);
 
     const set = document.createElement('span');
-    set.className = 'w-8 text-center text-[11px] text-court-500';
+    set.className = 'w-8 text-center text-[11px] text-court-300';
     set.textContent = `${r.set_vinti}-${r.set_persi}`;
 
     const punti = document.createElement('span');
@@ -3729,7 +3734,7 @@ function creaCalendarioGirone(incontri) {
   wrap.className = 'mt-3 space-y-2';
 
   const titolo = document.createElement('p');
-  titolo.className = 'text-[10px] font-semibold text-court-500 uppercase tracking-wide';
+  titolo.className = 'text-[10px] font-semibold text-court-300 uppercase tracking-wide';
   titolo.textContent = 'Calendario';
   wrap.appendChild(titolo);
 
@@ -3741,7 +3746,7 @@ function creaCalendarioGirone(incontri) {
 
   [...perTurno.keys()].sort((a, b) => a - b).forEach((turno) => {
     const et = document.createElement('p');
-    et.className = 'text-[10px] text-court-500 pt-1';
+    et.className = 'text-[10px] text-court-300 pt-1';
     et.textContent = `Turno ${turno}`;
     wrap.appendChild(et);
 
@@ -3780,7 +3785,7 @@ function creaRigaIncontro(incontro) {
 
   const punteggio = document.createElement('span');
   punteggio.className = 'text-sm font-display font-700 shrink-0 '
-    + (incontro.sets ? 'text-white' : 'text-court-500');
+    + (incontro.sets ? 'text-white' : 'text-court-300');
   punteggio.textContent = incontro.sets ? formattaSet(incontro.sets) : 'da giocare';
 
   linea.appendChild(nomi);
@@ -3854,7 +3859,7 @@ function creaFormPunteggioTorneo(incontro) {
     r.className = 'flex items-center gap-1.5';
 
     const et = document.createElement('span');
-    et.className = 'text-[10px] text-court-500 w-10 shrink-0';
+    et.className = 'text-[10px] text-court-300 w-10 shrink-0';
     et.textContent = s === 3 ? 'Set 3*' : `Set ${s}`;
     r.appendChild(et);
 
@@ -4260,8 +4265,9 @@ el.btnCloseCreaTorneo.addEventListener('click', () => closeModal(el.modalCreaTor
 el.modalCreaTorneoBackdrop.addEventListener('click', () => closeModal(el.modalCreaTorneo));
 
 el.btnOpenRanking.addEventListener('click', apriClassifica);
-el.btnCloseRanking.addEventListener('click', () => closeModal(el.modalRanking));
-el.modalRankingBackdrop.addEventListener('click', () => closeModal(el.modalRanking));
+el.btnClassificaIndietro.addEventListener('click', () => mostraPagina('paginaHome'));
+// Il marchio riporta a casa: e' cio' che ci si aspetta da un logo.
+el.btnHome.addEventListener('click', () => mostraPagina('paginaHome'));
 
 el.btnToggleRankingMin.addEventListener('click', async () => {
   rankingMinPartite = rankingMinPartite > 1 ? 1 : 3;
