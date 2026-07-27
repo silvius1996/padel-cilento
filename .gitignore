@@ -15,3 +15,6 @@ supabase/.branches/
 
 # I video registrati: si rigenerano con "npm run video"
 video/
+
+# Anteprima delle proposte di marchio: si rigenera aprendo public/marchio/proposte.html
+marchio-proposte.png
