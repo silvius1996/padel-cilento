@@ -1,0 +1,20 @@
+<meta charset="utf-8">
+<title>Padel Cilento — marchio in uso</title>
+<style>
+ body{margin:0;background:#0B0F0E;font-family:system-ui,sans-serif;color:#F4F5F2;padding:30px}
+ h2{font-size:12px;letter-spacing:2.5px;text-transform:uppercase;color:#6B736D;margin:0 0 16px}
+ .riga{display:flex;align-items:flex-end;gap:26px;margin-bottom:34px}
+ .cella{text-align:center}
+ .etichetta{font-size:11px;color:#6B736D;margin-top:8px}
+ .chiaro{background:#F4F5F2;padding:18px 22px;border-radius:14px;display:inline-block}
+</style>
+<h2>Icona dell'app, alle misure vere</h2>
+<div class="riga" id="misure"></div>
+<h2>Marchio esteso</h2>
+<div class="riga"><img src="/marchio/logo-scuro.svg" width="360"></div>
+<div class="riga"><span class="chiaro"><img src="/marchio/logo-chiaro.svg" width="360"></span></div>
+<script>
+  document.getElementById('misure').innerHTML = [128,96,72,60,44,36,28].map(n =>
+    `<div class="cella"><img src="/icons/icon.svg" width="${n}" height="${n}"><div class="etichetta">${n}px</div></div>`
+  ).join('');
+</script>

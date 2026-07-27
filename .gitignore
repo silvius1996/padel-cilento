@@ -18,3 +18,6 @@ video/
 
 # Anteprima delle proposte di marchio: si rigenera aprendo public/marchio/proposte.html
 marchio-proposte.png
+
+# schermate di lavoro, non fanno parte del progetto
+/*.png
