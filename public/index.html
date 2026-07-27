@@ -15,9 +15,9 @@
 <meta property="og:url" content="https://padelcilento.silvius13-bet.workers.dev/" />
 <meta name="twitter:card" content="summary" />
 
-<!-- Icona dell'app (racchetta da padel), incorporata nel file -->
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512' width='512' height='512'%3E%3Crect width='512' height='512' rx='112' fill='%230B0F0E'/%3E%3Cg transform='rotate(-38 256 256)'%3E%3Cpath d='M256 84c-63 0-114 47-114 112 0 48 27 84 66 100l12 34h72l12-34c39-16 66-52 66-100 0-65-51-112-114-112z' fill='%23C6FF3D'/%3E%3Cg fill='%230B0F0E'%3E%3Ccircle cx='256' cy='150' r='15'/%3E%3Ccircle cx='208' cy='186' r='15'/%3E%3Ccircle cx='304' cy='186' r='15'/%3E%3Ccircle cx='256' cy='222' r='15'/%3E%3Ccircle cx='208' cy='258' r='15'/%3E%3Ccircle cx='304' cy='258' r='15'/%3E%3Ccircle cx='256' cy='294' r='15'/%3E%3C/g%3E%3Crect x='236' y='330' width='40' height='92' rx='20' fill='%23C6FF3D'/%3E%3Crect x='222' y='404' width='68' height='26' rx='13' fill='%23C6FF3D'/%3E%3C/g%3E%3Ccircle cx='376' cy='372' r='46' fill='%233D7FFF'/%3E%3Cpath d='M376 326c-14 14-14 32 0 46s14 32 0 46' stroke='%230B0F0E' stroke-width='7' fill='none' stroke-linecap='round'/%3E%3C/svg%3E">
-<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512' width='512' height='512'%3E%3Crect width='512' height='512' rx='112' fill='%230B0F0E'/%3E%3Cg transform='rotate(-38 256 256)'%3E%3Cpath d='M256 84c-63 0-114 47-114 112 0 48 27 84 66 100l12 34h72l12-34c39-16 66-52 66-100 0-65-51-112-114-112z' fill='%23C6FF3D'/%3E%3Cg fill='%230B0F0E'%3E%3Ccircle cx='256' cy='150' r='15'/%3E%3Ccircle cx='208' cy='186' r='15'/%3E%3Ccircle cx='304' cy='186' r='15'/%3E%3Ccircle cx='256' cy='222' r='15'/%3E%3Ccircle cx='208' cy='258' r='15'/%3E%3Ccircle cx='304' cy='258' r='15'/%3E%3Ccircle cx='256' cy='294' r='15'/%3E%3C/g%3E%3Crect x='236' y='330' width='40' height='92' rx='20' fill='%23C6FF3D'/%3E%3Crect x='222' y='404' width='68' height='26' rx='13' fill='%23C6FF3D'/%3E%3C/g%3E%3Ccircle cx='376' cy='372' r='46' fill='%233D7FFF'/%3E%3Cpath d='M376 326c-14 14-14 32 0 46s14 32 0 46' stroke='%230B0F0E' stroke-width='7' fill='none' stroke-linecap='round'/%3E%3C/svg%3E">
+<!-- Icona dell'app: generata da scripts/marchio.mjs (npm run marchio) -->
+<link rel="icon" type="image/svg+xml" href="/icons/icon.svg">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
 <meta name="theme-color" content="#0B0F0E">
 
 <!-- PWA: manifest + meta per installazione su home screen -->
@@ -123,12 +123,9 @@
   <header class="sticky top-0 z-40 bg-court-900/90 backdrop-blur border-b border-court-600">
     <div class="max-w-2xl mx-auto px-4 h-16 flex items-center justify-between">
       <div class="flex items-center gap-2">
-        <div class="w-9 h-9 rounded-lg bg-lime-neon flex items-center justify-center shadow-neon">
-          <svg viewBox="0 0 24 24" class="w-5 h-5 text-court-900" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-            <circle cx="12" cy="12" r="6"></circle>
-            <path d="M12 6v12M6 12h12"></path>
-          </svg>
-        </div>
+        <!-- Il marchio arriva dallo stesso file dell'icona dell'app (npm run marchio),
+             cosi' header e home screen non possono divergere. -->
+        <img src="/icons/icon.svg" alt="" width="36" height="36" class="w-9 h-9 rounded-lg shadow-neon">
         <span class="font-display font-700 text-lg tracking-tight">Padel <span class="text-lime-neon">Cilento</span></span>
       </div>
 

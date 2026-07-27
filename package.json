@@ -13,7 +13,8 @@
     "db:status": "node scripts/db.mjs status",
     "db:verify": "node scripts/verifica.mjs",
     "dati:demo": "node scripts/dati-demo.mjs",
-    "spot": "node scripts/spot.mjs"
+    "spot": "node scripts/spot.mjs",
+    "marchio": "node scripts/marchio.mjs"
   },
   "devDependencies": {
     "@electric-sql/pglite": "^0.5.4",

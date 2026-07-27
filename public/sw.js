@@ -4,12 +4,13 @@
 // richieste verso Supabase, CDN esterni o qualunque dominio diverso dal
 // proprio: i dati delle partite restano sempre live, mai serviti dalla cache.
 
-const CACHE_NAME = 'padel-cilento-shell-v1';
+const CACHE_NAME = 'padel-cilento-shell-v2';
 const SHELL_ASSETS = [
   '/',
   '/index.html',
   '/manifest.json',
   '/icons/icon.svg',
+  '/icons/apple-touch-icon.png',
   '/icons/icon-192.png',
   '/icons/icon-512.png',
   '/icons/icon-maskable-192.png',
