@@ -763,6 +763,50 @@ async function testContatti() {
   uguale('il posto 2 appartiene alla squadra B', 'B', rows[2].squadra);
 }
 
+/**
+ * Un utente autenticato che NON ha ancora una riga in "profiles".
+ * Succede a chi elimina l'account e si registra di nuovo con la stessa
+ * email: il nuovo account ha un id nuovo e, con la conferma via email
+ * attiva, il profilo non viene creato al momento della registrazione.
+ *
+ * Finche' mio_profilo() era dichiarata "returns public.profiles",
+ * PostgreSQL restituiva UNA riga con tutte le colonne a null. Al
+ * browser arrivava un oggetto "vero", quindi l'app non si accorgeva
+ * mai che il profilo mancava: non lo creava e mostrava una scheda
+ * vuota, e ogni salvataggio finiva nel nulla dicendo "fatto".
+ */
+async function testProfiloAssente() {
+  console.log('\nUTENTE SENZA PROFILO');
+
+  const senzaProfilo = 'dddddddd-0000-0000-0000-0000000000ff';
+  await db.query('insert into auth.users (id, email) values ($1, $2)',
+    [senzaProfilo, 'senzaprofilo@test.it']);
+
+  await come(senzaProfilo);
+  await db.exec('set role authenticated');
+
+  const vuoto = await db.query('select * from public.mio_profilo()');
+  uguale('chi non ha un profilo non riceve nessuna riga', 0, vuoto.rows.length);
+
+  // Il salvataggio a vuoto deve restare visibile: l'app chiede indietro
+  // la riga modificata proprio per accorgersene.
+  const aggiornamento = await db.query(
+    `update public.profiles set nome = 'Fantasma' where id = $1 returning id`,
+    [senzaProfilo],
+  );
+  uguale('un salvataggio senza profilo non modifica nulla', 0, aggiornamento.rows.length);
+
+  // E chi il profilo ce l'ha continua a leggerlo, telefono compreso.
+  await db.exec('reset role');
+  await come(U.aldo);
+  await db.exec('set role authenticated');
+  const mio = await db.query('select * from public.mio_profilo()');
+  uguale('chi ha un profilo riceve una riga sola', 1, mio.rows.length);
+  uguale('e dentro c e il suo numero', '3330000001', mio.rows[0].telefono);
+
+  await db.exec('reset role');
+}
+
 async function testPrivacyTelefono() {
   console.log('\nPROTEZIONE DELLA COLONNA TELEFONO');
 
@@ -2033,6 +2077,7 @@ async function main() {
   await testClassifica();
   await testContatti();
   await testPrivacyTelefono();
+  await testProfiloAssente();
   await testPrivacyAnonimi();
   await testRuoloGestore();
   await testCodiceCircolo();

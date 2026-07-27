@@ -1269,7 +1269,12 @@ async function loadProfile(user, tentaCreazione = true) {
     return null;
   }
 
-  if (data) return data;
+  // mio_profilo() restituisce un elenco: nessun profilo = elenco vuoto.
+  // Il controllo su "id" e' una cintura in piu': se un browser ha in cache
+  // una versione vecchia dell'app che riceve ancora la riga tutta a null,
+  // quella riga va trattata per quello che e', cioe' un profilo assente.
+  const profilo = Array.isArray(data) ? data[0] : data;
+  if (profilo && profilo.id) return profilo;
 
   // Profilo assente: succede al primo accesso dopo la conferma via email.
   // Lo si crea ora, che la sessione e' attiva, e lo si rilegge.
@@ -1595,11 +1600,19 @@ async function caricaAvatar(userId, file) {
  * Aggiorna nome, cognome, telefono, livello e (facoltativo) avatar del profilo.
  */
 async function salvaProfilo(payload) {
-  const { error } = await supabaseClient
+  // Si chiede indietro la riga modificata: senza, un update che non
+  // trova nulla da modificare non e' un errore per il database, e
+  // l'app annuncerebbe "Profilo aggiornato" senza aver salvato niente.
+  // Si legge solo "id" perche' le altre colonne hanno permessi propri.
+  const { data, error } = await supabaseClient
     .from('profiles')
     .update(payload)
-    .eq('id', currentUser.id);
+    .eq('id', currentUser.id)
+    .select('id');
   if (error) throw error;
+  if (!data || data.length === 0) {
+    throw new Error('Il tuo profilo non risulta salvato sul server. Esci e rientra, poi riprova.');
+  }
 }
 
 el.formProfile.addEventListener('submit', async (e) => {
