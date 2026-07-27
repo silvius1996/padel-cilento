@@ -1973,6 +1973,176 @@ async function testTabellone() {
  * L'albo d'oro e la bacheca (aggiornamento n.17): la medaglia si
  * ricava dal tabellone, non viene salvata da nessuna parte.
  */
+/**
+ * Il collegamento fra una squadra del torneo e gli account dell'app.
+ *
+ * I nomi delle squadre si scrivono liberi, perche' a un torneo di
+ * circolo gioca anche chi l'app non ce l'ha. Chi invece e' iscritto va
+ * collegato: e' da user_id_1 / user_id_2 che la bacheca pesca le
+ * medaglie. Finora quel collegamento lo faceva solo il proprietario del
+ * database nei test; qui si verifica che lo possa fare il GESTORE dal
+ * browser, che e' il percorso vero, e che non lo possa fare nessun altro.
+ */
+/**
+ * Correggere un errore prima che si giochi, e non poterlo piu' fare dopo.
+ *
+ * torneo_incontri ha "on delete cascade" sulle squadre: cancellare una
+ * coppia a torneo iniziato porterebbe via anche le partite gia' giocate,
+ * e le classifiche si riscriverebbero da sole senza che nessuno lo
+ * chieda. Da qui la regola, la stessa del calendario: finche' non c'e'
+ * nessun risultato si rifa' tutto, dopo si annulla soltanto.
+ */
+async function testCorrezioniTorneo() {
+  console.log('\nCORREGGERE UN ERRORE NEL TORNEO');
+
+  await db.exec('reset role');
+  const { rows: c } = await db.query('select id from public.circoli where nome = $1', [CIRCOLO_NOME]);
+
+  await come(U.bea);
+  await db.exec('set role authenticated');
+
+  // Un torneo nuovo, ancora senza risultati.
+  const { rows: t } = await db.query(
+    `insert into public.tornei (circolo_id, nome, creato_da) values ($1, 'Torneo sbagliato', $2)
+     returning id`, [c[0].id, U.bea],
+  );
+  const torneo = t[0].id;
+
+  const gironi = [];
+  for (const [nome, ordine] of [['A', 1], ['B', 2]]) {
+    const { rows } = await db.query(
+      `insert into public.tornei_gironi (torneo_id, nome, ordine) values ($1, $2, $3) returning id`,
+      [torneo, nome, ordine],
+    );
+    gironi.push(rows[0].id);
+  }
+
+  const { rows: sq } = await db.query(
+    `insert into public.torneo_squadre (torneo_id, giocatore_1, giocatore_2, girone_id)
+     values ($1, 'Tizio', 'Caio', $2) returning id`, [torneo, gironi[0]],
+  );
+  const squadra = sq[0].id;
+
+  await deveRiuscire('la coppia si sposta di girone', () => db.query(
+    'update public.torneo_squadre set girone_id = $2 where id = $1', [squadra, gironi[1]],
+  ));
+
+  await deveRiuscire('la coppia si cancella', () => db.query(
+    'delete from public.torneo_squadre where id = $1', [squadra],
+  ));
+
+  await deveRiuscire('il torneo sbagliato si cancella', () => db.query(
+    'delete from public.tornei where id = $1', [torneo],
+  ));
+
+  // Ora un torneo in cui si e' gia' giocato: TORNEO, dove i risultati ci sono.
+  const { rows: giocate } = await db.query(
+    `select id, squadra_casa from public.torneo_incontri
+      where torneo_id = $1 and sets is not null limit 1`, [TORNEO],
+  );
+
+  if (giocate.length === 0) {
+    esito('il torneo di prova ha almeno un risultato', false, 'nessun incontro giocato');
+    await db.exec('reset role');
+    return;
+  }
+
+  const giocante = giocate[0].squadra_casa;
+
+  // Serve un girone DIVERSO da quello in cui sta gia': il trigger lascia
+  // passare un aggiornamento che non cambia niente, ed e' giusto cosi'.
+  const { rows: altroGirone } = await db.query(
+    `select g.id from public.tornei_gironi g
+      where g.torneo_id = $1
+        and g.id is distinct from (select s.girone_id from public.torneo_squadre s where s.id = $2)
+      limit 1`, [TORNEO, giocante],
+  );
+
+  await deveFallire(
+    'una coppia che ha gia giocato non si cancella',
+    () => db.query('delete from public.torneo_squadre where id = $1', [giocante]),
+    'gia\' giocato',
+  );
+
+  if (altroGirone.length === 0) {
+    esito('esiste un secondo girone per provare lo spostamento', false,
+      'il torneo di prova ne ha uno solo');
+  } else {
+    await deveFallire(
+      'e non le si cambia nemmeno il girone',
+      () => db.query('update public.torneo_squadre set girone_id = $2 where id = $1',
+        [giocante, altroGirone[0].id]),
+      'gia\' giocato',
+    );
+  }
+
+  await deveFallire(
+    'un torneo in cui si e giocato non si cancella',
+    () => db.query('delete from public.tornei where id = $1', [TORNEO]),
+    'gia\' giocato',
+  );
+
+  // Il resto della coppia resta intatto: nessuna partita e' sparita.
+  const { rows: ancora } = await db.query(
+    'select count(*)::int n from public.torneo_incontri where torneo_id = $1', [TORNEO],
+  );
+  esito('gli incontri del torneo sono tutti al loro posto', ancora[0].n > 0, `${ancora[0].n} incontri`);
+
+  await db.exec('reset role');
+}
+
+async function testCollegamentoGiocatori() {
+  console.log('\nCOLLEGAMENTO DEI GIOCATORI ISCRITTI');
+
+  await db.exec('reset role');
+  const { rows: squadre } = await db.query(
+    `select id, giocatore_1, user_id_1 from public.torneo_squadre
+      where torneo_id = $1 order by created_at limit 1`, [TORNEO_FINALI],
+  );
+  const squadra = squadre[0].id;
+
+  // Bea gestisce quel torneo: e' lei che iscrive le coppie.
+  await come(U.bea);
+  await db.exec('set role authenticated');
+
+  await deveRiuscire('il gestore collega un giocatore al suo account', () => db.query(
+    'update public.torneo_squadre set user_id_1 = $2 where id = $1', [squadra, U.dina],
+  ));
+
+  const { rows: dopo } = await db.query(
+    'select user_id_1 from public.torneo_squadre where id = $1', [squadra],
+  );
+  uguale('il collegamento e salvato', U.dina, dopo[0].user_id_1);
+
+  // Il vincolo della tabella: una persona non gioca con se stessa.
+  await deveFallire(
+    'la stessa persona non puo occupare tutti e due i posti',
+    () => db.query('update public.torneo_squadre set user_id_2 = $2 where id = $1',
+      [squadra, U.dina]),
+    'violates check constraint',
+  );
+
+  await deveRiuscire('il gestore puo anche scollegare', () => db.query(
+    'update public.torneo_squadre set user_id_1 = null where id = $1', [squadra],
+  ));
+
+  await db.exec('reset role');
+
+  // Aldo non gestisce quel torneo.
+  await come(U.aldo);
+  await db.exec('set role authenticated');
+  const estraneo = await db.query(
+    'update public.torneo_squadre set user_id_1 = $2 where id = $1 returning id',
+    [squadra, U.aldo],
+  );
+  uguale('un altro giocatore non collega nessuno', 0, estraneo.rows.length);
+
+  // Si rimette com'era, perche' le prove successive contano su questo.
+  await db.exec('reset role');
+  await db.query('update public.torneo_squadre set user_id_1 = $2 where id = $1',
+    [squadra, squadre[0].user_id_1]);
+}
+
 async function testBacheca() {
   console.log('\nMEDAGLIE E BACHECA');
 
@@ -2093,6 +2263,8 @@ async function main() {
   await testTornei();
   await testParitaClassifica();
   await testTabellone();
+  await testCorrezioniTorneo();
+  await testCollegamentoGiocatori();
   await testBacheca();
   await testEliminaAccount();
 

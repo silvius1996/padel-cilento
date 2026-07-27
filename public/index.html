@@ -865,17 +865,35 @@
           <div class="rounded-xl border border-court-600 p-3 space-y-2">
             <p class="text-[11px] font-semibold text-court-500 uppercase tracking-wide">Iscrivi una coppia</p>
             <div class="grid grid-cols-2 gap-2">
-              <input id="squadra-g1" type="text" maxlength="60" placeholder="Giocatore 1"
+              <input id="squadra-g1" type="text" maxlength="60" placeholder="Giocatore 1" list="iscritti-app"
                      class="w-full bg-court-700 border border-court-500 rounded-lg px-3 py-2 text-sm text-white focus:border-lime-neon outline-none">
-              <input id="squadra-g2" type="text" maxlength="60" placeholder="Giocatore 2"
+              <input id="squadra-g2" type="text" maxlength="60" placeholder="Giocatore 2" list="iscritti-app"
                      class="w-full bg-court-700 border border-court-500 rounded-lg px-3 py-2 text-sm text-white focus:border-lime-neon outline-none">
             </div>
+            <!-- I nomi si scrivono liberi: un torneo ha anche giocatori che
+                 l'app non ce l'hanno. Chi invece e' iscritto viene suggerito
+                 qui, e collegato al suo account: e' cio' che fa comparire la
+                 medaglia sul suo profilo se vince. -->
+            <datalist id="iscritti-app"></datalist>
+            <p class="text-[11px] text-court-500 leading-snug">
+              Se il giocatore ha l'app, scegli il suo nome dai suggerimenti: viene collegato
+              al suo account e la vittoria gli comparira' sul profilo.
+            </p>
             <select id="squadra-girone"
                     class="w-full bg-court-700 border border-court-500 rounded-lg px-3 py-2 text-sm text-white focus:border-lime-neon outline-none"></select>
             <button type="button" id="btn-aggiungi-squadra"
                     class="w-full bg-lime-neon text-court-900 font-display font-700 py-2.5 rounded-lg">
               Iscrivi la coppia
             </button>
+          </div>
+
+          <div id="torneo-collegamenti" class="rounded-xl border border-court-600 p-3 space-y-2 hidden">
+            <p class="text-[11px] font-semibold text-court-500 uppercase tracking-wide">Coppie iscritte</p>
+            <p class="text-[11px] text-court-500 leading-snug">
+              Chi e' collegato al proprio account riceve la medaglia sul profilo se vince.
+              Gli altri giocano lo stesso: il collegamento e' facoltativo.
+            </p>
+            <div id="collegamenti-lista" class="space-y-2"></div>
           </div>
         </div>
       </div>
@@ -1093,6 +1111,9 @@ const el = {
   torneoGestionePreparazione: document.getElementById('torneo-gestione-preparazione'),
   btnAggiungiGirone: document.getElementById('btn-aggiungi-girone'),
   btnGeneraCalendario: document.getElementById('btn-genera-calendario'),
+  iscrittiApp: document.getElementById('iscritti-app'),
+  torneoCollegamenti: document.getElementById('torneo-collegamenti'),
+  collegamentiLista: document.getElementById('collegamenti-lista'),
   squadraG1: document.getElementById('squadra-g1'),
   squadraG2: document.getElementById('squadra-g2'),
   squadraGirone: document.getElementById('squadra-girone'),
@@ -3130,6 +3151,245 @@ function gestisceTorneo(torneo) {
     && currentProfile.circolo_id === torneo.circolo_id;
 }
 
+// ---------------------------------------------------------
+// Collegamento fra una squadra del torneo e gli account dell'app
+//
+// I nomi delle squadre si scrivono liberi, perche' a un torneo di
+// circolo partecipa anche chi l'app non ce l'ha. Chi invece e'
+// iscritto puo' essere collegato al proprio account: le colonne
+// user_id_1 / user_id_2 di torneo_squadre servono a questo, ed e'
+// da li' che l'albo d'oro pesca le medaglie da mostrare sul profilo.
+// ---------------------------------------------------------
+let iscrittiApp = [];              // profili disponibili per il collegamento
+let iscrittiPerNome = new Map();   // nome scritto -> profilo, se non ambiguo
+
+function nomeIscritto(profilo) {
+  return `${profilo.nome || ''} ${profilo.cognome || ''}`.trim();
+}
+
+/**
+ * Carica una volta l'elenco di chi puo' essere collegato.
+ * Un nome che appartiene a due persone diverse non viene collegato
+ * da solo: resta al gestore sceglierlo dall'elenco della coppia.
+ */
+async function caricaIscritti() {
+  const { data, error } = await supabaseClient
+    .from('profiles')
+    .select('id, nome, cognome, level')
+    .is('eliminato_il', null)
+    .order('nome')
+    .limit(500);
+
+  if (error) {
+    console.error('Errore caricamento iscritti:', error);
+    iscrittiApp = [];
+    return;
+  }
+
+  iscrittiApp = data || [];
+
+  const conteggio = new Map();
+  for (const p of iscrittiApp) {
+    const chiave = nomeIscritto(p).toLowerCase();
+    conteggio.set(chiave, (conteggio.get(chiave) || 0) + 1);
+  }
+
+  iscrittiPerNome = new Map();
+  for (const p of iscrittiApp) {
+    const chiave = nomeIscritto(p).toLowerCase();
+    if (conteggio.get(chiave) === 1) iscrittiPerNome.set(chiave, p);
+  }
+
+  el.iscrittiApp.innerHTML = '';
+  for (const p of iscrittiApp) {
+    const o = document.createElement('option');
+    o.value = nomeIscritto(p);
+    el.iscrittiApp.appendChild(o);
+  }
+}
+
+/** Il profilo corrispondente a un nome scritto a mano, se e' uno solo. */
+function risolviIscritto(nome) {
+  return iscrittiPerNome.get((nome || '').trim().toLowerCase()) || null;
+}
+
+/** Collega (o scollega, con userId nullo) un giocatore di una coppia. */
+async function collegaGiocatore(squadraId, campo, userId) {
+  const { error } = await supabaseClient
+    .from('torneo_squadre')
+    .update({ [campo]: userId || null })
+    .eq('id', squadraId)
+    .select('id');
+  if (error) throw error;
+}
+
+/**
+ * Per ogni coppia gia' iscritta mostra i due giocatori: chi e' collegato
+ * con una spunta, chi no con l'elenco per collegarlo.
+ */
+/** Vero appena qualcuno ha inserito un risultato: da li' non si rifa' piu' nulla. */
+/**
+ * Cancella il torneo per intero: gironi, coppie e calendario se ne vanno
+ * con lui. Il database lo permette solo finche' non si e' giocato.
+ */
+async function eliminaTorneo() {
+  if (!torneoCorrente) return;
+  if (!confirm(
+    `Cancellare "${torneoCorrente.nome}"? Spariscono gironi, coppie e calendario. `
+    + 'Non si torna indietro.'
+  )) return;
+
+  try {
+    const { error } = await supabaseClient
+      .from('tornei').delete().eq('id', torneoCorrente.id).select('id');
+    if (error) throw error;
+    torneoCorrente = null;
+    torneoDati = null;
+    closeModal(el.modalTorneo);
+    showToast('Torneo cancellato.');
+    await caricaTornei();
+  } catch (e) {
+    console.error(e);
+    mostraErroreTorneo(e, 'Impossibile cancellare il torneo.');
+  }
+}
+
+function torneoHaRisultati() {
+  return (torneoDati?.incontri || []).some((i) => i.sets);
+}
+
+function renderCollegamenti() {
+  const squadre = torneoDati?.squadre || [];
+  el.torneoCollegamenti.classList.toggle('hidden', squadre.length === 0);
+  el.collegamentiLista.innerHTML = '';
+
+  for (const squadra of squadre) {
+    const riga = document.createElement('div');
+    riga.className = 'rounded-lg bg-court-700 border border-court-600 p-2 space-y-1.5';
+
+    const intestazione = document.createElement('div');
+    intestazione.className = 'flex items-center gap-2';
+
+    const titolo = document.createElement('p');
+    titolo.className = 'text-xs font-semibold text-white/80 flex-1 min-w-0 truncate';
+    titolo.textContent = nomeSquadra(squadra);
+    intestazione.appendChild(titolo);
+
+    // Spostare di girone e cancellare si possono fare finche' nessuno ha
+    // giocato. Da li' in poi il database rifiuta: qui si evita solo di
+    // mostrare comandi che darebbero errore.
+    if (!torneoHaRisultati()) {
+      const cambioGirone = document.createElement('select');
+      cambioGirone.className = 'bg-court-900 border border-court-500 rounded-lg px-2 py-1 '
+        + 'text-[11px] text-white focus:border-lime-neon outline-none shrink-0';
+      cambioGirone.title = 'Sposta la coppia in un altro girone';
+      for (const g of torneoDati.gironi) {
+        const o = document.createElement('option');
+        o.value = g.id;
+        o.textContent = `Girone ${g.nome}`;
+        if (squadra.girone_id === g.id) o.selected = true;
+        cambioGirone.appendChild(o);
+      }
+      cambioGirone.addEventListener('change', async () => {
+        cambioGirone.disabled = true;
+        try {
+          const { error } = await supabaseClient
+            .from('torneo_squadre')
+            .update({ girone_id: cambioGirone.value })
+            .eq('id', squadra.id)
+            .select('id');
+          if (error) throw error;
+          showToast('Coppia spostata. Rigenera il calendario.');
+          await ricaricaTorneo();
+        } catch (e) {
+          console.error(e);
+          mostraErroreTorneo(e, 'Impossibile spostare la coppia.');
+          cambioGirone.disabled = false;
+        }
+      });
+      intestazione.appendChild(cambioGirone);
+
+      const elimina = document.createElement('button');
+      elimina.type = 'button';
+      elimina.className = 'shrink-0 w-7 h-7 rounded-lg border border-red-500/40 text-red-400 '
+        + 'text-xs leading-none hover:bg-red-500/10 transition-colors';
+      elimina.textContent = '\u2715';
+      elimina.title = 'Cancella la coppia';
+      elimina.addEventListener('click', async () => {
+        if (!confirm(`Cancellare la coppia ${nomeSquadra(squadra)}?`)) return;
+        elimina.disabled = true;
+        try {
+          const { error } = await supabaseClient
+            .from('torneo_squadre').delete().eq('id', squadra.id);
+          if (error) throw error;
+          showToast('Coppia cancellata. Rigenera il calendario.');
+          await ricaricaTorneo();
+        } catch (e) {
+          console.error(e);
+          mostraErroreTorneo(e, 'Impossibile cancellare la coppia.');
+          elimina.disabled = false;
+        }
+      });
+      intestazione.appendChild(elimina);
+    }
+
+    riga.appendChild(intestazione);
+
+    for (const [campo, campoNome] of [['user_id_1', 'giocatore_1'], ['user_id_2', 'giocatore_2']]) {
+      const blocco = document.createElement('div');
+      blocco.className = 'flex items-center gap-2';
+
+      const etichetta = document.createElement('span');
+      etichetta.className = 'text-xs text-white/60 shrink-0 w-24 truncate';
+      etichetta.textContent = squadra[campoNome] || '—';
+      blocco.appendChild(etichetta);
+
+      const scelta = document.createElement('select');
+      scelta.className = 'flex-1 min-w-0 bg-court-900 border border-court-500 rounded-lg px-2 py-1.5 '
+        + 'text-xs text-white focus:border-lime-neon outline-none';
+
+      const nessuno = document.createElement('option');
+      nessuno.value = '';
+      nessuno.textContent = 'Non iscritto all app';
+      scelta.appendChild(nessuno);
+
+      for (const p of iscrittiApp) {
+        const o = document.createElement('option');
+        o.value = p.id;
+        o.textContent = nomeIscritto(p);
+        if (squadra[campo] === p.id) o.selected = true;
+        scelta.appendChild(o);
+      }
+
+      scelta.addEventListener('change', async () => {
+        scelta.disabled = true;
+        try {
+          await collegaGiocatore(squadra.id, campo, scelta.value);
+          await ricaricaTorneo();
+        } catch (e) {
+          console.error(e);
+          mostraErroreTorneo(e, 'Impossibile collegare il giocatore.');
+          scelta.disabled = false;
+        }
+      });
+
+      blocco.appendChild(scelta);
+
+      if (squadra[campo]) {
+        const spunta = document.createElement('span');
+        spunta.className = 'text-lime-neon text-sm shrink-0';
+        spunta.textContent = '\u2713';
+        spunta.title = 'Collegato: ricevera la medaglia sul profilo';
+        blocco.appendChild(spunta);
+      }
+
+      riga.appendChild(blocco);
+    }
+
+    el.collegamentiLista.appendChild(riga);
+  }
+}
+
 function nomeSquadra(s) {
   if (!s) return '—';
   const proprio = (s.nome || '').trim();
@@ -3261,6 +3521,11 @@ async function apriTorneo(torneoId) {
 
     torneoCorrente = data;
     torneoDati = await caricaDatiTorneo(torneoId);
+
+    // L'elenco degli iscritti serve solo a chi gestisce, e va letto
+    // prima di disegnare il pannello: e' quello che riempie sia i
+    // suggerimenti sui nomi sia gli elenchi di collegamento.
+    if (gestisceTorneo(torneoCorrente)) await caricaIscritti();
 
     el.torneoLoading.classList.add('hidden');
     renderTorneo();
@@ -3650,6 +3915,9 @@ function renderGestioneTorneo() {
   const inPreparazione = t.stato === 'bozza' || t.stato === 'iscrizioni';
   el.torneoGestionePreparazione.classList.toggle('hidden', !inPreparazione);
 
+  el.torneoCollegamenti.classList.toggle('hidden', !inPreparazione);
+  if (inPreparazione) renderCollegamenti();
+
   if (inPreparazione) {
     el.squadraGirone.innerHTML = '';
     if (torneoDati.gironi.length === 0) {
@@ -3689,14 +3957,25 @@ function renderGestioneTorneo() {
   if (t.stato === 'in_corso') passaggi.push(['concluso', 'Concludi']);
   if (t.stato !== 'annullato' && t.stato !== 'concluso') passaggi.push(['annullato', 'Annulla']);
 
+  // Cancellare il torneo e' per l'errore di battitura: un torneo in cui
+  // si e' gia' giocato non si cancella (lo rifiuta il database), si
+  // annulla. Il pulsante compare solo quando la cancellazione e'
+  // davvero possibile.
+  if (!torneoHaRisultati() && t.stato !== 'concluso') {
+    passaggi.push(['__elimina', 'Cancella il torneo']);
+  }
+
   passaggi.forEach(([nuovo, etichetta]) => {
     const b = document.createElement('button');
     b.type = 'button';
-    b.className = nuovo === 'annullato'
+    b.className = (nuovo === 'annullato' || nuovo === '__elimina')
       ? 'py-2.5 rounded-xl border border-red-500/40 text-red-400 text-sm font-semibold'
       : 'py-2.5 rounded-xl bg-lime-neon text-court-900 text-sm font-display font-700';
     b.textContent = etichetta;
-    b.addEventListener('click', () => cambiaStatoTorneo(nuovo, etichetta));
+    b.addEventListener('click', () => {
+      if (nuovo === '__elimina') return eliminaTorneo();
+      return cambiaStatoTorneo(nuovo, etichetta);
+    });
     el.torneoAzioniStato.appendChild(b);
   });
 }
@@ -3760,11 +4039,25 @@ el.btnAggiungiSquadra.addEventListener('click', async () => {
 
   el.btnAggiungiSquadra.disabled = true;
   try {
+    // Se il nome scritto corrisponde senza ambiguita' a un iscritto, la
+    // coppia nasce gia' collegata. Altrimenti resta da collegare a mano
+    // dall'elenco qui sotto, oppure non si collega affatto.
+    const iscritto1 = risolviIscritto(g1);
+    const iscritto2 = risolviIscritto(g2);
+
+    if (iscritto1 && iscritto2 && iscritto1.id === iscritto2.id) {
+      mostraErroreTorneo(new Error('Una persona non puo giocare con se stessa.'), '');
+      el.btnAggiungiSquadra.disabled = false;
+      return;
+    }
+
     const { error } = await supabaseClient.from('torneo_squadre').insert({
       torneo_id: torneoCorrente.id,
       giocatore_1: g1,
       giocatore_2: g2,
       girone_id: girone,
+      user_id_1: iscritto1?.id || null,
+      user_id_2: iscritto2?.id || null,
     });
     if (error) throw error;
     el.squadraG1.value = '';
