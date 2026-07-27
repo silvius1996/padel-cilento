@@ -54,17 +54,6 @@
     font-size: 13px;
     margin: 0 0 24px;
   }
-  .draft-banner {
-    background: rgba(198,255,61,0.08);
-    border: 1px solid rgba(198,255,61,0.35);
-    color: var(--lime);
-    border-radius: 12px;
-    padding: 14px 16px;
-    font-size: 13px;
-    font-weight: 600;
-    margin-bottom: 28px;
-    line-height: 1.5;
-  }
   h2 {
     font-size: 17px;
     font-weight: 700;
@@ -74,18 +63,10 @@
   }
   h2:first-of-type { border-top: none; padding-top: 0; }
   p, li { color: var(--text-dim); font-size: 14.5px; }
+  p a, li a { color: var(--lime); text-decoration: underline; text-underline-offset: 2px; }
   ul { padding-left: 20px; margin: 10px 0; }
   li { margin-bottom: 6px; }
   strong { color: var(--text); }
-  .placeholder {
-    background: rgba(61,127,255,0.12);
-    border: 1px dashed rgba(61,127,255,0.5);
-    color: #8fb4ff;
-    padding: 1px 6px;
-    border-radius: 6px;
-    font-size: 13.5px;
-    font-family: ui-monospace, 'SF Mono', Consolas, monospace;
-  }
   .box {
     background: var(--panel);
     border: 1px solid var(--border);
@@ -107,28 +88,16 @@
     <a class="back" href="/">&larr; Torna a Padel Cilento</a>
 
     <h1>Privacy Policy</h1>
-    <p class="updated">Ultimo aggiornamento: 26 luglio 2026</p>
-
-    <div class="draft-banner">
-      BOZZA — mancano ancora quattro dati, evidenziati come
-      <span class="placeholder">[PLACEHOLDER]</span> nel testo: nome o ragione sociale
-      del titolare del trattamento, indirizzo (o P.IVA, se persona giuridica),
-      email di contatto per le richieste privacy, e i giorni entro cui vengono
-      evase le richieste di cancellazione gestite manualmente. Vanno compilati
-      prima di aprire l'app a utenti veri. Questa pagina non sostituisce una
-      consulenza legale: per un lancio pubblico è consigliabile far rivedere il
-      testo a un professionista (DPO / avvocato privacy), soprattutto le sezioni
-      su base giuridica e trasferimento dati.
-    </div>
+    <p class="updated">Ultimo aggiornamento: 27 luglio 2026</p>
 
     <h2>1. Titolare del trattamento</h2>
     <p>
       Il titolare del trattamento dei dati raccolti tramite l'app Padel Cilento è:
     </p>
     <div class="box">
-      <p style="margin:0"><strong><span class="placeholder">[NOME / RAGIONE SOCIALE DEL TITOLARE]</span></strong></p>
-      <p style="margin:4px 0 0"><span class="placeholder">[INDIRIZZO, SE PERSONA GIURIDICA / P.IVA SE APPLICABILE]</span></p>
-      <p style="margin:4px 0 0">Contatto per richieste privacy: <span class="placeholder">[EMAIL DI CONTATTO PRIVACY]</span></p>
+      <p style="margin:0"><strong>Silvio Marino</strong></p>
+      <p style="margin:4px 0 0">Persona fisica, senza partita IVA.</p>
+      <p style="margin:4px 0 0">Contatto per richieste privacy: <a href="mailto:padelcilento@gmail.com">padelcilento@gmail.com</a></p>
     </div>
 
     <h2>2. Quali dati raccogliamo</h2>
@@ -184,8 +153,8 @@
     </p>
     <p>
       Per richieste diverse, o se preferisci che la cancellazione venga effettuata da noi,
-      puoi scrivere a <span class="placeholder">[EMAIL DI CONTATTO PRIVACY]</span>: in quel caso
-      procediamo entro <span class="placeholder">[N. GIORNI, ES. 30]</span> giorni, salvo dati che
+      puoi scrivere a <a href="mailto:padelcilento@gmail.com">padelcilento@gmail.com</a>: in quel caso
+      procediamo entro 30 giorni, salvo dati che
       siamo tenuti a conservare per obblighi di legge.
     </p>
 
@@ -202,7 +171,7 @@
     <p>
       La cancellazione puoi esercitarla da solo, subito, dall'app: <em>Il tuo profilo</em> &rarr;
       <em>Elimina il mio account</em> (vedi la sezione 5 per che cosa comporta). Per gli altri
-      diritti scrivi a <span class="placeholder">[EMAIL DI CONTATTO PRIVACY]</span>.
+      diritti scrivi a <a href="mailto:padelcilento@gmail.com">padelcilento@gmail.com</a>.
     </p>
 
     <h2>7. Cookie e tecnologie simili</h2>
@@ -227,7 +196,7 @@
     </p>
 
     <footer>
-      Padel Cilento — <span class="placeholder">[COMPLETARE PRIMA DELLA PUBBLICAZIONE]</span>
+      Padel Cilento — Silvio Marino, titolare del trattamento
     </footer>
   </div>
 </body>
