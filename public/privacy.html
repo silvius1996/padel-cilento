@@ -123,7 +123,7 @@
     <p>I dati sono trattati dai seguenti fornitori, in qualità di responsabili del trattamento:</p>
     <ul>
       <li><strong>Supabase</strong> (database e autenticazione) — infrastruttura ospitata nella regione UE (Londra/eu-west-2 al momento della stesura).</li>
-      <li><strong>Cloudflare</strong> (hosting della pagina web).</li>
+      <li><strong>Vercel</strong> (hosting della pagina web) — fornisce anche un conteggio anonimo delle visite: pagina aperta, provenienza del link, tipo di dispositivo. Non usa cookie, non crea identificativi persistenti e non permette di risalire alla singola persona.</li>
       <li><strong>Sentry</strong> (monitoraggio errori tecnici) — riceve informazioni tecniche sugli errori dell'app (es. messaggi di errore, browser usato); non riceve intenzionalmente password o dati di pagamento.</li>
     </ul>
     <p>Altri giocatori registrati vedono nome, cognome, livello ed eventuale foto profilo. Il numero di telefono è visibile solo a chi condivide una partita con te.</p>
@@ -180,6 +180,10 @@
       Utilizza esclusivamente il <em>local storage</em> del browser per mantenere la sessione di
       accesso (token di autenticazione Supabase): è strettamente necessario al funzionamento
       dell'app e non richiede consenso ai sensi della normativa vigente.
+    </p>
+    <p>
+      Anche il conteggio delle visite (Vercel Web Analytics) funziona senza cookie e senza
+      identificativi persistenti: registra il numero di pagine aperte, non chi le apre.
     </p>
 
     <h2>8. Minori</h2>

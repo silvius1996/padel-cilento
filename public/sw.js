@@ -44,6 +44,12 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // Il conteggio delle visite (/_vercel/insights) lo serve la piattaforma,
+  // non e' parte della shell: metterlo in cache falserebbe i numeri.
+  if (new URL(request.url).pathname.startsWith('/_vercel/')) {
+    return;
+  }
+
   // Network-first con fallback alla cache, cosi' la shell resta aggiornata
   // quando c'e' connessione e disponibile offline quando manca.
   event.respondWith(

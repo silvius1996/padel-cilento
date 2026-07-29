@@ -4865,6 +4865,14 @@ init();
 
   </script>
 
+  <!-- Conteggio delle visite (Vercel Web Analytics).
+       Va acceso una volta dal pannello Vercel, scheda Analytics: finche' e'
+       spento questo script risponde 404 e non succede nulla.
+       Non usa cookie e non identifica le persone: conta le pagine aperte, da
+       dove arriva il link e con che dispositivo. Serve a sapere se il link
+       mandato nel gruppo e' stato aperto, non chi lo ha aperto. -->
+  <script defer src="/_vercel/insights/script.js"></script>
+
   <!-- PWA: registrazione service worker (non blocca l'avvio dell'app) -->
   <script>
     if ('serviceWorker' in navigator) {
