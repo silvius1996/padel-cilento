@@ -832,6 +832,20 @@
       </p>
 
       <div>
+        <label class="block text-[11px] font-semibold text-court-300 uppercase tracking-wide mb-1.5" for="torneo-formato-girone">Formula dei gironi</label>
+        <select id="torneo-formato-girone"
+                class="w-full bg-court-700 border border-court-500 rounded-xl px-4 py-3 text-sm text-white focus:border-lime-neon outline-none">
+          <option value="all_italiana" selected>All'italiana · tutti contro tutti</option>
+          <option value="eliminazione_4">A eliminazione · 4 coppie, 4 incontri</option>
+        </select>
+      </div>
+      <p class="text-[11px] text-court-300 -mt-2 leading-snug">
+        A eliminazione il girone e' un piccolo tabellone: A-B, C-D, poi le due vincenti
+        fra loro e le due perdenti fra loro. Quattro incontri invece di sei, e la
+        classifica non dipende dalla differenza game. Richiede esattamente 4 coppie per girone.
+      </p>
+
+      <div>
         <label class="block text-[11px] font-semibold text-court-300 uppercase tracking-wide mb-1.5" for="torneo-livello">Livello</label>
         <select id="torneo-livello"
                 class="w-full bg-court-700 border border-court-500 rounded-xl px-4 py-3 text-sm text-white focus:border-lime-neon outline-none">
@@ -899,6 +913,14 @@
             <option value="">Come i gironi</option>
             <option value="due_su_tre">Due set su tre</option>
             <option value="set_unico">Set unico</option>
+          </select>
+        </label>
+        <label class="flex-1 min-w-0">
+          <span class="block text-[10px] font-semibold text-court-300 uppercase tracking-wide mb-1">Formula gironi</span>
+          <select id="torneo-formato-girone-gestione"
+                  class="w-full bg-court-700 border border-court-500 rounded-lg px-2 py-2 text-xs text-white focus:border-lime-neon outline-none">
+            <option value="all_italiana">All'italiana</option>
+            <option value="eliminazione_4">A eliminazione</option>
           </select>
         </label>
       </div>
@@ -1072,6 +1094,8 @@ const el = {
   torneoFormatoGestione: document.getElementById('torneo-formato-gestione'),
   torneoFormatoFinali: document.getElementById('torneo-formato-finali'),
   torneoFormatoFinaliGestione: document.getElementById('torneo-formato-finali-gestione'),
+  torneoFormatoGirone: document.getElementById('torneo-formato-girone'),
+  torneoFormatoGironeGestione: document.getElementById('torneo-formato-girone-gestione'),
   torneoFormatoRiga: document.getElementById('torneo-formato-riga'),
   torneoCircoloRiga: document.getElementById('torneo-circolo-riga'),
   matchOwnerActions: document.getElementById('match-owner-actions'),
@@ -3800,13 +3824,35 @@ function creaCalendarioGirone(incontri) {
   [...perTurno.keys()].sort((a, b) => a - b).forEach((turno) => {
     const et = document.createElement('p');
     et.className = 'text-[10px] text-court-300 pt-1';
-    et.textContent = `Turno ${turno}`;
+    // Nel girone a eliminazione i due turni hanno un nome, non un
+    // numero: il secondo assegna le posizioni.
+    et.textContent = (torneoCorrente && torneoCorrente.formato_girone === 'eliminazione_4')
+      ? (turno === 1 ? 'Primi incontri' : 'Incontri decisivi')
+      : `Turno ${turno}`;
     wrap.appendChild(et);
 
     perTurno.get(turno).forEach((i) => wrap.appendChild(creaRigaIncontro(i)));
   });
 
   return wrap;
+}
+
+/**
+ * Una casella ancora vuota non e' un buco: si sa gia' chi ci finira'.
+ * L'incontro che ci manda il vincitore (o il perdente) lo dichiara nei
+ * suoi collegamenti, quindi la casella si puo' leggere come sul foglio
+ * del circolo: "Vincente 1o incontro".
+ */
+function etichettaCasella(incontro, lato) {
+  const daVincente = torneoDati.incontri.find(
+    (i) => i.prossimo_incontro_id === incontro.id && i.prossimo_lato === lato);
+  if (daVincente) return `Vincente ${daVincente.ordine + 1}o incontro`;
+
+  const daPerdente = torneoDati.incontri.find(
+    (i) => i.perdente_incontro_id === incontro.id && i.perdente_lato === lato);
+  if (daPerdente) return `Perdente ${daPerdente.ordine + 1}o incontro`;
+
+  return '—';
 }
 
 function creaRigaIncontro(incontro) {
@@ -3826,12 +3872,12 @@ function creaRigaIncontro(incontro) {
   const c = document.createElement('p');
   c.className = 'text-sm truncate leading-relaxed '
     + (incontro.vincitore === 'C' ? 'font-bold text-lime-neon' : 'text-white/80');
-  c.textContent = nomeSquadra(casa);
+  c.textContent = casa ? nomeSquadra(casa) : etichettaCasella(incontro, 'C');
 
   const o = document.createElement('p');
   o.className = 'text-sm truncate leading-relaxed '
     + (incontro.vincitore === 'O' ? 'font-bold text-lime-neon' : 'text-white/80');
-  o.textContent = nomeSquadra(ospite);
+  o.textContent = ospite ? nomeSquadra(ospite) : etichettaCasella(incontro, 'O');
 
   nomi.appendChild(c);
   nomi.appendChild(o);
@@ -4062,6 +4108,7 @@ function renderGestioneTorneo() {
   if (puoCambiareFormato) {
     el.torneoFormatoGestione.value = t.formato_punteggio || 'due_su_tre';
     el.torneoFormatoFinaliGestione.value = t.formato_punteggio_finali || '';
+    el.torneoFormatoGironeGestione.value = t.formato_girone || 'all_italiana';
   }
 
   if (inPreparazione) {
@@ -4328,6 +4375,7 @@ el.formCreaTorneo.addEventListener('submit', async (e) => {
       circolo_id: circoloId,
       formato_punteggio: el.torneoFormatoPunteggio.value,
       formato_punteggio_finali: el.torneoFormatoFinali.value || null,
+      formato_girone: el.torneoFormatoGirone.value,
       nome: el.torneoNome.value.trim(),
       livello: el.torneoLivello.value,
       data_inizio: el.torneoInizio.value || null,
@@ -4351,7 +4399,9 @@ el.formCreaTorneo.addEventListener('submit', async (e) => {
 
 el.btnOpenTornei.addEventListener('click', apriTornei);
 async function salvaFormatoPunteggio() {
-  const tendine = [el.torneoFormatoGestione, el.torneoFormatoFinaliGestione];
+  const tendine = [el.torneoFormatoGestione, el.torneoFormatoFinaliGestione,
+                   el.torneoFormatoGironeGestione];
+  const cambiaFormula = el.torneoFormatoGironeGestione.value !== (torneoCorrente.formato_girone || 'all_italiana');
   tendine.forEach((t) => { t.disabled = true; });
   try {
     const { error } = await supabaseClient
@@ -4359,11 +4409,17 @@ async function salvaFormatoPunteggio() {
       .update({
         formato_punteggio: el.torneoFormatoGestione.value,
         formato_punteggio_finali: el.torneoFormatoFinaliGestione.value || null,
+        formato_girone: el.torneoFormatoGironeGestione.value,
       })
       .eq('id', torneoCorrente.id)
       .select('id');
     if (error) throw error;
-    showToast('Formato del punteggio aggiornato.');
+    // Cambiare la formula non ridisegna il calendario gia' generato:
+    // gli incontri restano quelli della formula precedente finche'
+    // non si rigenera.
+    showToast(cambiaFormula && torneoDati.incontri.length > 0
+      ? 'Formula cambiata: rigenera il calendario.'
+      : 'Formato del torneo aggiornato.');
     await ricaricaTorneo();
   } catch (e) {
     console.error(e);
@@ -4375,6 +4431,7 @@ async function salvaFormatoPunteggio() {
 
 el.torneoFormatoGestione.addEventListener('change', salvaFormatoPunteggio);
 el.torneoFormatoFinaliGestione.addEventListener('change', salvaFormatoPunteggio);
+el.torneoFormatoGironeGestione.addEventListener('change', salvaFormatoPunteggio);
 
 el.btnTorneiIndietro.addEventListener('click', () => mostraPagina('paginaHome'));
 el.btnCloseTorneo.addEventListener('click', () => {

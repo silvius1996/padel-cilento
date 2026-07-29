@@ -2130,6 +2130,155 @@ async function testFormatoFinaliEreditato() {
   await db.exec('reset role');
 }
 
+async function testGironeEliminazione() {
+  console.log('\nGIRONE A ELIMINAZIONE (4 COPPIE, 4 INCONTRI)');
+
+  await db.exec('reset role');
+  const { rows: c } = await db.query('select id from public.circoli where nome = $1', [CIRCOLO_NOME]);
+
+  await come(U.bea);
+  await db.exec('set role authenticated');
+
+  // Lo stesso torneo che un circolo organizza in due serate: gironi a
+  // set secco il primo giorno, finali a due set su tre il secondo.
+  const { rows: t } = await db.query(
+    `insert into public.tornei
+       (circolo_id, nome, creato_da, formato_girone, formato_punteggio, formato_punteggio_finali)
+     values ($1, 'Torneo di due sere', $2, 'eliminazione_4', 'set_unico', 'due_su_tre')
+     returning id`,
+    [c[0].id, U.bea],
+  );
+  const torneo = t[0].id;
+
+  const gironi = [];
+  for (const [nome, ordine] of [['A', 1], ['B', 2]]) {
+    const { rows } = await db.query(
+      `insert into public.tornei_gironi (torneo_id, nome, ordine) values ($1, $2, $3) returning id`,
+      [torneo, nome, ordine],
+    );
+    gironi.push(rows[0].id);
+  }
+
+  const coppie = [
+    ['Aldo', 'Bea'], ['Carlo', 'Dina'], ['Ester', 'Fabio'], ['Gino', 'Ilde'],
+    ['Lucia', 'Marco'], ['Nino', 'Olga'], ['Pia', 'Quirino'], ['Rosa', 'Sandro'],
+  ];
+  const squadre = [];
+  for (let i = 0; i < coppie.length; i++) {
+    const { rows } = await db.query(
+      `insert into public.torneo_squadre (torneo_id, giocatore_1, giocatore_2, girone_id)
+       values ($1, $2, $3, $4) returning id`,
+      [torneo, coppie[i][0], coppie[i][1], gironi[Math.floor(i / 4)]],
+    );
+    squadre.push(rows[0].id);
+  }
+
+  const { rows: gen } = await db.query(
+    'select public.torneo_genera_calendario($1) as n', [torneo],
+  );
+  uguale('due gironi a eliminazione fanno 8 incontri', 8, gen[0].n);
+
+  const { rows: incA } = await db.query(
+    `select id, turno, ordine, squadra_casa, squadra_ospite
+     from public.torneo_incontri where girone_id = $1 order by turno, ordine`, [gironi[0]],
+  );
+  uguale('il girone ha 4 incontri invece di 6', 4, incA.length);
+  esito('i due incontri decisivi partono senza squadre',
+    incA[2].squadra_casa === null && incA[2].squadra_ospite === null
+      && incA[3].squadra_casa === null && incA[3].squadra_ospite === null);
+
+  await db.query("select public.torneo_cambia_stato($1, 'iscrizioni')", [torneo]);
+  await db.query("select public.torneo_cambia_stato($1, 'in_corso')", [torneo]);
+
+  // Primi incontri del girone A: vincono le squadre di casa.
+  await db.query('select public.torneo_registra_risultato($1, $2::jsonb)', [incA[0].id, '[[6,4]]']);
+  await db.query('select public.torneo_registra_risultato($1, $2::jsonb)', [incA[1].id, '[[6,2]]']);
+
+  const { rows: decisivi } = await db.query(
+    `select id, ordine, squadra_casa, squadra_ospite from public.torneo_incontri
+     where girone_id = $1 and turno = 2 order by ordine`, [gironi[0]],
+  );
+
+  esito('le vincenti si ritrovano nell incontro decisivo',
+    decisivi[0].squadra_casa === squadre[0] && decisivi[0].squadra_ospite === squadre[2]);
+  esito('e le perdenti nell altro',
+    decisivi[1].squadra_casa === squadre[1] && decisivi[1].squadra_ospite === squadre[3]);
+
+  // Le due finali del girone: vince chi gioca in casa, quindi
+  // l'ordine atteso e' Aldo (1a), Ester (2a), Carlo (3a), Gino (4a).
+  await db.query('select public.torneo_registra_risultato($1, $2::jsonb)', [decisivi[0].id, '[[6,3]]']);
+  await db.query('select public.torneo_registra_risultato($1, $2::jsonb)', [decisivi[1].id, '[[6,1]]']);
+
+  const { rows: cls } = await db.query(
+    'select posizione, squadra_id, vittorie from public.classifica_girone($1)', [gironi[0]],
+  );
+
+  esito('la classifica segue il tabellone, non i punti',
+    cls[0].squadra_id === squadre[0] && cls[1].squadra_id === squadre[2]
+      && cls[2].squadra_id === squadre[1] && cls[3].squadra_id === squadre[3],
+    JSON.stringify(cls.map((r) => r.posizione + ':' + coppie[squadre.indexOf(r.squadra_id)][0])));
+
+  // Seconda e terza hanno una vittoria a testa: e' proprio il caso in
+  // cui ordinare per punti non basterebbe.
+  esito('seconda e terza hanno lo stesso numero di vittorie',
+    cls[1].vittorie === 1 && cls[2].vittorie === 1);
+
+  await deveFallire(
+    'la formula non si cambia a torneo iniziato',
+    () => db.query("update public.tornei set formato_girone = 'all_italiana' where id = $1",
+      [torneo]),
+    'gia\' giocato',
+  );
+
+  // Il girone B, giocato in fretta, serve a far nascere il tabellone.
+  const { rows: incB } = await db.query(
+    `select id from public.torneo_incontri where girone_id = $1 order by turno, ordine`,
+    [gironi[1]],
+  );
+  for (const i of incB) {
+    await db.query('select public.torneo_registra_risultato($1, $2::jsonb)', [i.id, '[[6,0]]']);
+  }
+
+  await deveRiuscire('il tabellone nasce dalle prime due di ogni girone', () => db.query(
+    'select public.torneo_genera_tabellone($1)', [torneo],
+  ));
+
+  const { rows: semi } = await db.query(
+    `select squadra_casa, squadra_ospite from public.torneo_incontri
+     where torneo_id = $1 and fase = 'semifinale' order by ordine`, [torneo],
+  );
+  esito('in semifinale ci sono le prime due del girone A',
+    semi.some((s) => [s.squadra_casa, s.squadra_ospite].includes(squadre[0]))
+      && semi.some((s) => [s.squadra_casa, s.squadra_ospite].includes(squadre[2])));
+  esito('e le due dello stesso girone non si rincontrano subito',
+    !semi.some((s) => [s.squadra_casa, s.squadra_ospite].every((x) => [squadre[0], squadre[2]].includes(x))));
+
+  // Un girone che non ha esattamente quattro coppie non regge la
+  // formula: meglio dirlo subito, non a torneo avviato.
+  const { rows: t2 } = await db.query(
+    `insert into public.tornei (circolo_id, nome, creato_da, formato_girone)
+     values ($1, 'Girone spaiato', $2, 'eliminazione_4') returning id`,
+    [c[0].id, U.bea],
+  );
+  const { rows: g2 } = await db.query(
+    `insert into public.tornei_gironi (torneo_id, nome) values ($1, 'A') returning id`, [t2[0].id],
+  );
+  for (const [a, b] of [['Tizio', 'Caio'], ['Mevio', 'Sempronio'], ['Filano', 'Calpurnio']]) {
+    await db.query(
+      `insert into public.torneo_squadre (torneo_id, giocatore_1, giocatore_2, girone_id)
+       values ($1, $2, $3, $4)`, [t2[0].id, a, b, g2[0].id],
+    );
+  }
+
+  await deveFallire(
+    'un girone a eliminazione pretende esattamente 4 coppie',
+    () => db.query('select public.torneo_genera_calendario($1)', [t2[0].id]),
+    'esattamente 4',
+  );
+
+  await db.exec('reset role');
+}
+
 async function testSetUnico() {
   console.log('\nTORNEI A SET UNICO');
 
@@ -2482,6 +2631,7 @@ async function main() {
   await testSetUnico();
   await testFormatoFinali();
   await testFormatoFinaliEreditato();
+  await testGironeEliminazione();
   await testCorrezioniTorneo();
   await testCollegamentoGiocatori();
   await testBacheca();
