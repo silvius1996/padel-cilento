@@ -3947,11 +3947,6 @@ function creaAzioniIncontro(incontro, riga) {
   return azioni;
 }
 
-/**
- * Il formato del punteggio per una fase del torneo. Ripete la regola di
- * torneo_formato_incontro() nel database: qui serve solo a disegnare il
- * numero giusto di caselle, la verifica vera resta di la'.
- */
 /** Come si vince, detto in due parole sotto al titolo del torneo. */
 function descrizioneFormato(t) {
   const gironi = t.formato_punteggio || 'due_su_tre';
@@ -3963,6 +3958,11 @@ function descrizioneFormato(t) {
   return ` · gironi a ${nome(gironi)}, finali a ${nome(finali)}`;
 }
 
+/**
+ * Il formato del punteggio per una fase del torneo. Ripete la regola di
+ * torneo_formato_incontro() nel database: qui serve solo a disegnare il
+ * numero giusto di caselle, la verifica vera resta di la'.
+ */
 function formatoDellaFase(fase) {
   const t = torneoCorrente;
   if (!t) return 'due_su_tre';
@@ -4017,8 +4017,13 @@ function creaFormPunteggioTorneo(incontro) {
   salva.textContent = 'Salva il punteggio';
 
   salva.addEventListener('click', async () => {
+    errore.classList.add('hidden');   // l'errore del tentativo prima non resta appeso
     const sets = [];
-    for (let s = 1; s <= 3; s++) {
+    // Si leggono le caselle che esistono davvero: a set unico ce n'e'
+    // una sola, e cercare la seconda restituirebbe null. Prima questo
+    // ciclo arrivava sempre a tre e il salvataggio moriva li', senza
+    // messaggio e senza chiamare il database.
+    for (let s = 1; s <= quantiSet; s++) {
       const a = wrap.querySelector(`input[data-set="${s}"][data-lato="a"]`).value.trim();
       const b = wrap.querySelector(`input[data-set="${s}"][data-lato="b"]`).value.trim();
       if (a === '' && b === '') continue;
