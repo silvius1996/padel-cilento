@@ -2199,16 +2199,27 @@ async function testGironeEliminazione() {
      where girone_id = $1 and turno = 2 order by ordine`, [gironi[0]],
   );
 
-  esito('le vincenti si ritrovano nell incontro decisivo',
-    decisivi[0].squadra_casa === squadre[0] && decisivi[0].squadra_ospite === squadre[2]);
-  esito('e le perdenti nell altro',
-    decisivi[1].squadra_casa === squadre[1] && decisivi[1].squadra_ospite === squadre[3]);
+  // Le quattro coppie vengono iscritte tutte insieme, quindi hanno lo
+  // stesso "created_at" e l'ordine degli accoppiamenti lo decide
+  // l'identificativo: chi gioca contro chi va letto dal calendario,
+  // non dato per scontato. Da qui in poi le squadre si chiamano per
+  // quello che hanno fatto: vincente e perdente di ogni primo incontro.
+  const [vinc1, pers1] = [incA[0].squadra_casa, incA[0].squadra_ospite];
+  const [vinc2, pers2] = [incA[1].squadra_casa, incA[1].squadra_ospite];
+  const chi = (id) => coppie[squadre.indexOf(id)][0];
 
-  // Le due finali del girone: vince chi gioca in casa. Aldo vince
-  // tutto ed e' primo; Carlo ed Ester hanno una vittoria a testa e
-  // non si sono mai incontrati, quindi decide la differenza game:
-  // Carlo 10-7 (+3), Ester 9-8 (+1). L'ordine atteso e' Aldo, Carlo,
-  // Ester, Gino — anche se Ester ha vinto la finale di consolazione.
+  esito('le vincenti si ritrovano nell incontro decisivo',
+    decisivi[0].squadra_casa === vinc1 && decisivi[0].squadra_ospite === vinc2);
+  esito('e le perdenti nell altro',
+    decisivi[1].squadra_casa === pers1 && decisivi[1].squadra_ospite === pers2);
+
+  // Le due finali del girone: vince chi gioca in casa. La prima
+  // vincente vince tutto ed e' prima. Le altre due hanno una vittoria
+  // a testa e non si sono mai incontrate, quindi decide la differenza
+  // game: chi ha perso il primo incontro 4-6 e vinto la consolazione
+  // 6-1 sta a +3, chi ha vinto 6-2 e perso la finale 3-6 sta a +1.
+  // Seconda e' quindi la perdente del primo incontro, anche se non ha
+  // giocato la finale.
   await db.query('select public.torneo_registra_risultato($1, $2::jsonb)', [decisivi[0].id, '[[6,3]]']);
   await db.query('select public.torneo_registra_risultato($1, $2::jsonb)', [decisivi[1].id, '[[6,1]]']);
 
@@ -2218,9 +2229,9 @@ async function testGironeEliminazione() {
   );
 
   esito('a pari punti il girone a eliminazione va a differenza game',
-    cls[0].squadra_id === squadre[0] && cls[1].squadra_id === squadre[1]
-      && cls[2].squadra_id === squadre[2] && cls[3].squadra_id === squadre[3],
-    JSON.stringify(cls.map((r) => r.posizione + ':' + coppie[squadre.indexOf(r.squadra_id)][0])));
+    cls[0].squadra_id === vinc1 && cls[1].squadra_id === pers1
+      && cls[2].squadra_id === vinc2 && cls[3].squadra_id === pers2,
+    JSON.stringify(cls.map((r) => r.posizione + ':' + chi(r.squadra_id))));
 
   // Seconda e terza hanno una vittoria a testa: e' proprio il caso in
   // cui ordinare per punti non basterebbe.
@@ -2255,10 +2266,10 @@ async function testGironeEliminazione() {
      where torneo_id = $1 and fase = 'semifinale' order by ordine`, [torneo],
   );
   esito('in semifinale ci sono le prime due del girone A',
-    semi.some((s) => [s.squadra_casa, s.squadra_ospite].includes(squadre[0]))
-      && semi.some((s) => [s.squadra_casa, s.squadra_ospite].includes(squadre[1])));
+    semi.some((s) => [s.squadra_casa, s.squadra_ospite].includes(vinc1))
+      && semi.some((s) => [s.squadra_casa, s.squadra_ospite].includes(pers1)));
   esito('e le due dello stesso girone non si rincontrano subito',
-    !semi.some((s) => [s.squadra_casa, s.squadra_ospite].every((x) => [squadre[0], squadre[1]].includes(x))));
+    !semi.some((s) => [s.squadra_casa, s.squadra_ospite].every((x) => [vinc1, pers1].includes(x))));
 
   // Un girone che non ha esattamente quattro coppie non regge la
   // formula: meglio dirlo subito, non a torneo avviato.
