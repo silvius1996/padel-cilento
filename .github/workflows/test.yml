@@ -26,12 +26,14 @@ jobs:
         with:
           node-version: 22
 
-      # Playwright sta fra le dipendenze perche' scripts/marchio.mjs e
-      # scripts/spot.mjs lo usano, ma qui non si apre nessun browser:
-      # senza questa variabile ogni installazione scaricherebbe
-      # centinaia di megabyte per non usarli.
+      # Il browser non lo scarica l'installazione delle dipendenze —
+      # servirebbero tutti quelli che Playwright supporta — ma il passo
+      # dopo, e solo Chromium: e' quello che apre test/app.test.mjs per
+      # usare l'app come la userebbe una persona.
       - run: npm ci
         env:
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
+
+      - run: npx playwright install --with-deps chromium
 
       - run: npm test

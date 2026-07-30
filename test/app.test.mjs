@@ -34,6 +34,17 @@ const RIF = 'eyxvgowdxcyxegktrgxp';           // riferimento del progetto Supaba
 const IO = '11111111-1111-1111-1111-111111111111';
 const CIRCOLO = 'c1';
 
+/**
+ * Dove sta il browser. Su GitHub lo installa il workflow e Playwright
+ * lo trova da solo; su alcune macchine di sviluppo e' gia' pronto in
+ * una cartella fissa, e li' va indicato a mano. Indicare un percorso
+ * che non esiste farebbe fallire l'avvio, quindi si guarda prima.
+ */
+const BROWSER_PRONTO = '/opt/pw-browsers/chromium';
+const avvioBrowser = fs.existsSync(BROWSER_PRONTO)
+  ? { executablePath: BROWSER_PRONTO }
+  : {};
+
 let passati = 0;
 const falliti = [];
 
@@ -395,7 +406,7 @@ async function testPunteggioIncompleto(page) {
 // ---------------------------------------------------------
 async function main() {
   const server = await avviaServer();
-  const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' });
+  const browser = await chromium.launch(avvioBrowser);
   const context = await browser.newContext({ viewport: { width: 420, height: 900 } });
 
   // L'app crede di avere una sessione aperta: cosi' mostra le
