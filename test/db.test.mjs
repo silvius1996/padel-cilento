@@ -2204,24 +2204,31 @@ async function testGironeEliminazione() {
   esito('e le perdenti nell altro',
     decisivi[1].squadra_casa === squadre[1] && decisivi[1].squadra_ospite === squadre[3]);
 
-  // Le due finali del girone: vince chi gioca in casa, quindi
-  // l'ordine atteso e' Aldo (1a), Ester (2a), Carlo (3a), Gino (4a).
+  // Le due finali del girone: vince chi gioca in casa. Aldo vince
+  // tutto ed e' primo; Carlo ed Ester hanno una vittoria a testa e
+  // non si sono mai incontrati, quindi decide la differenza game:
+  // Carlo 10-7 (+3), Ester 9-8 (+1). L'ordine atteso e' Aldo, Carlo,
+  // Ester, Gino — anche se Ester ha vinto la finale di consolazione.
   await db.query('select public.torneo_registra_risultato($1, $2::jsonb)', [decisivi[0].id, '[[6,3]]']);
   await db.query('select public.torneo_registra_risultato($1, $2::jsonb)', [decisivi[1].id, '[[6,1]]']);
 
   const { rows: cls } = await db.query(
-    'select posizione, squadra_id, vittorie from public.classifica_girone($1)', [gironi[0]],
+    `select posizione, squadra_id, vittorie, game_fatti, game_subiti
+     from public.classifica_girone($1)`, [gironi[0]],
   );
 
-  esito('la classifica segue il tabellone, non i punti',
-    cls[0].squadra_id === squadre[0] && cls[1].squadra_id === squadre[2]
-      && cls[2].squadra_id === squadre[1] && cls[3].squadra_id === squadre[3],
+  esito('a pari punti il girone a eliminazione va a differenza game',
+    cls[0].squadra_id === squadre[0] && cls[1].squadra_id === squadre[1]
+      && cls[2].squadra_id === squadre[2] && cls[3].squadra_id === squadre[3],
     JSON.stringify(cls.map((r) => r.posizione + ':' + coppie[squadre.indexOf(r.squadra_id)][0])));
 
   // Seconda e terza hanno una vittoria a testa: e' proprio il caso in
   // cui ordinare per punti non basterebbe.
   esito('seconda e terza hanno lo stesso numero di vittorie',
     cls[1].vittorie === 1 && cls[2].vittorie === 1);
+  esito('e a separarle e la differenza game',
+    cls[1].game_fatti - cls[1].game_subiti > cls[2].game_fatti - cls[2].game_subiti,
+    JSON.stringify(cls.map((r) => r.game_fatti + '-' + r.game_subiti)));
 
   await deveFallire(
     'la formula non si cambia a torneo iniziato',
@@ -2249,9 +2256,9 @@ async function testGironeEliminazione() {
   );
   esito('in semifinale ci sono le prime due del girone A',
     semi.some((s) => [s.squadra_casa, s.squadra_ospite].includes(squadre[0]))
-      && semi.some((s) => [s.squadra_casa, s.squadra_ospite].includes(squadre[2])));
+      && semi.some((s) => [s.squadra_casa, s.squadra_ospite].includes(squadre[1])));
   esito('e le due dello stesso girone non si rincontrano subito',
-    !semi.some((s) => [s.squadra_casa, s.squadra_ospite].every((x) => [squadre[0], squadre[2]].includes(x))));
+    !semi.some((s) => [s.squadra_casa, s.squadra_ospite].every((x) => [squadre[0], squadre[1]].includes(x))));
 
   // Un girone che non ha esattamente quattro coppie non regge la
   // formula: meglio dirlo subito, non a torneo avviato.
