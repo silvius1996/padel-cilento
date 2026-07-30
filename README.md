@@ -215,9 +215,15 @@ statistiche personali.
 - La **classifica** e ricalcolata dai risultati a ogni lettura. A pari punti
   decidono, in ordine: la classifica ridotta fra le sole squadre in parita'
   (che con due squadre coincide con lo scontro diretto), poi differenza set,
-  differenza game, game fatti. Vale anche per il girone a eliminazione a quattro
-  coppie: li' le squadre a pari punti spesso non si sono mai incontrate, quindi
-  a separarle e la differenza game — non l'esito degli incontri decisivi.
+  differenza game, game fatti. Cosi nel girone all'italiana, dove tutte si
+  incontrano.
+
+  Nel girone a **eliminazione** a quattro coppie i criteri sono due soli: punti
+  e differenza game (poi i game fatti). Li ogni coppia gioca due incontri su
+  tre avversarie possibili, quindi chi finisce a pari punti a volte si e
+  affrontato e a volte no: tenere lo scontro diretto vorrebbe dire cambiare
+  regola da un girone all'altro. L'esito degli incontri decisivi non ordina la
+  classifica, la riempie.
 - Lo **stato** del torneo (bozza, iscrizioni, in corso, concluso) non si scrive
   a mano: passa da `torneo_cambia_stato()`, che rifiuta di avviare un torneo
   senza calendario o con squadre non assegnate a un girone.

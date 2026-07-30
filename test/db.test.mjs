@@ -2248,6 +2248,67 @@ async function testGironeEliminazione() {
     'gia\' giocato',
   );
 
+  // L'altro caso di parita': due coppie a pari punti che SI SONO
+  // incontrate. All'italiana deciderebbe lo scontro diretto; qui no,
+  // perche' in un girone di quattro incontri chi finisce a pari punti
+  // a volte si e' affrontato e a volte no, e la classifica finirebbe
+  // per cambiare regola da un girone all'altro. Vale la differenza
+  // game per tutti.
+  const { rows: t3 } = await db.query(
+    `insert into public.tornei
+       (circolo_id, nome, creato_da, formato_girone, formato_punteggio)
+     values ($1, 'Girone con scontro diretto', $2, 'eliminazione_4', 'set_unico')
+     returning id`,
+    [c[0].id, U.bea],
+  );
+  const { rows: g3 } = await db.query(
+    `insert into public.tornei_gironi (torneo_id, nome) values ($1, 'A') returning id`,
+    [t3[0].id],
+  );
+  const coppie3 = [['Ada', 'Bruno'], ['Ciro', 'Dora'], ['Elio', 'Fina'], ['Gigi', 'Ida']];
+  for (const [a, b] of coppie3) {
+    await db.query(
+      `insert into public.torneo_squadre (torneo_id, giocatore_1, giocatore_2, girone_id)
+       values ($1, $2, $3, $4)`, [t3[0].id, a, b, g3[0].id],
+    );
+  }
+  await db.query('select public.torneo_genera_calendario($1)', [t3[0].id]);
+  await db.query("select public.torneo_cambia_stato($1, 'iscrizioni')", [t3[0].id]);
+  await db.query("select public.torneo_cambia_stato($1, 'in_corso')", [t3[0].id]);
+
+  const { rows: primi3 } = await db.query(
+    `select id, squadra_casa, squadra_ospite from public.torneo_incontri
+     where girone_id = $1 and turno = 1 order by ordine`, [g3[0].id],
+  );
+  // Primo incontro 6-3 per la squadra di casa, secondo 6-0: le due
+  // che si sono affrontate finiranno tutte e due a tre punti.
+  await db.query('select public.torneo_registra_risultato($1, $2::jsonb)', [primi3[0].id, '[[6,3]]']);
+  await db.query('select public.torneo_registra_risultato($1, $2::jsonb)', [primi3[1].id, '[[6,0]]']);
+
+  const { rows: dec3 } = await db.query(
+    `select id, ordine from public.torneo_incontri
+     where girone_id = $1 and turno = 2 order by ordine`, [g3[0].id],
+  );
+  // Finale persa da chi aveva vinto il primo incontro 6-3, consolazione
+  // vinta 6-0 da chi lo aveva perso: 3 punti a testa, ma differenza
+  // game 7-9 contro 9-6.
+  await db.query('select public.torneo_registra_risultato($1, $2::jsonb)', [dec3[0].id, '[[1,6]]']);
+  await db.query('select public.torneo_registra_risultato($1, $2::jsonb)', [dec3[1].id, '[[6,0]]']);
+
+  const { rows: cls3 } = await db.query(
+    `select posizione, squadra_id, punti, game_fatti, game_subiti
+     from public.classifica_girone($1)`, [g3[0].id],
+  );
+
+  esito('a pari punti lo scontro diretto non conta piu del margine',
+    cls3[1].squadra_id === primi3[0].squadra_ospite
+      && cls3[2].squadra_id === primi3[0].squadra_casa,
+    JSON.stringify(cls3.map((r) => r.posizione + ':' + (r.game_fatti - r.game_subiti))));
+  esito('la seconda e la terza avevano gli stessi punti',
+    cls3[1].punti === 3 && cls3[2].punti === 3);
+  esito('e la terza aveva pure vinto lo scontro diretto',
+    primi3[0].squadra_casa === cls3[2].squadra_id);
+
   // Il girone B, giocato in fretta, serve a far nascere il tabellone.
   const { rows: incB } = await db.query(
     `select id from public.torneo_incontri where girone_id = $1 order by turno, ordine`,
