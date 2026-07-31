@@ -747,6 +747,20 @@
       <p class="text-court-300 text-sm mt-1">Organizzati dai circoli del Cilento.</p>
     </div>
 
+    <!-- Due schede, non due elenchi incolonnati: questa pagina serve
+         ai tornei che si giocano adesso, e l'albo d'oro si guarda
+         quando uno lo vuole guardare. Compaiono a caricamento finito. -->
+    <div id="tornei-tabs" class="hidden flex gap-2 mb-4">
+      <button type="button" data-scheda="tornei"
+              class="flex-1 text-sm font-display font-700 py-2 rounded-full border transition-colors">
+        Tornei
+      </button>
+      <button type="button" data-scheda="albo"
+              class="flex-1 text-sm font-display font-700 py-2 rounded-full border transition-colors">
+        Albo d'oro
+      </button>
+    </div>
+
     <button type="button" id="btn-nuovo-torneo"
             class="hidden w-full mb-4 bg-lime-neon text-court-900 font-display font-700 py-3 rounded-xl shadow-neon">
       + Crea un torneo
@@ -764,13 +778,13 @@
 
     <div id="tornei-list" class="space-y-2"></div>
 
-    <!-- Albo d'oro: i podi dei tornei finiti. Sta sotto l'elenco perche'
-         questa pagina serve prima di tutto ai tornei che si giocano
-         adesso; chi ha vinto e' gia' scritto sulla riga di ognuno.
-         Compare solo quando c'e' almeno un podio. -->
-    <div id="albo-doro" class="hidden mt-8">
-      <p class="text-[11px] font-semibold text-court-300 uppercase tracking-wide mb-2">Albo d'oro</p>
+    <!-- Albo d'oro: i podi dei tornei finiti, dietro la sua scheda. -->
+    <div id="albo-doro" class="hidden">
       <div id="albo-doro-list" class="space-y-2"></div>
+      <div id="albo-doro-empty" class="hidden text-center py-10 px-2 rounded-2xl border border-dashed border-court-500">
+        <p class="font-display font-700 text-base mb-1">Ancora nessun vincitore</p>
+        <p class="text-court-300 text-sm">Qui finiscono i podi dei tornei conclusi.</p>
+      </div>
     </div>
   </section>
 
@@ -1185,8 +1199,10 @@ const el = {
   torneiEmpty: document.getElementById('tornei-empty'),
   torneiEmptyText: document.getElementById('tornei-empty-text'),
   torneiList: document.getElementById('tornei-list'),
+  torneiTabs: document.getElementById('tornei-tabs'),
   alboDoro: document.getElementById('albo-doro'),
   alboDoroList: document.getElementById('albo-doro-list'),
+  alboDoroEmpty: document.getElementById('albo-doro-empty'),
 
   modalCreaTorneo: document.getElementById('modal-crea-torneo'),
   modalCreaTorneoBackdrop: document.getElementById('modal-crea-torneo-backdrop'),
@@ -3559,7 +3575,9 @@ async function apriTornei() {
   mostraPagina('paginaTornei');
   el.torneiLoading.classList.remove('hidden');
   el.torneiEmpty.classList.add('hidden');
+  el.torneiTabs.classList.add('hidden');
   el.torneiList.innerHTML = '';
+  mostraSchedaTornei('tornei');
 
   const puoCreare = Boolean(currentProfile)
     && (sonoAmministratore() || (currentProfile.role === 'gestore' && currentProfile.circolo_id));
@@ -3578,11 +3596,13 @@ async function apriTornei() {
     }
 
     // I podi arrivano tutti insieme, non uno per torneo: servono sia
-    // alla riga di ogni torneo concluso sia all'albo qui sotto.
+    // alla riga di ogni torneo concluso sia alla scheda dell'albo.
     const podi = await caricaAlbo();
 
     tornei.forEach((t) => el.torneiList.appendChild(creaRigaTorneo(t, podi.get(t.id))));
     renderAlbo(podi);
+    el.torneiTabs.classList.remove('hidden');
+    mostraSchedaTornei('tornei');
   } catch (e) {
     console.error(e);
     el.torneiLoading.classList.add('hidden');
@@ -3590,6 +3610,37 @@ async function apriTornei() {
     el.torneiEmptyText.textContent = messaggioErrore(e, 'Impossibile caricare i tornei.');
   }
 }
+
+/**
+ * Le due schede della pagina Tornei. Il pulsante "Crea un torneo" segue
+ * l'elenco: sull'albo d'oro non c'e' niente da creare.
+ */
+let schedaTornei = 'tornei';
+
+function mostraSchedaTornei(quale) {
+  schedaTornei = quale;
+  const suAlbo = quale === 'albo';
+
+  el.torneiList.classList.toggle('hidden', suAlbo);
+  el.alboDoro.classList.toggle('hidden', !suAlbo);
+
+  const puoCreare = Boolean(currentProfile)
+    && (sonoAmministratore() || (currentProfile.role === 'gestore' && currentProfile.circolo_id));
+  el.btnNuovoTorneo.classList.toggle('hidden', suAlbo || !puoCreare);
+
+  for (const b of el.torneiTabs.querySelectorAll('button')) {
+    const attiva = b.dataset.scheda === quale;
+    b.className = 'flex-1 text-sm font-display font-700 py-2 rounded-full border transition-colors '
+      + (attiva
+        ? 'bg-lime-neon text-court-900 border-lime-neon'
+        : 'bg-court-700 text-court-300 border-court-600 hover:border-lime-neon');
+  }
+}
+
+el.torneiTabs.addEventListener('click', (e) => {
+  const b = e.target.closest('button[data-scheda]');
+  if (b) mostraSchedaTornei(b.dataset.scheda);
+});
 
 /**
  * L'albo d'oro: i podi dei tornei conclusi, in una chiamata sola.
@@ -3615,9 +3666,13 @@ async function caricaAlbo() {
 }
 
 function renderAlbo(podi) {
-  el.alboDoro.classList.add('hidden');
   el.alboDoroList.innerHTML = '';
-  if (!podi || podi.size === 0) return;
+
+  // La scheda esiste comunque: se non c'e' ancora nessun torneo finito
+  // lo dice, invece di sparire e lasciare il dubbio.
+  const vuoto = !podi || podi.size === 0;
+  el.alboDoroEmpty.classList.toggle('hidden', !vuoto);
+  if (vuoto) return;
 
   for (const righe of podi.values()) {
     const card = document.createElement('button');
@@ -3641,8 +3696,6 @@ function renderAlbo(podi) {
     card.addEventListener('click', () => apriTorneo(righe[0].torneo_id));
     el.alboDoroList.appendChild(card);
   }
-
-  el.alboDoro.classList.remove('hidden');
 }
 
 /** Una riga del podio: medaglia, nome della coppia, piazzamento. */
