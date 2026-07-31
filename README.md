@@ -245,6 +245,13 @@ statistiche personali.
   bacheca si aggiorna da sola — e un premio appeso al profilo sbagliato non puo
   esistere.
 
+- La medaglia sul profilo la vede solo chi l'ha vinta. Il vincitore e pubblico:
+  nella pagina Tornei ogni torneo concluso porta scritto chi ha vinto, e sotto
+  l'elenco c'e l'**albo d'oro** con i podi degli ultimi tornei. Li serve
+  `albo_tornei()`, che restituisce i podi di piu tornei in una chiamata sola
+  invece di una per torneo; nel dettaglio del torneo il podio sta in cima.
+  Entrambi si leggono anche senza account, come tutto il resto dei tornei.
+
 Il circolo e anche un **cliente**: `circoli.attivo` e
 `circoli.abbonamento_scade_il` decidono se puo ancora creare. Chi non rinnova
 resta visibile con i suoi tornei, ma non crea piu nulla.

@@ -2664,6 +2664,42 @@ async function testBacheca() {
   const { rows: finalista } = await db.query('select * from public.bacheca_giocatore()');
   uguale('e chi prima era primo ora e secondo', 2, finalista[0].posizione);
 
+  // ----- L'albo d'oro, che invece vedono tutti -----
+  // La bacheca e' la vetrina di uno solo; l'albo e' l'elenco pubblico
+  // dei tornei finiti, quello che si legge senza nemmeno avere l'account.
+  await db.exec('reset role');
+  const { rows: primaDiChiudere } = await db.query(
+    'select * from public.albo_tornei(20) where torneo_id = $1', [TORNEO_FINALI],
+  );
+  uguale('un torneo ancora in corso non entra nell albo', 0, primaDiChiudere.length);
+
+  await come(U.bea);
+  await db.exec('set role authenticated');
+  await db.query("select public.torneo_cambia_stato($1, 'concluso')", [TORNEO_FINALI]);
+
+  await db.exec('reset role');
+  const { rows: alboPubblico } = await db.query(
+    'select * from public.albo_tornei(20) where torneo_id = $1 order by posizione',
+    [TORNEO_FINALI],
+  );
+  esito('il torneo concluso entra nell albo', alboPubblico.length >= 2,
+    `righe: ${alboPubblico.length}`);
+  uguale('con il nome del torneo', 'Torneo con finali', alboPubblico[0].torneo);
+  uguale('e il circolo', CIRCOLO_NOME, alboPubblico[0].circolo);
+  uguale('in cima c e chi ha vinto la finale', finale[0].squadra_ospite, alboPubblico[0].squadra_id);
+  esito('con il nome della coppia gia scritto',
+    typeof alboPubblico[0].squadra === 'string' && alboPubblico[0].squadra.length > 0,
+    alboPubblico[0].squadra);
+
+  // Il punto di tutto: l'albo si legge anche senza account.
+  await db.exec('reset role');
+  await db.exec('set role anon');
+  const { rows: alboAnonimo } = await db.query(
+    'select * from public.albo_tornei(20) where torneo_id = $1', [TORNEO_FINALI],
+  );
+  esito('e lo vede anche chi non ha l account', alboAnonimo.length === alboPubblico.length,
+    `righe: ${alboAnonimo.length}`);
+
   await db.exec('reset role');
 }
 
