@@ -3862,12 +3862,227 @@ function creaBloccoPodio() {
   titolo.textContent = 'Podio';
   wrap.appendChild(titolo);
 
-  albo
-    .slice()
-    .sort((a, b) => a.posizione - b.posizione)
-    .forEach((r) => wrap.appendChild(rigaPodio(r.posizione, nomeSquadra(perId.get(r.squadra_id)))));
+  const ordinato = albo.slice().sort((a, b) => a.posizione - b.posizione);
+  ordinato.forEach((r) => wrap.appendChild(rigaPodio(r.posizione, nomeSquadra(perId.get(r.squadra_id)))));
+
+  // Il torneo si vince davanti a tutti: da qui esce l'immagine che i
+  // vincitori mettono nelle loro storie. Vale piu' di qualsiasi post
+  // nostro, ed e' l'unico modo perche' un torneo di paese si veda
+  // fuori dal paese.
+  const vincitori = ordinato.find((r) => r.posizione === 1);
+  if (vincitori) {
+    const condividi = document.createElement('button');
+    condividi.type = 'button';
+    condividi.className = 'w-full mt-3 bg-lime-neon text-court-900 font-display font-700 '
+      + 'text-sm py-2.5 rounded-xl';
+    condividi.textContent = 'Condividi il podio';
+    condividi.addEventListener('click', () => condividiPodio(condividi, ordinato, perId));
+    wrap.appendChild(condividi);
+  }
 
   return wrap;
+}
+
+/**
+ * L'immagine del podio, formato storia (1080x1920).
+ *
+ * Solo vincitori e finalisti: il terzo posto c'e' nei dati solo quando
+ * il torneo ha giocato la finalina, e un'immagine che a volte ha tre
+ * righe e a volte due non e' riconoscibile. Nell'app il podio resta
+ * intero.
+ *
+ * Si disegna nel telefono di chi la condivide: nessun servizio da
+ * mantenere, nessuna immagine da salvare da qualche parte.
+ */
+const IMG_PODIO = { larghezza: 1080, altezza: 1920, margine: 96 };
+
+async function disegnaPodio(righe, perId) {
+  const { larghezza: W, altezza: H, margine: M } = IMG_PODIO;
+  const canvas = document.createElement('canvas');
+  canvas.width = W;
+  canvas.height = H;
+  const c = canvas.getContext('2d');
+
+  // I font sono quelli dell'app: senza questa attesa il disegno
+  // partirebbe con il ripiego di sistema.
+  if (document.fonts?.ready) {
+    try { await document.fonts.load('700 72px "Space Grotesk"'); } catch (e) { /* si ripiega */ }
+    try { await document.fonts.ready; } catch (e) { /* idem */ }
+  }
+
+  c.fillStyle = '#0B0F0E';
+  c.fillRect(0, 0, W, H);
+
+  // Un alone verde in alto, lo stesso della schermata
+  const alone = c.createRadialGradient(W / 2, H * 0.28, 0, W / 2, H * 0.28, W * 0.9);
+  alone.addColorStop(0, 'rgba(198,255,61,0.10)');
+  alone.addColorStop(1, 'rgba(198,255,61,0)');
+  c.fillStyle = alone;
+  c.fillRect(0, 0, W, H);
+
+  const icona = await caricaImmagine('/icons/icon-192.png').catch(() => null);
+  if (icona) c.drawImage(icona, M, M, 112, 112);
+
+  c.fillStyle = '#C6FF3D';
+  c.font = '700 34px "Space Grotesk", sans-serif';
+  c.textBaseline = 'alphabetic';
+  c.fillText('PADEL CILENTO', M + (icona ? 140 : 0), M + 56);
+  c.fillStyle = '#94A29A';
+  c.font = '500 28px Inter, sans-serif';
+  c.fillText('Il torneo, com\'è finito', M + (icona ? 140 : 0), M + 96);
+
+  let y = M + 300;
+
+  c.fillStyle = '#FFFFFF';
+  c.font = '700 76px "Space Grotesk", sans-serif';
+  y = scriviAcapo(c, torneoCorrente?.nome || 'Torneo', M, y, W - M * 2, 92);
+
+  c.fillStyle = '#94A29A';
+  c.font = '500 34px Inter, sans-serif';
+  const sotto = [torneoCorrente?.circoli?.nome, dataTorneoPerImmagine()].filter(Boolean).join(' · ');
+  if (sotto) c.fillText(sotto, M, y + 20);
+
+  // Il podio non sta appeso al titolo ne' schiacciato in fondo: si
+  // misura e si centra nello spazio che resta fra il titolo e il piede.
+  // Due nomi corti e due nomi lunghi cadono cosi' nello stesso posto.
+  const secondo = righe.find((r) => r.posizione === 2);
+  const blocchi = [{ etichetta: 'VINCITORI', nome: nomeSquadra(perId.get(righe[0].squadra_id)), primo: true }];
+  if (secondo) blocchi.push({ etichetta: 'FINALISTI', nome: nomeSquadra(perId.get(secondo.squadra_id)), primo: false });
+
+  const DISTANZA = 140;
+  const altezze = blocchi.map((b) => altezzaBlocco(c, b));
+  const totale = altezze.reduce((a, h) => a + h, 0) + DISTANZA * (blocchi.length - 1);
+
+  const alto = y + 200;             // sotto il titolo e il suo sottotitolo
+  const basso = H - M - 140;        // sopra l'indirizzo del sito
+  let cursore = Math.max(alto, alto + (basso - alto - totale) / 2);
+  blocchi.forEach((b, i) => {
+    bloccoVincita(c, cursore, b.etichetta, b.nome, b.primo);
+    cursore += altezze[i] + DISTANZA;
+  });
+
+  c.fillStyle = '#6F7C75';
+  c.font = '500 30px Inter, sans-serif';
+  c.textAlign = 'center';
+  c.fillText('padel-cilento.vercel.app', W / 2, H - M);
+  c.textAlign = 'left';
+
+  return new Promise((risolvi, fallisci) => {
+    canvas.toBlob((b) => (b ? risolvi(b) : fallisci(new Error('Immagine non generata'))), 'image/png');
+  });
+}
+
+/** Le misure di un blocco del podio, uguali per chi disegna e chi conta. */
+function misureBlocco(primo) {
+  return {
+    fontNome: primo ? '700 82px "Space Grotesk", sans-serif' : '700 54px "Space Grotesk", sans-serif',
+    stacco: primo ? 106 : 78,   // dall'etichetta alla prima riga di nomi
+    passo: primo ? 96 : 68,     // fra una riga di nomi e l'altra
+  };
+}
+
+function altezzaBlocco(c, b) {
+  const m = misureBlocco(b.primo);
+  c.font = m.fontNome;
+  const righe = spezzaTesto(c, b.nome, IMG_PODIO.larghezza - IMG_PODIO.margine * 2);
+  return m.stacco + m.passo * (righe.length - 1);
+}
+
+/** Un blocco del podio: etichetta piccola sopra, nomi grandi sotto. */
+function bloccoVincita(c, y, etichetta, nome, primo) {
+  const { larghezza: W, margine: M } = IMG_PODIO;
+  const m = misureBlocco(primo);
+
+  c.fillStyle = primo ? '#C6FF3D' : '#94A29A';
+  c.font = '700 30px "Space Grotesk", sans-serif';
+  c.fillText(etichetta, M, y);
+
+  c.fillStyle = primo ? '#FFFFFF' : 'rgba(255,255,255,0.7)';
+  c.font = m.fontNome;
+  return scriviAcapo(c, nome, M, y + m.stacco, W - M * 2, m.passo);
+}
+
+/** Le righe in cui un testo si spezza, con il font gia' impostato. */
+function spezzaTesto(c, testo, larghezza) {
+  const parole = String(testo || '').split(/\s+/).filter(Boolean);
+  const righe = [];
+  let riga = '';
+
+  for (const parola of parole) {
+    const prova = riga ? `${riga} ${parola}` : parola;
+    if (c.measureText(prova).width > larghezza && riga) {
+      righe.push(riga);
+      riga = parola;
+    } else {
+      riga = prova;
+    }
+  }
+  if (riga) righe.push(riga);
+  return righe;
+}
+
+/** Scrive andando a capo sulle parole. Torna la y dopo l'ultima riga. */
+function scriviAcapo(c, testo, x, y, larghezza, passo) {
+  let cursore = y;
+  for (const riga of spezzaTesto(c, testo, larghezza)) {
+    c.fillText(riga, x, cursore);
+    cursore += passo;
+  }
+  return cursore;
+}
+
+function caricaImmagine(src) {
+  return new Promise((risolvi, fallisci) => {
+    const img = new Image();
+    img.onload = () => risolvi(img);
+    img.onerror = () => fallisci(new Error(`Immagine non caricata: ${src}`));
+    img.src = src;
+  });
+}
+
+function dataTorneoPerImmagine() {
+  const iso = torneoCorrente?.data_fine || torneoCorrente?.data_inizio;
+  if (!iso) return '';
+  return new Date(`${iso}T12:00:00`)
+    .toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' });
+}
+
+/**
+ * Condivide l'immagine con il foglio di condivisione del telefono
+ * (Instagram, WhatsApp, quello che c'e'). Dove non esiste, la scarica:
+ * da li' si pubblica a mano.
+ */
+async function condividiPodio(pulsante, righe, perId) {
+  const testoOriginale = pulsante.textContent;
+  pulsante.disabled = true;
+  pulsante.textContent = 'Preparo l\'immagine…';
+
+  try {
+    const blob = await disegnaPodio(righe, perId);
+    const nomeFile = `podio-${(torneoCorrente?.nome || 'torneo')
+      .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}.png`;
+    const file = new File([blob], nomeFile, { type: 'image/png' });
+
+    if (navigator.canShare?.({ files: [file] })) {
+      await navigator.share({ files: [file], title: torneoCorrente?.nome || 'Podio' });
+    } else {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = nomeFile;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+  } catch (e) {
+    // Chi annulla il foglio di condivisione non ha sbagliato niente.
+    if (e?.name !== 'AbortError') {
+      console.error(e);
+      mostraErroreTorneo(e, 'Non sono riuscito a preparare l\'immagine del podio.');
+    }
+  } finally {
+    pulsante.disabled = false;
+    pulsante.textContent = testoOriginale;
+  }
 }
 
 /**
