@@ -413,7 +413,10 @@
             <label class="block text-xs font-semibold text-court-300 uppercase tracking-wide mb-1.5 mt-3" for="auth-codice">
               Codice del circolo
             </label>
-            <input id="auth-codice" type="text" placeholder="ESEMPIO-2026"
+            <!-- Nessun esempio nel campo: un segnaposto come "ESEMPIO-2026"
+                 rivela il formato dei codici, e con cinque tentativi prima
+                 del blocco indovinare diventa un'impresa ragionevole. -->
+            <input id="auth-codice" type="text"
                    class="w-full bg-court-700 border border-court-500 rounded-xl px-4 py-3 text-sm text-white placeholder-court-500 focus:border-lime-neon outline-none uppercase" />
             <p class="text-[11px] text-court-300 leading-snug mt-2">
               Te lo diamo noi quando attiviamo il circolo. Dopo cinque tentativi
