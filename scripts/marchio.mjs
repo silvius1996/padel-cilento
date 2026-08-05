@@ -8,6 +8,7 @@
 //   npm run marchio        genera public/icons/* e public/marchio/*
 //
 import { mkdir, writeFile } from 'node:fs/promises';
+import { pathToFileURL } from 'node:url';
 import { chromium } from 'playwright';
 
 const LIME = '#C6FF3D';
@@ -86,6 +87,24 @@ function marchioEsteso(sfondo = 'scuro') {
 </svg>`;
 }
 
+/**
+ * L'anteprima che compare quando il link viene incollato in WhatsApp,
+ * Telegram o Facebook. Misura 1200x630 perche' e' il formato che tutti
+ * ritagliano senza tagliare niente, ed e' un PNG perche' WhatsApp gli SVG
+ * non li disegna: e' il motivo per cui prima il link arrivava spoglio.
+ */
+const ANTEPRIMA = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630" fill="none">
+  <rect width="1200" height="630" fill="${SCURO}"/>
+  <circle cx="1080" cy="90" r="320" fill="${LIME}" opacity="0.07"/>
+  <g transform="translate(452,120) scale(2.6)">${segno({ tratto: SCURO, sfondo: LIME, onda: false })}</g>
+  <text x="600" y="470" text-anchor="middle" font-family="Space Grotesk, Segoe UI, system-ui, sans-serif"
+        font-size="76" font-weight="700" letter-spacing="-2" fill="#FFFFFF">PADEL CILENTO</text>
+  <text x="600" y="530" text-anchor="middle" font-family="Space Grotesk, Segoe UI, system-ui, sans-serif"
+        font-size="30" font-weight="600" letter-spacing="6" fill="${LIME}">PAESTUM · CAPACCIO · AGROPOLI</text>
+  <text x="600" y="583" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif"
+        font-size="26" fill="#9AA5A0">Trova la tua partita. Segui il tuo torneo.</text>
+</svg>`;
+
 // L'icona normale sta dentro un quadrato con gli angoli arrotondati.
 // Quella maskable viene ritagliata da Android dentro un cerchio che ne copre
 // circa l'80%, quindi ha il fondo a tutta pagina e il disegno piu' piccolo.
@@ -103,6 +122,14 @@ async function png(browser, sorgente, lato, destinazione) {
     `<style>html,body{margin:0;padding:0;background:transparent}</style>${sorgente.replace(/width="\d+" height="\d+"/, `width="${lato}" height="${lato}"`)}`,
   );
   await pagina.locator('svg').screenshot({ path: destinazione, omitBackground: true });
+  await pagina.close();
+}
+
+/** Come png(), ma per un'immagine che non e' quadrata. */
+async function pngRettangolo(browser, sorgente, larghezza, altezza, destinazione) {
+  const pagina = await browser.newPage({ viewport: { width: larghezza, height: altezza } });
+  await pagina.setContent(`<style>html,body{margin:0;padding:0}</style>${sorgente}`);
+  await pagina.locator('svg').screenshot({ path: destinazione });
   await pagina.close();
 }
 
@@ -124,6 +151,7 @@ async function main() {
     await png(browser, ICONA, 180, 'public/icons/apple-touch-icon.png');
     await png(browser, ICONA_MASKABLE, 192, 'public/icons/icon-maskable-192.png');
     await png(browser, ICONA_MASKABLE, 512, 'public/icons/icon-maskable-512.png');
+    await pngRettangolo(browser, ANTEPRIMA, 1200, 630, 'public/icons/anteprima.png');
   } finally {
     await browser.close();
   }
@@ -131,6 +159,10 @@ async function main() {
   console.log('Marchio generato: icone SVG e PNG in public/icons, marchio esteso in public/marchio.');
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+// Il confronto va fatto fra due URL: su Windows process.argv[1] e' un
+// percorso con le barre rovesce, quindi "file://" + percorso non coincide
+// mai con import.meta.url e main() non veniva eseguita — il comando
+// finiva senza scrivere niente e senza dire perche'.
+if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   await main();
 }
