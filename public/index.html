@@ -718,6 +718,12 @@
 
       <p class="text-xs font-semibold text-court-300 uppercase tracking-wide mb-2">In campo (<span id="match-detail-count">0/4</span>)</p>
 
+      <!-- Avviso separato da quello delle azioni: renderMatchDetailAction()
+           azzera il proprio, e un messaggio sulla formazione sparirebbe
+           un istante dopo essere comparso. -->
+      <p id="match-formazione-errore"
+         class="hidden text-xs text-red-400 font-medium mb-2 leading-snug"></p>
+
       <!-- Mini campo da padel: 4 posizioni, 2 per lato -->
       <div id="match-court" class="relative rounded-2xl border border-court-500 bg-court-900 p-3 mb-6 overflow-hidden">
         <!-- linee del campo -->
@@ -1161,6 +1167,7 @@ let authMode = 'login';
 let tipoRegistrazione = 'giocatore';   // 'giocatore' | 'circolo'
 let currentDetailMatch = null;
 let currentDetailParticipants = [];
+let formazioneNonLetta = false;   // la lettura e' fallita, non "non c'e' nessuno"
 let currentDetailResult = null;
 let profileAvatarFile = null;
 
@@ -1340,6 +1347,7 @@ const el = {
   matchDetailDate: document.getElementById('match-detail-date'),
   matchDetailLevel: document.getElementById('match-detail-level'),
   matchDetailClub: document.getElementById('match-detail-club'),
+  matchFormazioneErrore: document.getElementById('match-formazione-errore'),
   matchDetailOrigin: document.getElementById('match-detail-origin'),
   matchDetailCount: document.getElementById('match-detail-count'),
   matchCourt: document.getElementById('match-court'),
@@ -2139,9 +2147,15 @@ async function caricaPartecipanti(matchId) {
     .order('spot', { ascending: true });
 
   if (error) {
+    // Un errore non e' "non c'e' nessuno in campo". Restituendo un
+    // elenco vuoto il campo veniva disegnato con dei segnaposto contati
+    // da filled_slots: quattro "Ospite" al posto dei giocatori veri, e
+    // nessun modo di accorgersi che il problema era la lettura.
     console.error('Errore caricamento partecipanti:', error);
+    formazioneNonLetta = true;
     return [];
   }
+  formazioneNonLetta = false;
   return data || [];
 }
 
@@ -2589,6 +2603,18 @@ function renderMatchCourt() {
   // occupato da un "Ospite" che non esisteva, e - cosa peggiore - non era
   // piu' cliccabile: una partita 2 su 4 offriva un solo posto libero.
   let nascosti = Math.max(0, occupati - currentDetailParticipants.length);
+
+  // Chi ha effettuato l'accesso la formazione la puo' sempre leggere: se
+  // arriva vuota mentre i posti risultano occupati, la lettura e'
+  // fallita. Meglio dirlo che disegnare quattro sconosciuti al posto dei
+  // giocatori veri, e lasciar credere che siano quelli.
+  const illeggibile = formazioneNonLetta ||
+    (Boolean(currentUser) && nascosti > 0);
+
+  if (illeggibile) nascosti = 0;
+  el.matchFormazioneErrore.textContent = illeggibile
+    ? 'Non e\' stato possibile leggere chi e\' in campo. Ricarica la pagina.' : '';
+  el.matchFormazioneErrore.classList.toggle('hidden', !illeggibile);
 
   // Chi ha creato QUESTA partita, o l'amministratore: sono gli stessi
   // che il database lascia passare in partita_aggiungi_ospite(). Qui si

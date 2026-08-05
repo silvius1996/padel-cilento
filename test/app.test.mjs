@@ -428,10 +428,13 @@ async function campo(page, stato) {
     };
     currentDetailParticipants = s.formazione;
     currentDetailResult = null;
+    formazioneNonLetta = Boolean(s.letturaFallita);
     renderMatchCourt();
 
     return {
       contatore: document.getElementById('match-detail-count').textContent,
+      avviso: document.getElementById('match-formazione-errore').classList.contains('hidden')
+        ? '' : document.getElementById('match-formazione-errore').textContent,
       posti: [...document.querySelectorAll('#match-court .court-spot')].map((p) => ({
         testo: p.textContent.replace(/\s+/g, ' ').trim(),
         cliccabile: Boolean(p.onclick),
@@ -500,6 +503,29 @@ async function testCampoDaGioco(page) {
     collegato.posti[0].testo);
   esito('chi ce l ha messo puo toglierlo', collegato.posti[0].togliibile);
   esito('chi si e iscritto da solo non si tocca', !collegato.posti[2].togliibile);
+
+  titolo('Se la formazione non si riesce a leggere');
+
+  // Il caso vero: la lettura fallisce (una colonna appena aggiunta che
+  // l'API non conosce ancora) e l'app riceve un elenco vuoto mentre i
+  // posti risultano tutti pieni. Prima disegnava quattro sconosciuti.
+  const rotta = await campo(page, {
+    utente: 'u-circolo', ruolo: 'gestore', creata_da: 'u-circolo',
+    occupati: 4, formazione: [], letturaFallita: true,
+  });
+  esito('non inventa quattro ospiti',
+    !rotta.posti.some((p) => p.testo.includes('Ospite')),
+    rotta.posti.map((p) => p.testo).join(' | '));
+  esito('e lo dice', rotta.avviso.includes('Ricarica'), rotta.avviso);
+
+  // Stessa cosa senza errore dichiarato: un utente entrato la formazione
+  // la legge sempre, quindi vuota + posti pieni resta una lettura fallita.
+  const muta = await campo(page, {
+    utente: 'u-terzo', creata_da: 'u-circolo', occupati: 4, formazione: [],
+  });
+  esito('nemmeno quando l errore non e stato dichiarato',
+    !muta.posti.some((p) => p.testo.includes('Ospite')) && muta.avviso !== '',
+    `${muta.avviso} — ${muta.posti.map((p) => p.testo).join(' | ')}`);
 
   titolo('Chi non ha organizzato');
 
