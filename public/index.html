@@ -2142,7 +2142,11 @@ async function caricaPartecipanti(matchId) {
 
   const { data, error } = await supabaseClient
     .from('match_players')
-    .select('user_id, spot, joined_at, ospite, aggiunto_da, profiles ( nome, cognome, full_name, level, avatar_url )')
+    // Il profilo va chiesto indicando DA QUALE collegamento passare.
+    // Da quando esiste aggiunto_da, fra match_players e profiles ci sono
+    // due chiavi esterne — chi gioca e chi ce l'ha messo — e senza questa
+    // precisazione l'API rifiuta la richiesta invece di sceglierne una.
+    .select('user_id, spot, joined_at, ospite, aggiunto_da, profiles!match_players_user_id_fkey ( nome, cognome, full_name, level, avatar_url )')
     .eq('match_id', matchId)
     .order('spot', { ascending: true });
 
