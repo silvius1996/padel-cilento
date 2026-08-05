@@ -16,12 +16,14 @@
     "db:verify": "node scripts/verifica.mjs",
     "dati:demo": "node scripts/dati-demo.mjs",
     "spot": "node scripts/spot.mjs",
-    "marchio": "node scripts/marchio.mjs"
+    "marchio": "node scripts/marchio.mjs",
+    "volantino": "node scripts/volantino.mjs"
   },
   "devDependencies": {
     "@electric-sql/pglite": "^0.5.4",
     "pg": "^8.22.0",
     "playwright": "^1.62.0",
+    "qrcode": "^1.5.4",
     "supabase": "^2.109.1",
     "tailwindcss": "^3.4.19",
     "vercel": "^48.0.0"

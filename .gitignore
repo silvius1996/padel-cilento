@@ -17,6 +17,9 @@ supabase/.branches/
 # I video registrati: si rigenerano con "npm run spot"
 video/
 
+# Il volantino e il QR: si rigenerano con "npm run volantino"
+grafiche/
+
 # Anteprima delle proposte di marchio: si rigenera aprendo public/marchio/proposte.html
 marchio-proposte.png
 
