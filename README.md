@@ -11,7 +11,7 @@ Online su **https://padel-cilento.vercel.app**
 | Interfaccia | `public/index.html` — una sola pagina, JavaScript senza framework. Tailwind e la libreria Supabase sono serviti dal nostro dominio, non da CDN esterni |
 | Database | Supabase (PostgreSQL) — tabelle, permessi e regole in `supabase/migrations/` |
 | Pubblicazione | Vercel — viene pubblicata **solo** la cartella `public/` |
-| Test | `test/db.test.mjs` — esegue le migrazioni su un PostgreSQL in WebAssembly |
+| Test | `test/db.test.mjs` — esegue le migrazioni su un PostgreSQL in WebAssembly; `test/app.test.mjs` — usa l'app in un browser vero, con le risposte del database simulate |
 
 Il principio di fondo: **le regole stanno nel database, non nell'interfaccia.** Chi
 puo iscriversi, chi puo registrare un risultato, chi puo vedere un numero di
@@ -69,7 +69,9 @@ liberi: se ne apri uno, Vercel genera come sempre la sua anteprima.
 Servono solo per lavorare in locale: la pubblicazione e automatica.
 
 ```bash
-npm test            # verifica la logica del database (non tocca la produzione)
+npm test            # tutti i test (non toccano la produzione)
+npm run test:db     # solo la logica del database
+npm run test:app    # solo l'interfaccia, guidata in un browser vero
 npm run spot        # registra i due video di presentazione in video/
 npm run dati:demo   # riempie il database con un torneo dimostrativo
 npm run build:css   # rigenera public/styles.css
