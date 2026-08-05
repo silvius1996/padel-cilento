@@ -302,6 +302,9 @@
             <option value="agropoli">Agropoli</option>
             <option value="altro">Altro / dintorni</option>
           </select>
+          <p id="nota-circolo-fisso" class="hidden text-[11px] text-court-300 leading-snug mt-1.5">
+            Circolo e zona sono quelli del tuo circolo e non si cambiano da qui.
+          </p>
         </div>
 
         <div class="grid grid-cols-2 gap-3">
@@ -1332,6 +1335,9 @@ const el = {
   matchCourt: document.getElementById('match-court'),
   inputTime: document.getElementById('input-time'),
   inputDate: document.getElementById('input-date'),
+  inputClub: document.getElementById('input-club'),
+  inputZona: document.getElementById('input-zona'),
+  notaCircoloFisso: document.getElementById('nota-circolo-fisso'),
   matchDetailError: document.getElementById('match-detail-error'),
   matchDetailHint: document.getElementById('match-detail-hint'),
   btnMatchDetailAction: document.getElementById('btn-match-detail-action'),
@@ -3182,8 +3188,11 @@ function apriModificaPartita(match) {
   el.inputDate.value = match.match_date;
   generaSlotOrari();
 
-  document.getElementById('input-club').value = match.club;
-  document.getElementById('input-zona').value = match.zona;
+  // Modificando una partita gia' pubblicata i campi restano liberi:
+  // qui si corregge quello che c'e', anche se fu scritto altrove.
+  sbloccaCampiDelCircolo();
+  el.inputClub.value = match.club;
+  el.inputZona.value = match.zona;
   document.getElementById('input-level').value = match.level;
 
   // se l'orario originale non e' piu' selezionabile, lo si aggiunge
@@ -4998,7 +5007,7 @@ el.btnRefresh.addEventListener('click', caricaPartite);
 // ---------------------------------------------------------
 // 11. EVENTI: MODALE CREA PARTITA
 // ---------------------------------------------------------
-function openCreateModal() {
+async function openCreateModal() {
   if (!currentUser) {
     showToast('Accedi per organizzare una partita.');
     authMode = 'login';
@@ -5015,15 +5024,52 @@ function openCreateModal() {
   impostaVincoliData();
   generaSlotOrari();
 
-  // Se l'utente e' un gestore, il circolo viene precompilato
-  if (currentProfile?.role === 'gestore' && currentProfile.circolo) {
-    document.getElementById('input-club').value = currentProfile.circolo;
-  }
-
   el.createError.classList.add('hidden');
   selectedSpot = 0;
   updateSlotsButtonsUI();
   openModal(el.modalCreate);
+
+  // Dopo l'apertura: il circolo va letto dal database, e far aspettare
+  // un giro di rete prima di mostrare il modulo lo farebbe sembrare
+  // lento a ogni tocco.
+  await bloccaCampiDelCircolo();
+}
+
+/**
+ * Per un gestore, circolo e zona non sono una scelta: il suo circolo ha
+ * un indirizzo, ed e' sempre lo stesso. Lasciarli liberi voleva dire che
+ * il Padel Village di Agropoli pubblicava partite a Paestum, perche'
+ * Paestum e' la prima voce dell'elenco e nessuno la cambia.
+ *
+ * La zona vera si legge dalla riga del circolo, non dal profilo: e' li'
+ * che sta l'anagrafica, ed e' l'unico posto che resta giusto se un
+ * domani il circolo si sposta.
+ */
+async function bloccaCampiDelCircolo() {
+  const gestore = currentProfile?.role === 'gestore' && currentProfile.circolo_id;
+
+  if (!gestore) return sbloccaCampiDelCircolo();
+
+  el.inputClub.value = currentProfile.circolo || '';
+
+  const { data, error } = await supabaseClient
+    .from('circoli').select('nome, zona').eq('id', currentProfile.circolo_id).single();
+
+  // Se la lettura non riesce si lasciano i campi liberi: meglio una
+  // zona da scegliere che un modulo bloccato su un valore sbagliato.
+  if (error || !data) return sbloccaCampiDelCircolo();
+
+  el.inputClub.value = data.nome;
+  el.inputZona.value = data.zona;
+  el.inputClub.readOnly = true;
+  el.inputZona.disabled = true;
+  el.notaCircoloFisso.classList.remove('hidden');
+}
+
+function sbloccaCampiDelCircolo() {
+  el.inputClub.readOnly = false;
+  el.inputZona.disabled = false;
+  el.notaCircoloFisso.classList.add('hidden');
 }
 
 el.btnOpenCreate.addEventListener('click', openCreateModal);
@@ -5060,8 +5106,11 @@ el.formCreateMatch.addEventListener('submit', async (e) => {
 
   const formData = new FormData(el.formCreateMatch);
   const payload = {
-    club: formData.get('club')?.trim(),
-    zona: formData.get('zona'),
+    // Letti dagli elementi e non dal modulo: una tendina disabilitata —
+    // la zona bloccata sul circolo del gestore — non viene inviata da
+    // FormData, e la partita partirebbe senza zona.
+    club: el.inputClub.value.trim(),
+    zona: el.inputZona.value,
     match_date: formData.get('date'),
     match_time: formData.get('time'),
     level: formData.get('level'),
