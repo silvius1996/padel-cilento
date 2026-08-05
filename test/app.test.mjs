@@ -404,6 +404,98 @@ async function testPunteggioIncompleto(page) {
 }
 
 // ---------------------------------------------------------
+/**
+ * Il campo da gioco del dettaglio partita.
+ *
+ * Si chiama direttamente renderMatchCourt() con una formazione decisa
+ * qui: e' la funzione vera dell'app vera, ma senza dipendere dal feed
+ * o dai permessi, quindi la prova dice sempre la stessa cosa.
+ *
+ * Cosa protegge: il disegno inventava un "Ospite" nei posti prima
+ * dell'ultimo occupato, perche' confrontava la posizione con il numero
+ * di posti pieni. Con due giocatori nei posti 0 e 2 il posto 1
+ * risultava occupato da nessuno e smetteva di essere cliccabile: una
+ * partita 2 su 4 offriva un posto libero solo.
+ */
+async function campo(page, stato) {
+  return page.evaluate((s) => {
+    currentUser = s.utente ? { id: s.utente } : null;
+    currentProfile = s.utente ? { id: s.utente, nome: 'Tizio', cognome: 'Test', role: s.ruolo || 'giocatore' } : null;
+    currentDetailMatch = {
+      id: 'm-test', club: 'Padel Village Agropoli', zona: 'agropoli',
+      match_date: '2030-01-01', match_time: '20:00:00', level: 'intermedio',
+      total_slots: 4, filled_slots: s.occupati, created_by: s.creata_da, origin: 'circolo',
+    };
+    currentDetailParticipants = s.formazione;
+    currentDetailResult = null;
+    renderMatchCourt();
+
+    return {
+      contatore: document.getElementById('match-detail-count').textContent,
+      posti: [...document.querySelectorAll('#match-court .court-spot')].map((p) => ({
+        testo: p.textContent.replace(/\s+/g, ' ').trim(),
+        cliccabile: Boolean(p.onclick),
+        aggiungibile: Boolean([...p.querySelectorAll('button')].find((b) => b.textContent.includes('+ nome'))),
+        togliibile: Boolean([...p.querySelectorAll('button')].find((b) => b.textContent.includes('Togli'))),
+      })),
+    };
+  }, stato);
+}
+
+const GIOCATORE = (spot, nome) => ({ user_id: `u-${nome}`, spot, ospite: null,
+  profiles: { nome, cognome: 'Test', level: 'intermedio' } });
+const OSPITE = (spot, nome) => ({ user_id: null, spot, ospite: nome, profiles: null });
+
+async function testCampoDaGioco(page) {
+  titolo('Il posto vuoto in mezzo resta vuoto');
+
+  const sparsi = await campo(page, {
+    utente: 'u-terzo', creata_da: 'u-altro', occupati: 2,
+    formazione: [GIOCATORE(0, 'Aldo'), GIOCATORE(2, 'Bea')],
+  });
+  esito('il contatore dice due su quattro', sparsi.contatore === '2/4', sparsi.contatore);
+  esito('nessun ospite inventato', !sparsi.posti.some((p) => p.testo.includes('Ospite')),
+    sparsi.posti.map((p) => p.testo).join(' | '));
+  esito('il posto in mezzo e libero', sparsi.posti[1].testo.includes('Gioca qui'), sparsi.posti[1].testo);
+  esito('e si puo occupare', sparsi.posti[1].cliccabile);
+  esito('anche l ultimo si puo occupare', sparsi.posti[3].cliccabile);
+
+  titolo('Chi non ha effettuato l accesso');
+
+  const fuori = await campo(page, {
+    utente: null, creata_da: 'u-altro', occupati: 2, formazione: [],
+  });
+  const occupati = fuori.posti.filter((p) => p.testo.includes('Occupato')).length;
+  esito('vede due posti presi', occupati === 2, `ne vede ${occupati}`);
+  esito('senza nomi', !fuori.posti.some((p) => p.testo.includes('Aldo')));
+  esito('e non puo occuparne nessuno', !fuori.posti.some((p) => p.cliccabile));
+
+  titolo('I giocatori messi in campo dal circolo');
+
+  const conOspiti = await campo(page, {
+    utente: 'u-circolo', ruolo: 'gestore', creata_da: 'u-circolo', occupati: 2,
+    formazione: [OSPITE(0, 'Gennaro Esposito'), OSPITE(2, 'Ciro Rullo')],
+  });
+  esito('il nome scritto a mano compare', conOspiti.posti[0].testo.includes('Gennaro Esposito'),
+    conOspiti.posti[0].testo);
+  esito('ed e segnalato come senza app', conOspiti.posti[0].testo.includes('senza app'));
+  esito('chi organizza puo toglierlo', conOspiti.posti[0].togliibile);
+  esito('e puo aggiungerne su un posto libero', conOspiti.posti[1].aggiungibile);
+  esito('il circolo non compare in campo',
+    !conOspiti.posti.some((p) => p.testo.includes('Tizio')),
+    conOspiti.posti.map((p) => p.testo).join(' | '));
+
+  titolo('Chi non ha organizzato');
+
+  const estraneo = await campo(page, {
+    utente: 'u-terzo', creata_da: 'u-circolo', occupati: 2,
+    formazione: [OSPITE(0, 'Gennaro Esposito'), OSPITE(2, 'Ciro Rullo')],
+  });
+  esito('non puo aggiungere nomi', !estraneo.posti.some((p) => p.aggiungibile));
+  esito('non puo toglierne', !estraneo.posti.some((p) => p.togliibile));
+  esito('ma vede i posti liberi', estraneo.posti[1].cliccabile && estraneo.posti[3].cliccabile);
+}
+
 async function main() {
   const server = await avviaServer();
   const browser = await chromium.launch(avvioBrowser);
@@ -448,6 +540,7 @@ async function main() {
     await testTerzoSetFacoltativo(page);
     await testFasiConFormatiDiversi(page);
     await testPunteggioIncompleto(page);
+    await testCampoDaGioco(page);
   } finally {
     titolo('Errori JavaScript');
     esito('l app non ha sollevato eccezioni', erroriPagina.length === 0,

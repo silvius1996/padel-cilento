@@ -341,6 +341,15 @@
             <button type="button" data-slots="2" class="slots-btn py-2.5 rounded-xl border border-court-500 text-xs font-display font-700">Squadra B · sinistra</button>
             <button type="button" data-slots="3" class="slots-btn py-2.5 rounded-xl border border-court-500 text-xs font-display font-700">Squadra B · destra</button>
           </div>
+
+          <!-- Un circolo che pubblica un'ora libera non sta giocando:
+               sta offrendo un campo. Compare solo a chi gestisce un
+               circolo, perche' per un giocatore "organizzo e non gioco"
+               non vuol dire niente. -->
+          <button type="button" id="btn-non-gioco"
+                  class="hidden w-full mt-2 py-2.5 rounded-xl border border-court-500 text-xs font-display font-700 text-white/80">
+            Pubblico il campo, non gioco
+          </button>
           <p class="text-[11px] text-court-300 mt-1.5">Gli altri giocatori scelgono il proprio posto iscrivendosi: le squadre sono reali e servono per registrare il risultato.</p>
           <input type="hidden" id="input-missing" name="missing" value="0" />
         </div>
@@ -1210,6 +1219,7 @@ const el = {
   createError: document.getElementById('create-error'),
   slotsButtons: document.querySelectorAll('.slots-btn'),
   inputMissing: document.getElementById('input-missing'),
+  btnNonGioco: document.getElementById('btn-non-gioco'),
 
   modalAuth: document.getElementById('modal-auth'),
   modalAuthBackdrop: document.getElementById('modal-auth-backdrop'),
@@ -2124,7 +2134,7 @@ async function caricaPartecipanti(matchId) {
 
   const { data, error } = await supabaseClient
     .from('match_players')
-    .select('user_id, spot, joined_at, profiles ( nome, cognome, full_name, level, avatar_url )')
+    .select('user_id, spot, joined_at, ospite, profiles ( nome, cognome, full_name, level, avatar_url )')
     .eq('match_id', matchId)
     .order('spot', { ascending: true });
 
@@ -2461,6 +2471,59 @@ async function apriDettaglioPartita(matchId) {
 /**
  * Iscrizione al posto toccato sul campo.
  */
+/**
+ * Mette in campo un giocatore che il circolo ha gia' confermato al
+ * telefono. Il nome e' testo, come nei tornei: a una partita di circolo
+ * gioca anche chi l'app non ce l'ha.
+ *
+ * Chi puo' farlo lo decide il database (partita_aggiungi_ospite): qui
+ * non c'e' nessun controllo che valga come protezione.
+ */
+async function aggiungiOspite(spot) {
+  if (!currentDetailMatch) return;
+  const matchId = currentDetailMatch.id;
+
+  const nome = prompt(`Chi gioca nella Squadra ${squadraDiSpot(spot)}?`);
+  if (nome === null) return;
+
+  el.matchDetailError.classList.add('hidden');
+  try {
+    const { error } = await supabaseClient.rpc('partita_aggiungi_ospite', {
+      p_match_id: matchId, p_spot: spot, p_nome: nome,
+    });
+    if (error) throw error;
+    showToast(`${nome.trim()} e' in campo.`);
+    await caricaPartite();
+    await apriDettaglioPartita(matchId);
+  } catch (err) {
+    console.error(err);
+    el.matchDetailError.textContent = messaggioErrore(err, 'Impossibile aggiungere il giocatore.');
+    el.matchDetailError.classList.remove('hidden');
+  }
+}
+
+/** Toglie dal campo un giocatore aggiunto a mano: quello che da' buca. */
+async function togliOspite(spot, nome) {
+  if (!currentDetailMatch) return;
+  if (!confirm(`Togliere ${nome} dal campo?`)) return;
+
+  const matchId = currentDetailMatch.id;
+  el.matchDetailError.classList.add('hidden');
+  try {
+    const { error } = await supabaseClient.rpc('partita_togli_ospite', {
+      p_match_id: matchId, p_spot: spot,
+    });
+    if (error) throw error;
+    showToast('Posto liberato.');
+    await caricaPartite();
+    await apriDettaglioPartita(matchId);
+  } catch (err) {
+    console.error(err);
+    el.matchDetailError.textContent = messaggioErrore(err, 'Impossibile togliere il giocatore.');
+    el.matchDetailError.classList.remove('hidden');
+  }
+}
+
 async function iscrivitiAlPosto(spot) {
   if (!currentUser || !currentDetailMatch) return;
 
@@ -2509,6 +2572,12 @@ function renderMatchCourt() {
   // piu' cliccabile: una partita 2 su 4 offriva un solo posto libero.
   let nascosti = Math.max(0, occupati - currentDetailParticipants.length);
 
+  // Chi ha creato QUESTA partita, o l'amministratore: sono gli stessi
+  // che il database lascia passare in partita_aggiungi_ospite(). Qui si
+  // decide solo cosa mostrare.
+  const organizzaQuesta = Boolean(currentUser) &&
+    (match.created_by === currentUser.id || sonoAmministratore());
+
   const giaIscritto = Boolean(currentUser) &&
     currentDetailParticipants.some((p) => p.user_id === currentUser.id);
   const formazioneChiusa = Boolean(currentDetailResult);
@@ -2522,7 +2591,37 @@ function renderMatchCourt() {
 
     const iscritto = perPosto.get(i);
 
-    if (iscritto) {
+    if (iscritto && iscritto.ospite) {
+      // Giocatore messo in campo dall'organizzatore: ha un nome scritto
+      // a mano e nessun account, come le coppie di un torneo. Gioca
+      // davvero, ma non entra in nessuna statistica: non c'e' un profilo
+      // a cui attribuire la partita.
+      const avatar = document.createElement('div');
+      avatar.className = 'w-11 h-11 rounded-full bg-court-600 border border-lime-neon/40 flex items-center justify-center font-display font-700 text-sm text-lime-neon/80';
+      avatar.textContent = iscritto.ospite.trim().charAt(0).toUpperCase();
+
+      const name = document.createElement('p');
+      name.className = 'text-[11px] font-semibold text-white text-center leading-tight max-w-[80px] truncate';
+      name.textContent = iscritto.ospite;
+
+      const nota = document.createElement('p');
+      nota.className = 'text-[9px] text-court-300 leading-none';
+      nota.textContent = 'senza app';
+
+      spot.appendChild(avatar);
+      spot.appendChild(name);
+      spot.appendChild(nota);
+
+      if (organizzaQuesta && !formazioneChiusa) {
+        const via = document.createElement('button');
+        via.type = 'button';
+        via.className = 'text-[10px] font-semibold text-red-400 mt-0.5';
+        via.textContent = 'Togli';
+        via.onclick = (e) => { e.stopPropagation(); togliOspite(i, iscritto.ospite); };
+        spot.appendChild(via);
+      }
+
+    } else if (iscritto) {
       // Giocatore registrato nell'app
       const profile = iscritto.profiles;
       const avatar = document.createElement('div');
@@ -2593,6 +2692,17 @@ function renderMatchCourt() {
       if (selezionabile) {
         spot.className += ' cursor-pointer hover:bg-lime-neon/5 transition-colors';
         spot.onclick = () => iscrivitiAlPosto(i);
+      }
+
+      // Chi ha organizzato mette in campo i giocatori che ha gia'
+      // confermato al telefono, senza aspettare che si iscrivano.
+      if (organizzaQuesta && !formazioneChiusa) {
+        const aggiungi = document.createElement('button');
+        aggiungi.type = 'button';
+        aggiungi.className = 'text-[10px] font-semibold text-lime-neon mt-0.5';
+        aggiungi.textContent = '+ nome';
+        aggiungi.onclick = (e) => { e.stopPropagation(); aggiungiOspite(i); };
+        spot.appendChild(aggiungi);
       }
     }
   });
@@ -5104,8 +5214,30 @@ function updateSlotsButtonsUI() {
       ? 'slots-btn py-2.5 rounded-xl border border-lime-neon bg-lime-neon/10 text-lime-neon text-xs font-display font-700'
       : 'slots-btn py-2.5 rounded-xl border border-court-500 text-white/70 text-xs font-display font-700';
   });
-  el.inputMissing.value = selectedSpot;
+
+  // selectedSpot nullo vuol dire "non gioco": il campo nascosto resta
+  // vuoto e crea_partita non iscrive nessuno.
+  const nonGioco = selectedSpot === null;
+  el.inputMissing.value = nonGioco ? '' : selectedSpot;
+  el.btnNonGioco.className = nonGioco
+    ? 'w-full mt-2 py-2.5 rounded-xl border border-lime-neon bg-lime-neon/10 text-lime-neon text-xs font-display font-700'
+    : 'w-full mt-2 py-2.5 rounded-xl border border-court-500 text-white/80 text-xs font-display font-700';
+  el.btnNonGioco.classList.toggle('hidden', !puoPubblicareSenzaGiocare());
 }
+
+/**
+ * Solo chi gestisce un circolo, o l'amministratore. Per un giocatore
+ * "organizzo e non gioco" non vuol dire niente: la partita la cerca
+ * proprio perche' vuole giocarci.
+ */
+function puoPubblicareSenzaGiocare() {
+  return currentProfile?.role === 'gestore' || sonoAmministratore();
+}
+
+el.btnNonGioco.addEventListener('click', () => {
+  selectedSpot = selectedSpot === null ? 0 : null;
+  updateSlotsButtonsUI();
+});
 
 el.slotsButtons.forEach((btn) => {
   btn.addEventListener('click', () => {
@@ -5128,8 +5260,10 @@ el.formCreateMatch.addEventListener('submit', async (e) => {
     match_date: formData.get('date'),
     match_time: formData.get('time'),
     level: formData.get('level'),
-    // posto scelto dall'organizzatore: 0-1 Squadra A, 2-3 Squadra B
-    spot: Math.min(3, Math.max(0, Number(formData.get('missing')) || 0)),
+    // Posto scelto dall'organizzatore: 0-1 Squadra A, 2-3 Squadra B.
+    // Nullo quando il circolo pubblica il campo senza giocarci: allora
+    // crea_partita non iscrive nessuno e i posti liberi sono quattro.
+    spot: selectedSpot === null ? null : Math.min(3, Math.max(0, Number(selectedSpot) || 0)),
   };
 
   if (!payload.club || !payload.zona || !payload.match_date || !payload.match_time) {

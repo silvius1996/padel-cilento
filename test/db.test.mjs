@@ -998,6 +998,131 @@ async function testAvatar() {
  * spariscono e l'accesso viene distrutto, ma le partite giocate
  * restano, altrimenti si riscriverebbe la storia degli avversari.
  */
+async function testPartiteDelCircolo() {
+  console.log('\nIL CIRCOLO PUBBLICA IL CAMPO SENZA GIOCARCI');
+
+  // Ester non ha ancora giocato niente: fa da circolo che offre un'ora.
+  await come(U.ester);
+  await db.exec('set role authenticated');
+
+  const { rows: campo } = await db.query(
+    `select * from public.crea_partita('Padel Village Agropoli', 'agropoli',
+       current_date + 4, '19:00', 'intermedio', null::smallint)`,
+  );
+  const CAMPO = campo[0].id;
+  uguale('chi pubblica senza giocare lascia quattro posti liberi', 0, campo[0].filled_slots);
+
+  const { rows: nessuno } = await db.query(
+    'select count(*)::int as n from public.match_players where match_id = $1', [CAMPO]);
+  uguale('e non compare in campo', 0, nessuno[0].n);
+
+  // Il vecchio comportamento non cambia: un numero vuol dire "gioco li'".
+  const { rows: conPosto } = await db.query(
+    `select * from public.crea_partita('Padel Arena', 'paestum',
+       current_date + 4, '20:00', 'intermedio', 2::smallint)`,
+  );
+  uguale('indicando un posto ci si iscrive come prima', 1, conPosto[0].filled_slots);
+
+  await deveFallire(
+    'un posto fuori dai quattro resta un errore',
+    () => db.query(
+      `select * from public.crea_partita('Padel Arena', 'paestum',
+         current_date + 4, '21:00', 'intermedio', 7::smallint)`),
+    'compreso fra 0 e 3',
+  );
+
+  console.log('\n  I GIOCATORI GIA CONFERMATI AL TELEFONO');
+
+  await deveRiuscire('l organizzatore mette due nomi in campo', async () => {
+    await db.query(`select public.partita_aggiungi_ospite($1, 0::smallint, 'Gennaro Esposito')`, [CAMPO]);
+    await db.query(`select public.partita_aggiungi_ospite($1, 2::smallint, 'Ciro Rullo')`, [CAMPO]);
+  });
+
+  const { rows: dueOspiti } = await db.query(
+    `select spot, ospite, user_id from public.match_players
+      where match_id = $1 order by spot`, [CAMPO]);
+  uguale('i posti occupati diventano due', 2, dueOspiti.length);
+  uguale('il nome resta scritto com e', 'Gennaro Esposito', dueOspiti[0].ospite);
+  uguale('e non e collegato a nessun account', null, dueOspiti[0].user_id);
+  uguale('stanno nei posti scelti, non in fila', 2, dueOspiti[1].spot);
+
+  const { rows: contati } = await db.query(
+    'select filled_slots from public.matches where id = $1', [CAMPO]);
+  uguale('il conteggio dei posti segue gli ospiti', 2, contati[0].filled_slots);
+
+  await deveFallire(
+    'un posto gia occupato non si sovrascrive',
+    () => db.query(`select public.partita_aggiungi_ospite($1, 0::smallint, 'Un altro')`, [CAMPO]),
+    'gia\' occupato',
+  );
+
+  await deveFallire(
+    'il nome non puo essere vuoto',
+    () => db.query(`select public.partita_aggiungi_ospite($1, 1::smallint, '   ')`, [CAMPO]),
+    'Serve il nome',
+  );
+
+  console.log('\n  E RESTA UNA PARTITA VERA');
+
+  await come(U.carlo);
+  await deveRiuscire('un giocatore vero occupa un posto rimasto libero', () => db.query(
+    'insert into public.match_players (match_id, user_id, spot) values ($1, $2, 1)',
+    [CAMPO, U.carlo],
+  ));
+
+  await deveFallire(
+    'chi non ha organizzato non aggiunge nomi',
+    () => db.query(`select public.partita_aggiungi_ospite($1, 3::smallint, 'Intruso')`, [CAMPO]),
+    'Solo chi ha organizzato',
+  );
+
+  await deveFallire(
+    'chi non ha organizzato non toglie nomi',
+    () => db.query('select public.partita_togli_ospite($1, 0::smallint)', [CAMPO]),
+    'Solo chi ha organizzato',
+  );
+
+  console.log('\n  CHI DA BUCA SI TOGLIE');
+
+  await come(U.ester);
+  await deveRiuscire('l organizzatore toglie un ospite', () => db.query(
+    'select public.partita_togli_ospite($1, 0::smallint)', [CAMPO]));
+
+  const { rows: dopoRimozione } = await db.query(
+    'select filled_slots from public.matches where id = $1', [CAMPO]);
+  uguale('il posto torna libero nel conteggio', 2, dopoRimozione[0].filled_slots);
+
+  await deveFallire(
+    'un giocatore registrato non si sfratta da qui',
+    () => db.query('select public.partita_togli_ospite($1, 1::smallint)', [CAMPO]),
+    'aggiunto a mano',
+  );
+
+  const { rows: carloResta } = await db.query(
+    'select count(*)::int as n from public.match_players where match_id = $1 and user_id = $2',
+    [CAMPO, U.carlo]);
+  uguale('e infatti resta in campo', 1, carloResta[0].n);
+
+  console.log('\n  IL VINCOLO DI CHI OCCUPA IL POSTO');
+
+  await db.exec('reset role');
+
+  await deveFallire(
+    'un posto non puo avere account e nome insieme',
+    () => db.query(
+      `insert into public.match_players (match_id, user_id, spot, ospite)
+       values ($1, $2, 3, 'Due volte')`, [CAMPO, U.bea]),
+    'match_players_chi_check',
+  );
+
+  await deveFallire(
+    'e nemmeno restare senza nessuno dei due',
+    () => db.query(
+      'insert into public.match_players (match_id, spot) values ($1, 3)', [CAMPO]),
+    'match_players_chi_check',
+  );
+}
+
 async function testEliminaAccount() {
   console.log('\nCANCELLAZIONE DELL ACCOUNT');
 
@@ -2750,6 +2875,7 @@ async function main() {
   await testCorrezioniTorneo();
   await testCollegamentoGiocatori();
   await testBacheca();
+  await testPartiteDelCircolo();
   await testEliminaAccount();
 
   console.log('\n' + '='.repeat(60));
