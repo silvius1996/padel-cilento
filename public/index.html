@@ -365,9 +365,23 @@
 
       <form id="form-auth" class="space-y-4">
         <div id="auth-signup-fields" class="hidden space-y-4">
+          <!-- Chi si registra dice prima chi e'. Un giocatore non deve
+               nemmeno vedere il codice circolo, che per lui e' rumore; un
+               circolo non deve dichiarare il proprio livello di gioco. -->
+          <div class="grid grid-cols-2 gap-2">
+            <button type="button" id="btn-tipo-giocatore"
+                    class="py-2.5 px-2 rounded-xl border text-sm font-semibold transition-colors">
+              Sono un giocatore
+            </button>
+            <button type="button" id="btn-tipo-circolo"
+                    class="py-2.5 px-2 rounded-xl border text-sm font-semibold transition-colors">
+              Sono un circolo
+            </button>
+          </div>
+
           <div class="grid grid-cols-2 gap-3">
             <div>
-              <label class="block text-xs font-semibold text-court-300 uppercase tracking-wide mb-1.5" for="auth-nome">Nome</label>
+              <label id="label-auth-nome" class="block text-xs font-semibold text-court-300 uppercase tracking-wide mb-1.5" for="auth-nome">Nome</label>
               <input id="auth-nome" type="text" placeholder="Mario"
                      class="w-full bg-court-700 border border-court-500 rounded-xl px-4 py-3 text-sm text-white placeholder-court-500 focus:border-lime-neon outline-none" />
             </div>
@@ -382,7 +396,7 @@
             <input id="auth-telefono" type="tel" placeholder="333 1234567"
                    class="w-full bg-court-700 border border-court-500 rounded-xl px-4 py-3 text-sm text-white placeholder-court-500 focus:border-lime-neon outline-none" />
           </div>
-          <div>
+          <div id="signup-solo-giocatore">
             <label class="block text-xs font-semibold text-court-300 uppercase tracking-wide mb-1.5" for="auth-level">Il tuo livello</label>
             <select id="auth-level" class="w-full bg-court-700 border border-court-500 rounded-xl px-4 py-3 text-sm text-white focus:border-lime-neon outline-none">
               <option value="principiante">Principiante · 1.0-2.0</option>
@@ -391,12 +405,21 @@
             </select>
           </div>
 
-          <div class="pt-1 border-t border-court-600">
+          <!-- Il nome del circolo non viene chiesto: lo sa gia' il codice,
+               che punta a una riga precisa della tabella dei circoli.
+               Chiederlo a mano vorrebbe dire accettare tre modi diversi di
+               scrivere lo stesso circolo. -->
+          <div id="signup-solo-circolo" class="hidden pt-1 border-t border-court-600">
             <label class="block text-xs font-semibold text-court-300 uppercase tracking-wide mb-1.5 mt-3" for="auth-codice">
-              Codice circolo <span class="normal-case font-normal">(solo per i gestori)</span>
+              Codice del circolo
             </label>
-            <input id="auth-codice" type="text" placeholder="Lascia vuoto se sei un giocatore"
+            <input id="auth-codice" type="text" placeholder="ESEMPIO-2026"
                    class="w-full bg-court-700 border border-court-500 rounded-xl px-4 py-3 text-sm text-white placeholder-court-500 focus:border-lime-neon outline-none uppercase" />
+            <p class="text-[11px] text-court-300 leading-snug mt-2">
+              Te lo diamo noi quando attiviamo il circolo. Dopo cinque tentativi
+              sbagliati l'inserimento resta bloccato per quindici minuti, e in
+              quel quarto d'ora non funziona nemmeno il codice giusto.
+            </p>
           </div>
 
           <p class="text-[11px] text-court-300 leading-relaxed">
@@ -526,6 +549,22 @@
             <p class="text-[10px] font-bold uppercase tracking-wide text-lime-neon">Gestore del circolo</p>
             <p id="profile-ruolo-circolo" class="text-sm font-semibold text-white truncate"></p>
           </div>
+        </div>
+
+        <!-- La seconda occasione. Il codice si verifica solo dopo che
+             l'account esiste, perche' la funzione che lo controlla ha
+             bisogno di un utente gia' autenticato: chi lo sbagliava in
+             fase di registrazione restava un giocatore e non aveva piu'
+             nessun posto dove riprovare. -->
+        <div id="profile-codice-riga" class="hidden rounded-xl border border-court-600 p-3 space-y-2">
+          <p class="text-[11px] font-semibold text-court-300 uppercase tracking-wide">Gestisci un circolo?</p>
+          <input id="profile-codice" type="text" placeholder="Codice del circolo"
+                 class="w-full bg-court-700 border border-court-500 rounded-lg px-3 py-2 text-sm text-white placeholder-court-500 focus:border-lime-neon outline-none uppercase" />
+          <p id="profile-codice-error" class="hidden text-[11px] text-red-400 font-medium"></p>
+          <button type="button" id="btn-usa-codice"
+                  class="w-full py-2.5 rounded-lg border border-court-500 text-sm font-semibold text-white/80 hover:border-lime-neon hover:text-lime-neon transition-colors">
+            Attiva il ruolo di gestore
+          </button>
         </div>
 
         <!-- Statistiche: calcolate dai risultati confermati, non memorizzate -->
@@ -1104,6 +1143,7 @@ let activeTab = 'aperte';
 let editingMatchId = null;
 let selectedSpot = 0;
 let authMode = 'login';
+let tipoRegistrazione = 'giocatore';   // 'giocatore' | 'circolo'
 let currentDetailMatch = null;
 let currentDetailParticipants = [];
 let currentDetailResult = null;
@@ -1206,6 +1246,15 @@ const el = {
   profileAvatarFile: document.getElementById('profile-avatar-file'),
   profileRuolo: document.getElementById('profile-ruolo'),
   profileRuoloCircolo: document.getElementById('profile-ruolo-circolo'),
+  profileCodiceRiga: document.getElementById('profile-codice-riga'),
+  profileCodice: document.getElementById('profile-codice'),
+  profileCodiceError: document.getElementById('profile-codice-error'),
+  btnUsaCodice: document.getElementById('btn-usa-codice'),
+  btnTipoGiocatore: document.getElementById('btn-tipo-giocatore'),
+  btnTipoCircolo: document.getElementById('btn-tipo-circolo'),
+  labelAuthNome: document.getElementById('label-auth-nome'),
+  signupSoloGiocatore: document.getElementById('signup-solo-giocatore'),
+  signupSoloCircolo: document.getElementById('signup-solo-circolo'),
   profileNome: document.getElementById('profile-nome'),
   profileCognome: document.getElementById('profile-cognome'),
   profilePhone: document.getElementById('profile-phone'),
@@ -1329,6 +1378,18 @@ function showToast(message) {
  * di Supabase Auth) viene tradotto o sostituito dal messaggio di
  * default passato da chi chiama, specifico per quel punto dell'app.
  */
+/**
+ * Un errore gia' scritto per chi legge. messaggioErrore() mostra il testo
+ * originale solo agli errori marcati P0001 — e' come il database segnala i
+ * propri messaggi — quindi senza questa marcatura una validazione scritta a
+ * mano finiva sostituita dal messaggio generico di chi la chiamava.
+ */
+function erroreUtente(messaggio) {
+  const e = new Error(messaggio);
+  e.code = 'P0001';
+  return e;
+}
+
 function messaggioErrore(err, fallback) {
   if (!err) return fallback;
 
@@ -1647,6 +1708,11 @@ function openProfileModal() {
   el.profileRuolo.classList.toggle('hidden', !gestore);
   el.profileRuolo.classList.toggle('flex', Boolean(gestore));
   if (gestore) el.profileRuoloCircolo.textContent = currentProfile.circolo;
+
+  // Il campo del codice serve solo a chi gestore non e' ancora.
+  el.profileCodiceRiga.classList.toggle('hidden', Boolean(gestore));
+  el.profileCodice.value = '';
+  el.profileCodiceError.classList.add('hidden');
 
   el.profileError.classList.add('hidden');
 
@@ -5130,11 +5196,62 @@ el.btnToggleAuthMode.addEventListener('click', () => {
   updateAuthModeUI();
 });
 
+/**
+ * Attiva il ruolo di gestore dal profilo, per chi il codice non l'ha
+ * inserito in fase di registrazione o l'ha sbagliato.
+ */
+el.btnUsaCodice.addEventListener('click', async () => {
+  const codice = el.profileCodice.value.trim();
+  el.profileCodiceError.classList.add('hidden');
+  if (!codice) return;
+
+  el.btnUsaCodice.disabled = true;
+  try {
+    const circolo = await usaCodiceCircolo(codice);
+    currentProfile = await loadProfile(currentUser);
+    openProfileModal();               // il distintivo prende il posto del campo
+    showToast(`Ora gestisci ${circolo}.`);
+  } catch (err) {
+    el.profileCodiceError.textContent = messaggioErrore(err, 'Codice circolo non valido.');
+    el.profileCodiceError.classList.remove('hidden');
+  } finally {
+    el.btnUsaCodice.disabled = false;
+  }
+});
+
+el.btnTipoGiocatore.addEventListener('click', () => { tipoRegistrazione = 'giocatore'; updateTipoRegistrazioneUI(); });
+el.btnTipoCircolo.addEventListener('click', () => { tipoRegistrazione = 'circolo'; updateTipoRegistrazioneUI(); });
+
+/**
+ * Le due iscrizioni. Cambiano i campi, non le regole: il ruolo di
+ * gestore continua a dipendere solo dal codice verificato dal database,
+ * quindi scegliere "sono un circolo" non concede niente da solo.
+ */
+function updateTipoRegistrazioneUI() {
+  const circolo = tipoRegistrazione === 'circolo';
+  const scelto = 'border-lime-neon bg-lime-neon/10 text-lime-neon';
+  const altro = 'border-court-500 text-white/70 hover:text-white';
+
+  el.btnTipoGiocatore.className = `py-2.5 px-2 rounded-xl border text-sm font-semibold transition-colors ${circolo ? altro : scelto}`;
+  el.btnTipoCircolo.className = `py-2.5 px-2 rounded-xl border text-sm font-semibold transition-colors ${circolo ? scelto : altro}`;
+
+  el.signupSoloGiocatore.classList.toggle('hidden', circolo);
+  el.signupSoloCircolo.classList.toggle('hidden', !circolo);
+
+  // Il profilo resta di una persona anche quando l'account e' di un
+  // circolo: le partite, le medaglie e i contatti hanno bisogno di
+  // qualcuno con un nome. Cambia solo come lo si chiede.
+  el.labelAuthNome.textContent = circolo ? 'Referente' : 'Nome';
+  el.authNome.placeholder = circolo ? 'Mario' : 'Mario';
+  el.authError.classList.add('hidden');
+}
+
 function updateAuthModeUI() {
   el.authError.classList.add('hidden');
   if (authMode === 'signup') {
     el.authTitle.textContent = 'Registrati';
     el.authSignupFields.classList.remove('hidden');
+    updateTipoRegistrazioneUI();
     el.btnSubmitAuth.textContent = 'Crea Account';
     el.btnToggleAuthMode.innerHTML = 'Hai già un account? <span class="text-lime-neon">Accedi</span>';
     el.btnForgotPassword.classList.add('hidden');
@@ -5182,6 +5299,7 @@ el.formAuth.addEventListener('submit', async (e) => {
 
   el.btnSubmitAuth.disabled = true;
   el.btnSubmitAuth.textContent = authMode === 'signup' ? 'Creazione...' : 'Accesso...';
+  let codiceRifiutato = false;
 
   try {
     if (authMode === 'signup') {
@@ -5191,10 +5309,16 @@ el.formAuth.addEventListener('submit', async (e) => {
       const level = el.authLevel.value;
 
       if (!nome || !cognome) {
-        throw new Error('Nome e cognome sono obbligatori.');
+        throw erroreUtente('Nome e cognome sono obbligatori.');
       }
 
-      const codice = el.authCodice.value.trim();
+      // Il codice viaggia solo se si sta registrando un circolo: chi si
+      // iscrive come giocatore il campo non lo vede nemmeno.
+      const codice = tipoRegistrazione === 'circolo' ? el.authCodice.value.trim() : '';
+      if (tipoRegistrazione === 'circolo' && !codice) {
+        throw erroreUtente('Serve il codice del circolo. Se non ce l\'hai, scrivici.');
+      }
+
       const { user, session } = await registraUtente({
         email, password, nome, cognome, telefono, level, codice,
       });
@@ -5204,6 +5328,14 @@ el.formAuth.addEventListener('submit', async (e) => {
         currentUser = user;
         currentProfile = await loadProfile(user);
         renderAuthState();
+
+        // Il codice si puo' verificare solo adesso, ad account creato:
+        // se e' stato rifiutato l'account esiste comunque, ed e' quello
+        // di un giocatore. Va detto qui, altrimenti sembra che l'app
+        // abbia ignorato la scelta "sono un circolo".
+        if (codice && currentProfile?.role !== 'gestore') {
+          codiceRifiutato = true;
+        }
         showToast('Registrazione completata!');
       } else {
         // Conferma via email richiesta: il profilo verra' creato al primo accesso
@@ -5221,6 +5353,15 @@ el.formAuth.addEventListener('submit', async (e) => {
 
     closeModal(el.modalAuth);
     el.formAuth.reset();
+
+    // Codice rifiutato: l'account c'e' ed e' quello di un giocatore. Si
+    // apre il profilo sul campo che permette di riprovare, invece di
+    // lasciarlo davanti a un'app che sembra aver ignorato la scelta.
+    if (codiceRifiutato) {
+      openProfileModal();
+      el.profileCodiceError.textContent = 'Il codice non e\' stato accettato. Controllalo e riprova.';
+      el.profileCodiceError.classList.remove('hidden');
+    }
   } catch (err) {
     console.error(err);
     el.authError.textContent = messaggioErrore(
