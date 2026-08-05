@@ -11,8 +11,9 @@
    L'app non se ne accorge: esegue il suo codice di sempre.
 
    Uso:
-     npm run spot              registra tutti e due i video
+     npm run spot              registra tutti i video
      npm run spot giocatori
+     npm run spot guida        la guida passo per passo, per i circoli
 
    I file finiscono in  video/  come MP4.
 ========================================================= */
@@ -154,6 +155,16 @@ const STATISTICHE = [{
   partite: 14, vittorie: 10, sconfitte: 4, percentuale_vittorie: 71,
 }];
 
+// La guida passo per passo mostra un torneo che si riempie un pezzo
+// alla volta. Invece di inventare schermate finte, si nasconde all'app
+// una parte dei dati: cosi' e' l'app stessa a scrivere "Passo 2 di 4",
+// perche' crede davvero che le coppie non ci siano ancora.
+const SCENA = { fase: null };   // 'vuoto' | 'gironi' | 'squadre' | null
+
+function gironiVisibili()   { return SCENA.fase === 'vuoto' ? [] : GIRONI; }
+function squadreVisibili()  { return (SCENA.fase === 'vuoto' || SCENA.fase === 'gironi') ? [] : SQUADRE; }
+function incontriVisibili() { return SCENA.fase ? [] : INCONTRI; }
+
 // ---------------------------------------------------------
 // Le risposte, scelte in base a cosa l'app sta chiedendo
 // ---------------------------------------------------------
@@ -185,9 +196,9 @@ function rispostaPer(url) {
   }
   if (via.endsWith('/match_results')) return [];
   if (via.endsWith('/tornei')) return TORNEI;
-  if (via.endsWith('/tornei_gironi')) return GIRONI;
-  if (via.endsWith('/torneo_squadre')) return SQUADRE;
-  if (via.endsWith('/torneo_incontri')) return INCONTRI;
+  if (via.endsWith('/tornei_gironi')) return gironiVisibili();
+  if (via.endsWith('/torneo_squadre')) return squadreVisibili();
+  if (via.endsWith('/torneo_incontri')) return incontriVisibili();
 
   return [];
 }
@@ -208,8 +219,16 @@ async function intercetta(context) {
     if (url.includes('/rpc/classifica_girone')) {
       let girone = 'g1';
       try { girone = JSON.parse(req.postData() || '{}').p_girone_id || 'g1'; } catch { /* niente */ }
-      corpo = CLASSIFICHE[girone] || [];
+      corpo = SCENA.fase ? [] : (CLASSIFICHE[girone] || []);
     }
+
+    // Quando l'app chiama .single() PostgREST risponde con l'oggetto,
+    // non con l'elenco: lo si riconosce dall'intestazione Accept. Senza
+    // questo, apriTorneo() riceveva un array, e da li' in poi il torneo
+    // risultava senza nome e senza circolo — quindi niente pannello di
+    // gestione, perche' l'app non riconosceva piu' il proprio circolo.
+    const accept = req.headers()['accept'] || '';
+    if (accept.includes('pgrst.object') && Array.isArray(corpo)) corpo = corpo[0] ?? null;
 
     await route.fulfill({
       status: 200,
@@ -315,7 +334,10 @@ async function copioneGiocatori(r) {
 
   // --- La bacheca ---
   await r.viaTitoli();
-  await r.app(() => { closeModal(el.modalRanking); openProfileModal(); });
+  // Anche la classifica era un modale ed e' diventata una pagina:
+  // "el.modalRanking" non esiste piu'. Il profilo si apre sopra la
+  // pagina che c'e', quindi non serve chiudere niente.
+  await r.app(() => { openProfileModal(); });
   await r.camera('destra');
   await r.attesa(1800);
   await r.titolo('dx', 'La tua bacheca', 'I tornei che hai vinto,\nsul tuo profilo',
@@ -376,10 +398,10 @@ async function copioneCircoli(r) {
 
   // --- 4. Il calendario e la classifica ---
   await r.viaTitoli();
-  await r.app(() => {
-    document.querySelector('#modal-torneo .overflow-y-auto')
-      ?.scrollTo({ top: 380, behavior: 'smooth' });
-  });
+  // Il torneo era un modale con il suo riquadro scorrevole; ora e' una
+  // pagina intera, quindi a scorrere e' la finestra. Con il vecchio
+  // selettore la telecamera si avvicinava a una schermata ferma.
+  await r.app(() => { window.scrollTo({ top: 380, behavior: 'smooth' }); });
   await r.camera('vicino');
   await r.attesa(2200);
   await r.titolo('sx', 'Passo 3', 'Il calendario\nse lo fa da solo',
@@ -395,8 +417,7 @@ async function copioneCircoli(r) {
   // --- 5. Il tabellone ---
   await r.viaTitoli();
   await r.app(() => {
-    const c = document.querySelector('#modal-torneo .overflow-y-auto');
-    c?.scrollTo({ top: c.scrollHeight, behavior: 'smooth' });
+    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
   });
   await r.camera('alto');
   await r.attesa(2400);
@@ -406,7 +427,9 @@ async function copioneCircoli(r) {
 
   // --- 6. Le medaglie ---
   await r.viaTitoli();
-  await r.app(() => { closeModal(el.modalTorneo); openProfileModal(); });
+  // "el.modalTorneo" non esiste piu' da quando il torneo e' una pagina:
+  // la chiamata sollevava un errore e il copione si fermava qui.
+  await r.app(() => { el.btnCloseTorneo.click(); openProfileModal(); });
   await r.camera('centro');
   await r.attesa(1800);
   await r.titolo('dx', 'Dopo il torneo', 'Il nome del tuo circolo\nresta sul loro profilo',
@@ -421,9 +444,141 @@ async function copioneCircoli(r) {
   await r.attesa(3800);
 }
 
+// ---------------------------------------------------------
+// COPIONE 3 — LA GUIDA PASSO PER PASSO
+// Non e' uno spot: e' il video che si manda a chi il torneo lo
+// gestisce davvero, il giorno prima di gestirlo. Ritmo piu' lento,
+// nessuna promessa, i passi nell'ordine in cui vanno fatti.
+// ---------------------------------------------------------
+async function copioneGuida(r) {
+  // Il torneo prende il nome di chi guarda il video, e riparte da zero:
+  // niente coppie, niente gironi, niente calendario.
+  TORNEI[0].nome = 'Bronze';
+  TORNEI[0].descrizione = 'Padel Village Agropoli — 11 agosto';
+  TORNEI[0].stato = 'bozza';
+  TORNEI[0].circoli = { nome: 'Padel Village Agropoli' };
+  PROFILO.circolo = 'Padel Village Agropoli';
+  SCENA.fase = 'vuoto';
+
+  await r.apertura('Il torneo,<br><span class="verde">passo per passo</span>',
+    'Bronze, Silver, Gold: la stessa procedura, tre volte.');
+  await r.attesa(4200);
+  await r.viaApertura();
+  await r.attesa(900);
+
+  // --- Passo 1: si crea il torneo ---
+  await r.app(() => { apriTornei(); });
+  await r.camera('centro');
+  await r.attesa(1600);
+  await r.tocca(640, 232);
+  await r.app(() => { el.btnNuovoTorneo.click(); });
+  await r.attesa(1400);
+  await r.app(() => {
+    el.torneoNome.value = 'Bronze';
+    el.torneoLivello.value = 'principiante';
+  });
+  await r.camera('vicino');
+  await r.attesa(1200);
+  await r.titolo('sx', 'Passo 1', 'Crea il torneo',
+    'Nome, date, livello. Nasce come bozza: lo vedi solo tu. Poi lo rifai per Silver e per Gold.');
+  await r.attesa(6000);
+
+  // --- Passo 2: i gironi ---
+  await r.viaTitoli();
+  await r.app(() => { closeModal(el.modalCreaTorneo); apriTorneo('t1'); });
+  await r.camera('centro');
+  await r.attesa(2000);
+  await r.titolo('dx', 'Passo 2', 'Crea i gironi',
+    'L\'app ti dice sempre a che punto sei: "Passo 1 di 4". Se salti un passo, il torneo non parte.');
+  await r.attesa(6000);
+
+  // Il girone e' stato creato: da qui l'app ne vede due.
+  await r.viaTitoli();
+  SCENA.fase = 'gironi';
+  await r.app(() => { ricaricaTorneo(); });
+  await r.attesa(1800);
+
+  // --- Passo 3: le coppie ---
+  await r.app(() => {
+    el.squadraG1.value = 'Marco Rossi';
+    el.squadraG2.value = 'Luca Bianchi';
+  });
+  await r.camera('vicino');
+  await r.attesa(1400);
+  await r.titolo('sx', 'Passo 3', 'Iscrivi le coppie',
+    'Due nomi scritti a mano e il girone. I giocatori non devono registrarsi: copi il foglio che hai gia\'.');
+  await r.attesa(6200);
+
+  await r.viaTitoli();
+  SCENA.fase = 'squadre';
+  await r.app(() => { ricaricaTorneo(); });
+  await r.attesa(1800);
+
+  // --- Passo 4: il calendario ---
+  await r.camera('destra');
+  await r.attesa(1200);
+  await r.titolo('dx', 'Passo 4', 'Genera il calendario',
+    'Un pulsante. Tutti contro tutti dentro il girone, diviso in turni: nessuno gioca due volte nello stesso turno.');
+  await r.attesa(6200);
+
+  // --- Passo 5: si avvia ---
+  await r.viaTitoli();
+  SCENA.fase = null;
+  TORNEI[0].stato = 'in_corso';
+  await r.app(() => { ricaricaTorneo(); });
+  await r.attesa(1800);
+  await r.camera('centro');
+  await r.titolo('sx', 'Passo 5', 'Avvia il torneo',
+    'Questo e\' il passaggio che non si intuisce: i punteggi si inseriscono solo da qui in poi.');
+  await r.attesa(6200);
+
+  // --- Passo 6: il punteggio ---
+  await r.viaTitoli();
+  await r.app(() => { window.scrollTo({ top: 820, behavior: 'smooth' }); });
+  await r.camera('vicino');
+  await r.attesa(2200);
+  await r.titolo('dx', 'Passo 6', 'Scrivi il punteggio\nsotto l\'incontro',
+    'Il vincitore non lo dichiari tu: lo calcola il database dai game. Sbagliato a digitare? Si corregge.');
+  await r.attesa(6200);
+
+  // --- Passo 7: la classifica ---
+  await r.viaTitoli();
+  // Si torna su: la classifica sta in cima al girone, sopra il calendario.
+  await r.app(() => { window.scrollTo({ top: 340, behavior: 'smooth' }); });
+  await r.camera('destra');
+  await r.attesa(2200);
+  await r.titolo('sx', 'Passo 7', 'La classifica\nsi rifa\' da sola',
+    'A pari punti decide lo scontro diretto, poi i set, poi i game. Le regole sono scritte, non discusse a bordo campo.');
+  await r.attesa(6200);
+
+  // --- Passo 8: le finali ---
+  await r.viaTitoli();
+  await r.app(() => { window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }); });
+  await r.camera('alto');
+  await r.attesa(2400);
+  await r.titolo('dx', 'Passo 8', 'Le finali\nvanno avanti da sole',
+    'A gironi finiti generi il tabellone. Chi vince compare nel turno dopo senza che tu componga niente.');
+  await r.attesa(6200);
+
+  // --- Il link pubblico ---
+  await r.viaTitoli();
+  await r.camera('centro');
+  await r.attesa(1200);
+  await r.titolo('sx', 'E i giocatori?', 'Guardano, e basta',
+    'Il tabellone e\' una pagina pubblica: si apre senza registrarsi. E il link che metti nelle storie.');
+  await r.attesa(6000);
+
+  await r.viaTitoli();
+  await r.camera('uscita');
+  await r.attesa(1300);
+  await r.chiusura();
+  await r.attesa(3800);
+}
+
 const COPIONI = {
   giocatori: { fn: copioneGiocatori, titolo: 'Per i giocatori' },
   circoli:   { fn: copioneCircoli,   titolo: 'Per i circoli' },
+  guida:     { fn: copioneGuida,     titolo: 'La guida passo per passo' },
 };
 
 // ---------------------------------------------------------
@@ -443,8 +598,23 @@ function avviaServer() {
   return new Promise((r) => server.listen(PORTA, () => r(server)));
 }
 
+// Playwright registra in WebM e per l'MP4 serve ffmpeg. Non basta uno
+// qualsiasi: quello che Playwright si porta dietro e' una build ridotta
+// all'osso (niente libx264, niente muxer MP4) e serve solo a lui. Va
+// installato quello vero, altrimenti il video resta in WebM.
+function trovaFfmpeg() {
+  return spawnSync('ffmpeg', ['-version'], { stdio: 'ignore' }).status === 0 ? 'ffmpeg' : null;
+}
+
 function inMp4(webm, mp4, taglioIniziale = 0) {
-  const r = spawnSync('ffmpeg', [
+  const ffmpeg = trovaFfmpeg();
+  if (!ffmpeg) {
+    console.log('   ffmpeg non e\' installato: il video resta in WebM.');
+    console.log('   Per averlo in MP4:  winget install Gyan.FFmpeg   (poi riapri il terminale)');
+    return false;
+  }
+
+  const r = spawnSync(ffmpeg, [
     '-y', '-ss', taglioIniziale.toFixed(2), '-i', webm,
     '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-crf', '19', '-preset', 'slow',
     '-vf', 'fps=30', '-movflags', '+faststart', mp4,
@@ -456,7 +626,14 @@ async function registra(nome) {
   const copione = COPIONI[nome];
   console.log(`\n${copione.titolo}`);
 
-  const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' });
+  // Il percorso del browser era scritto a mano e valeva solo per la
+  // macchina Linux su cui questo script e' nato: su Windows non
+  // esiste, e la registrazione non partiva affatto. Senza indicazione
+  // Playwright usa il browser che ha scaricato lui, qualunque sia il
+  // sistema; la variabile serve solo se si vuole forzarne un altro.
+  const browser = await chromium.launch(
+    process.env.SPOT_CHROMIUM ? { executablePath: process.env.SPOT_CHROMIUM } : {},
+  );
   const context = await browser.newContext({
     viewport: { width: 1280, height: 720 },
     recordVideo: { dir: USCITA, size: { width: 1280, height: 720 } },

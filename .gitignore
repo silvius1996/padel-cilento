@@ -14,7 +14,7 @@ supabase/.branches/
 # Impostazioni locali di Claude Code (contengono percorsi di questo computer)
 .claude/settings.local.json
 
-# I video registrati: si rigenerano con "npm run video"
+# I video registrati: si rigenerano con "npm run spot"
 video/
 
 # Anteprima delle proposte di marchio: si rigenera aprendo public/marchio/proposte.html
