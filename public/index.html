@@ -2498,6 +2498,17 @@ function renderMatchCourt() {
   const perPosto = new Map();
   currentDetailParticipants.forEach((p) => perPosto.set(p.spot, p));
 
+  // Quanti posti sono occupati da qualcuno che NON possiamo vedere.
+  // Succede a chi non ha effettuato l'accesso: il numero dei posti pieni
+  // e' pubblico, i nomi no. Per tutti gli altri questo vale zero.
+  //
+  // Prima al suo posto c'era un confronto fra la posizione e il numero di
+  // occupati, che dava per scontato che i posti si riempissero da
+  // sinistra. Con due giocatori nei posti 0 e 2 il posto 1 risultava
+  // occupato da un "Ospite" che non esisteva, e - cosa peggiore - non era
+  // piu' cliccabile: una partita 2 su 4 offriva un solo posto libero.
+  let nascosti = Math.max(0, occupati - currentDetailParticipants.length);
+
   const giaIscritto = Boolean(currentUser) &&
     currentDetailParticipants.some((p) => p.user_id === currentUser.id);
   const formazioneChiusa = Boolean(currentDetailResult);
@@ -2543,9 +2554,12 @@ function renderMatchCourt() {
         spot.className += ' bg-lime-neon/5 ring-1 ring-lime-neon/30';
       }
 
-    } else if (i < occupati) {
-      // Posto occupato. Chi non ha effettuato l'accesso vede che il posto e'
-      // preso, ma non chi lo occupa: i nomi dei giocatori non sono pubblici.
+    } else if (nascosti > 0) {
+      // Posto occupato da qualcuno che non possiamo leggere. La posizione
+      // e' un'approssimazione — sappiamo quanti sono, non dove stanno — ma
+      // vale solo per chi non ha effettuato l'accesso, che i nomi non li
+      // vedrebbe comunque.
+      nascosti--;
       const anonimo = !currentUser;
 
       const avatar = document.createElement('div');
