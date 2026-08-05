@@ -442,9 +442,13 @@ async function campo(page, stato) {
   }, stato);
 }
 
-const GIOCATORE = (spot, nome) => ({ user_id: `u-${nome}`, spot, ospite: null,
+const GIOCATORE = (spot, nome) => ({ user_id: `u-${nome}`, spot, ospite: null, aggiunto_da: null,
   profiles: { nome, cognome: 'Test', level: 'intermedio' } });
-const OSPITE = (spot, nome) => ({ user_id: null, spot, ospite: nome, profiles: null });
+const OSPITE = (spot, nome) => ({ user_id: null, spot, ospite: nome, aggiunto_da: 'u-circolo',
+  profiles: null });
+/** Un account messo in campo dall'organizzatore, non entrato da solo. */
+const AGGIUNTO = (spot, nome) => ({ user_id: `u-${nome}`, spot, ospite: null, aggiunto_da: 'u-circolo',
+  profiles: { nome, cognome: 'Test', level: 'intermedio' } });
 
 async function testCampoDaGioco(page) {
   titolo('Il posto vuoto in mezzo resta vuoto');
@@ -484,6 +488,18 @@ async function testCampoDaGioco(page) {
   esito('il circolo non compare in campo',
     !conOspiti.posti.some((p) => p.testo.includes('Tizio')),
     conOspiti.posti.map((p) => p.testo).join(' | '));
+
+  titolo('Un account messo in campo dal circolo');
+
+  const collegato = await campo(page, {
+    utente: 'u-circolo', ruolo: 'gestore', creata_da: 'u-circolo', occupati: 2,
+    formazione: [AGGIUNTO(0, 'Mirko'), GIOCATORE(2, 'Silvio')],
+  });
+  esito('compare con nome e livello, non come ospite',
+    collegato.posti[0].testo.includes('Mirko') && !collegato.posti[0].testo.includes('senza app'),
+    collegato.posti[0].testo);
+  esito('chi ce l ha messo puo toglierlo', collegato.posti[0].togliibile);
+  esito('chi si e iscritto da solo non si tocca', !collegato.posti[2].togliibile);
 
   titolo('Chi non ha organizzato');
 

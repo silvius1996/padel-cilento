@@ -2134,7 +2134,7 @@ async function caricaPartecipanti(matchId) {
 
   const { data, error } = await supabaseClient
     .from('match_players')
-    .select('user_id, spot, joined_at, ospite, profiles ( nome, cognome, full_name, level, avatar_url )')
+    .select('user_id, spot, joined_at, ospite, aggiunto_da, profiles ( nome, cognome, full_name, level, avatar_url )')
     .eq('match_id', matchId)
     .order('spot', { ascending: true });
 
@@ -2483,16 +2483,34 @@ async function aggiungiOspite(spot) {
   if (!currentDetailMatch) return;
   const matchId = currentDetailMatch.id;
 
-  const nome = prompt(`Chi gioca nella Squadra ${squadraDiSpot(spot)}?`);
+  // L'elenco dei registrati serve a riconoscere chi l'app ce l'ha gia'.
+  // Si carica solo ora, e solo per chi organizza.
+  if (iscrittiPerNome.size === 0) await caricaIscritti();
+
+  const nome = prompt(
+    `Chi gioca nella Squadra ${squadraDiSpot(spot)}?\n\n`
+    + 'Se ha l\'app, scrivi nome e cognome esatti: la partita gli conta nelle statistiche.',
+  );
   if (nome === null) return;
+
+  // Stessa regola dei tornei: il collegamento scatta solo se quel nome
+  // appartiene a una persona sola. Con due omonimi non si indovina, e
+  // si iscrive il nome come testo.
+  const registrato = profiloDaNome(nome);
 
   el.matchDetailError.classList.add('hidden');
   try {
-    const { error } = await supabaseClient.rpc('partita_aggiungi_ospite', {
-      p_match_id: matchId, p_spot: spot, p_nome: nome,
-    });
+    const { error } = registrato
+      ? await supabaseClient.rpc('partita_aggiungi_giocatore', {
+        p_match_id: matchId, p_spot: spot, p_user_id: registrato.id,
+      })
+      : await supabaseClient.rpc('partita_aggiungi_ospite', {
+        p_match_id: matchId, p_spot: spot, p_nome: nome,
+      });
     if (error) throw error;
-    showToast(`${nome.trim()} e' in campo.`);
+    showToast(registrato
+      ? `${nomeIscritto(registrato)} e' in campo, con il suo account.`
+      : `${nome.trim()} e' in campo.`);
     await caricaPartite();
     await apriDettaglioPartita(matchId);
   } catch (err) {
@@ -2651,6 +2669,18 @@ function renderMatchCourt() {
       // Il proprio posto viene evidenziato
       if (currentUser && iscritto.user_id === currentUser.id) {
         spot.className += ' bg-lime-neon/5 ring-1 ring-lime-neon/30';
+      }
+
+      // Chi e' stato messo in campo dall'organizzatore puo' essere
+      // tolto dall'organizzatore. Chi si e' iscritto da solo no: se ne
+      // va da solo, ed e' il database a impedire il resto.
+      if (organizzaQuesta && iscritto.aggiunto_da && !formazioneChiusa) {
+        const via = document.createElement('button');
+        via.type = 'button';
+        via.className = 'text-[10px] font-semibold text-red-400 mt-0.5';
+        via.textContent = 'Togli';
+        via.onclick = (e) => { e.stopPropagation(); togliOspite(i, displayName(profile)); };
+        spot.appendChild(via);
       }
 
     } else if (nascosti > 0) {

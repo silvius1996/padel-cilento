@@ -1095,13 +1095,70 @@ async function testPartiteDelCircolo() {
   await deveFallire(
     'un giocatore registrato non si sfratta da qui',
     () => db.query('select public.partita_togli_ospite($1, 1::smallint)', [CAMPO]),
-    'aggiunto a mano',
+    'iscritto da solo',
   );
 
   const { rows: carloResta } = await db.query(
     'select count(*)::int as n from public.match_players where match_id = $1 and user_id = $2',
     [CAMPO, U.carlo]);
   uguale('e infatti resta in campo', 1, carloResta[0].n);
+
+  console.log('\n  CHI L APP CE L HA GIA');
+
+  await come(U.ester);
+  await deveRiuscire('l organizzatore mette in campo un account', () => db.query(
+    'select public.partita_aggiungi_giocatore($1, 3::smallint, $2)', [CAMPO, U.bea]));
+
+  const { rows: bea } = await db.query(
+    `select user_id, ospite, aggiunto_da from public.match_players
+      where match_id = $1 and spot = 3`, [CAMPO]);
+  uguale('la riga punta al suo account', U.bea, bea[0].user_id);
+  uguale('e non a un nome scritto a mano', null, bea[0].ospite);
+  uguale('resta scritto chi ce l ha messo', U.ester, bea[0].aggiunto_da);
+
+  await deveFallire(
+    'lo stesso giocatore non entra due volte',
+    () => db.query('select public.partita_aggiungi_giocatore($1, 0::smallint, $2)', [CAMPO, U.bea]),
+    'gia\' in campo',
+  );
+
+  await deveFallire(
+    'un account inesistente non entra',
+    () => db.query(
+      'select public.partita_aggiungi_giocatore($1, 0::smallint, $2)',
+      [CAMPO, '99999999-9999-9999-9999-999999999999']),
+    'inesistente',
+  );
+
+  console.log('\n  IL TELEFONO DI CHI NON HA SCELTO');
+
+  // Bea non si e' iscritta da sola: l'ha messa Ester.
+  await come(U.carlo);
+  const { rows: contatti } = await db.query('select * from public.contatti_partita($1)', [CAMPO]);
+  const rigaBea = contatti.find((r) => r.user_id === U.bea);
+  const rigaCarlo = contatti.find((r) => r.user_id === U.carlo);
+  uguale('chi e stato aggiunto compare in formazione', true, Boolean(rigaBea));
+  uguale('ma senza il suo numero', null, rigaBea.telefono);
+  uguale('chi si e iscritto da solo lo condivide', '3330000003', rigaCarlo.telefono);
+
+  await come(U.bea);
+  const { rows: suoi } = await db.query('select * from public.contatti_partita($1)', [CAMPO]);
+  uguale(
+    'e ognuno vede sempre il proprio',
+    '3330000002', suoi.find((r) => r.user_id === U.bea).telefono,
+  );
+
+  console.log('\n  TOGLIERE CHI E STATO MESSO');
+
+  await come(U.ester);
+  await deveRiuscire('l organizzatore toglie chi aveva aggiunto', () => db.query(
+    'select public.partita_togli_ospite($1, 3::smallint)', [CAMPO]));
+
+  await deveFallire(
+    'ma non chi si e iscritto da solo',
+    () => db.query('select public.partita_togli_ospite($1, 1::smallint)', [CAMPO]),
+    'iscritto da solo',
+  );
 
   console.log('\n  IL VINCOLO DI CHI OCCUPA IL POSTO');
 
