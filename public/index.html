@@ -515,6 +515,19 @@
           <input id="profile-avatar-file" type="file" accept="image/*" class="hidden" />
         </div>
 
+        <!-- Chi gestisce un circolo lo scopriva solo perche' gli compariva
+             il pulsante dei tornei: qui c'e' scritto, con il nome del suo
+             circolo. Il ruolo lo assegna il database tramite il codice
+             circolo, quindi questo distintivo mostra un fatto, non una
+             preferenza salvata nel profilo. -->
+        <div id="profile-ruolo" class="hidden items-center gap-2 rounded-xl border border-lime-neon/40 bg-lime-neon/10 px-3 py-2.5">
+          <svg viewBox="0 0 24 24" class="w-4 h-4 shrink-0 text-lime-neon" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V8l7-5 7 5v13"/></svg>
+          <div class="min-w-0">
+            <p class="text-[10px] font-bold uppercase tracking-wide text-lime-neon">Gestore del circolo</p>
+            <p id="profile-ruolo-circolo" class="text-sm font-semibold text-white truncate"></p>
+          </div>
+        </div>
+
         <!-- Statistiche: calcolate dai risultati confermati, non memorizzate -->
         <div id="profile-stats" class="hidden">
           <div class="grid grid-cols-4 gap-1.5 text-center">
@@ -1191,6 +1204,8 @@ const el = {
   profileAvatarImg: document.getElementById('profile-avatar-img'),
   profileAvatarInitial: document.getElementById('profile-avatar-initial'),
   profileAvatarFile: document.getElementById('profile-avatar-file'),
+  profileRuolo: document.getElementById('profile-ruolo'),
+  profileRuoloCircolo: document.getElementById('profile-ruolo-circolo'),
   profileNome: document.getElementById('profile-nome'),
   profileCognome: document.getElementById('profile-cognome'),
   profilePhone: document.getElementById('profile-phone'),
@@ -1624,6 +1639,14 @@ function openProfileModal() {
     el.profileAvatarInitial.classList.remove('hidden');
     el.profileAvatarInitial.textContent = displayName(currentProfile).charAt(0).toUpperCase();
   }
+
+  // Il nome del circolo arriva da usa_codice_circolo(), che lo scrive
+  // insieme al ruolo: se manca l'uno manca anche l'altro, quindi si
+  // mostrano insieme o non si mostra niente.
+  const gestore = currentProfile.role === 'gestore' && currentProfile.circolo;
+  el.profileRuolo.classList.toggle('hidden', !gestore);
+  el.profileRuolo.classList.toggle('flex', Boolean(gestore));
+  if (gestore) el.profileRuoloCircolo.textContent = currentProfile.circolo;
 
   el.profileError.classList.add('hidden');
 
