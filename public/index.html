@@ -4636,10 +4636,16 @@ function oraBreve(ora) {
  * cambia in giornata: il calendario generato dice CHI gioca contro chi,
  * non a che ora si entra in campo.
  *
- * Lo spostamento scambia il campo "ordine" con l'incontro vicino dello
- * stesso turno. Restare dentro al turno e' voluto: gli accoppiamenti del
- * girone all'italiana valgono perche' in ogni turno una squadra gioca
- * una volta sola, e mescolare i turni butterebbe via quella garanzia.
+ * Su e giu' scambiano il campo "ordine" con l'incontro vicino. Il menu
+ * dei turni sposta l'incontro in un'altra giornata, o in una nuova.
+ *
+ * Spostare fra turni indebolisce la garanzia del girone all'italiana —
+ * in ogni turno una squadra gioca una volta sola — quindi prima si
+ * avvisa: se una delle due coppie gioca gia' in quel turno lo si dice,
+ * e decide chi organizza. Nel girone a eliminazione invece il turno non
+ * e' una data: il secondo turno E' quello che assegna le posizioni in
+ * classifica, e li' spostare vorrebbe dire cambiare il risultato del
+ * girone. Per questo il menu non compare.
  */
 function creaOrarioIncontro(incontro, gruppo) {
   const vicini = Array.isArray(gruppo) ? gruppo : [incontro];
@@ -4681,6 +4687,9 @@ function creaOrarioIncontro(incontro, gruppo) {
     riga1.appendChild(ora);
     riga1.appendChild(campo);
     form.appendChild(riga1);
+
+    const menuTurno = creaMenuTurno(incontro);
+    if (menuTurno) form.appendChild(menuTurno);
 
     const errore = document.createElement('p');
     errore.className = 'hidden text-[11px] text-red-400 font-medium';
@@ -4749,6 +4758,98 @@ function creaOrarioIncontro(incontro, gruppo) {
   });
 
   return box;
+}
+
+/**
+ * Il menu per portare l'incontro in un altro turno, o in uno nuovo in
+ * fondo. Solo per i gironi all'italiana: nelle fasi finali il turno non
+ * si usa (contano fase e collegamenti fra caselle) e nel girone a
+ * eliminazione il turno 2 e' quello che decide la classifica.
+ */
+function creaMenuTurno(incontro) {
+  if (incontro.fase !== 'girone' || !incontro.girone_id) return null;
+  if (torneoCorrente && torneoCorrente.formato_girone === 'eliminazione_4') return null;
+
+  const delGirone = torneoDati.incontri.filter(
+    (i) => i.girone_id === incontro.girone_id && i.fase === 'girone');
+  const turni = [...new Set(delGirone.map((i) => i.turno))].sort((a, b) => a - b);
+  const nuovo = (turni[turni.length - 1] || 0) + 1;
+
+  const riga = document.createElement('div');
+  riga.className = 'flex items-center gap-1.5';
+
+  const menu = document.createElement('select');
+  menu.className = 'flex-1 min-w-0 bg-court-800 border border-court-500 rounded-lg px-2 py-1.5 '
+    + 'text-xs text-white focus:border-lime-neon outline-none';
+
+  turni.forEach((t) => {
+    const o = document.createElement('option');
+    o.value = String(t);
+    o.textContent = `Turno ${t}`;
+    if (t === incontro.turno) o.selected = true;
+    menu.appendChild(o);
+  });
+
+  const oNuovo = document.createElement('option');
+  oNuovo.value = String(nuovo);
+  oNuovo.textContent = `Nuovo turno ${nuovo}`;
+  menu.appendChild(oNuovo);
+
+  const sposta = document.createElement('button');
+  sposta.type = 'button';
+  sposta.className = 'shrink-0 px-3 py-1.5 rounded-lg border border-court-500 text-[11px] '
+    + 'font-semibold text-white/70 hover:border-lime-neon hover:text-lime-neon transition-colors';
+  sposta.textContent = 'Sposta';
+
+  sposta.addEventListener('click', async () => {
+    const destinazione = Number(menu.value);
+    if (destinazione === incontro.turno) return;
+
+    // Chi gioca gia' in quel turno viene detto per nome: "una squadra
+    // due volte" non basta a capire se e' un problema o e' voluto.
+    const occupate = delGirone
+      .filter((i) => i.turno === destinazione && i.id !== incontro.id)
+      .flatMap((i) => [i.squadra_casa, i.squadra_ospite])
+      .filter(Boolean);
+
+    const doppie = [incontro.squadra_casa, incontro.squadra_ospite]
+      .filter((s) => s && occupate.includes(s))
+      .map((s) => {
+        const sq = torneoDati.squadre.find((x) => x.id === s);
+        return sq ? nomeSquadra(sq) : 'una coppia';
+      });
+
+    if (doppie.length > 0) {
+      const chi = doppie.join(' e ');
+      if (!confirm(`Nel turno ${destinazione} ${chi} gioca gia'. `
+        + 'Sposto lo stesso?')) return;
+    }
+
+    sposta.disabled = true;
+    sposta.textContent = 'Sposto...';
+    try {
+      const inArrivo = delGirone.filter((i) => i.turno === destinazione);
+      const coda = inArrivo.reduce((max, i) => Math.max(max, i.ordine), -1) + 1;
+
+      const { error } = await supabaseClient
+        .from('torneo_incontri')
+        .update({ turno: destinazione, ordine: coda })
+        .eq('id', incontro.id);
+      if (error) throw error;
+
+      showToast(`Incontro spostato nel turno ${destinazione}.`);
+      await ricaricaTorneo();
+    } catch (e) {
+      console.error(e);
+      mostraErroreTorneo(e, 'Impossibile spostare l\'incontro di turno.');
+      sposta.disabled = false;
+      sposta.textContent = 'Sposta';
+    }
+  });
+
+  riga.appendChild(menu);
+  riga.appendChild(sposta);
+  return riga;
 }
 
 /**
