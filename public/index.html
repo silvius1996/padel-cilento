@@ -4412,9 +4412,8 @@ function creaBloccoFinali(incontri) {
     et.textContent = NOMI_FASE[fase] || fase;
     wrap.appendChild(et);
 
-    dellaFase
-      .sort((a, b) => a.ordine - b.ordine)
-      .forEach((i) => wrap.appendChild(creaRigaIncontro(i)));
+    const ordinati = dellaFase.slice().sort((a, b) => a.ordine - b.ordine);
+    ordinati.forEach((i) => wrap.appendChild(creaRigaIncontro(i, ordinati)));
   });
 
   return wrap;
@@ -4537,7 +4536,8 @@ function creaCalendarioGirone(incontri) {
       : `Turno ${turno}`;
     wrap.appendChild(et);
 
-    perTurno.get(turno).forEach((i) => wrap.appendChild(creaRigaIncontro(i)));
+    const delTurno = perTurno.get(turno).slice().sort((a, b) => a.ordine - b.ordine);
+    delTurno.forEach((i) => wrap.appendChild(creaRigaIncontro(i, delTurno)));
   });
 
   return wrap;
@@ -4561,7 +4561,7 @@ function etichettaCasella(incontro, lato) {
   return '—';
 }
 
-function creaRigaIncontro(incontro) {
+function creaRigaIncontro(incontro, gruppo) {
   const squadra = (id) => torneoDati.squadre.find((s) => s.id === id);
   const casa = squadra(incontro.squadra_casa);
   const ospite = squadra(incontro.squadra_ospite);
@@ -4597,6 +4597,16 @@ function creaRigaIncontro(incontro) {
   linea.appendChild(punteggio);
   riga.appendChild(linea);
 
+  // L'ora e il campo, quando il circolo li ha scritti. Chi gioca legge
+  // qui quando tocca a lui: e' l'unica informazione che cerca.
+  if (incontro.ora || incontro.campo) {
+    const quando = document.createElement('p');
+    quando.className = 'mt-1 text-[11px] text-court-300';
+    quando.textContent = [oraBreve(incontro.ora), incontro.campo]
+      .filter(Boolean).join(' · ');
+    riga.appendChild(quando);
+  }
+
   // Una casella del tabellone senza entrambe le squadre non e' ancora
   // un incontro: aspetta chi vince il turno prima.
   const pronta = incontro.squadra_casa && incontro.squadra_ospite;
@@ -4605,7 +4615,158 @@ function creaRigaIncontro(incontro) {
     riga.appendChild(creaAzioniIncontro(incontro, riga));
   }
 
+  // L'ordine di gioco si cambia fino a torneo concluso: un campo che si
+  // libera tardi o una coppia in ritardo non sono un errore da correggere
+  // prima dell'avvio, succedono mentre si gioca.
+  if (gestisceTorneo(torneoCorrente) && torneoCorrente.stato !== 'concluso'
+      && torneoCorrente.stato !== 'annullato') {
+    riga.appendChild(creaOrarioIncontro(incontro, gruppo));
+  }
+
   return riga;
+}
+
+/** "14:30:00" del database diventa "14:30": i secondi non li legge nessuno. */
+function oraBreve(ora) {
+  return ora ? String(ora).slice(0, 5) : '';
+}
+
+/**
+ * Ora, campo e posto nella fila. Sono le tre cose che un torneo vero
+ * cambia in giornata: il calendario generato dice CHI gioca contro chi,
+ * non a che ora si entra in campo.
+ *
+ * Lo spostamento scambia il campo "ordine" con l'incontro vicino dello
+ * stesso turno. Restare dentro al turno e' voluto: gli accoppiamenti del
+ * girone all'italiana valgono perche' in ogni turno una squadra gioca
+ * una volta sola, e mescolare i turni butterebbe via quella garanzia.
+ */
+function creaOrarioIncontro(incontro, gruppo) {
+  const vicini = Array.isArray(gruppo) ? gruppo : [incontro];
+  const posizione = vicini.findIndex((i) => i.id === incontro.id);
+
+  const box = document.createElement('div');
+  box.className = 'mt-2';
+
+  const apri = document.createElement('button');
+  apri.type = 'button';
+  apri.className = 'w-full py-1.5 rounded-lg border border-court-500 text-[11px] font-semibold '
+    + 'text-white/70 hover:border-lime-neon hover:text-lime-neon transition-colors';
+  apri.textContent = 'Orario e ordine di gioco';
+  box.appendChild(apri);
+
+  apri.addEventListener('click', () => {
+    box.innerHTML = '';
+
+    const form = document.createElement('div');
+    form.className = 'space-y-1.5';
+
+    const riga1 = document.createElement('div');
+    riga1.className = 'flex items-center gap-1.5';
+
+    const ora = document.createElement('input');
+    ora.type = 'time';
+    ora.value = oraBreve(incontro.ora);
+    ora.className = 'flex-1 min-w-0 bg-court-800 border border-court-500 rounded-lg px-2 py-1.5 '
+      + 'text-xs text-white focus:border-lime-neon outline-none';
+
+    const campo = document.createElement('input');
+    campo.type = 'text';
+    campo.maxLength = 40;
+    campo.placeholder = 'Campo';
+    campo.value = incontro.campo || '';
+    campo.className = 'flex-1 min-w-0 bg-court-800 border border-court-500 rounded-lg px-2 py-1.5 '
+      + 'text-xs text-white focus:border-lime-neon outline-none';
+
+    riga1.appendChild(ora);
+    riga1.appendChild(campo);
+    form.appendChild(riga1);
+
+    const errore = document.createElement('p');
+    errore.className = 'hidden text-[11px] text-red-400 font-medium';
+    form.appendChild(errore);
+
+    const salva = document.createElement('button');
+    salva.type = 'button';
+    salva.className = 'w-full bg-lime-neon text-court-900 font-display font-700 py-2 rounded-lg text-xs';
+    salva.textContent = 'Salva orario e campo';
+    salva.addEventListener('click', async () => {
+      salva.disabled = true;
+      salva.textContent = 'Salvataggio...';
+      try {
+        const { error } = await supabaseClient
+          .from('torneo_incontri')
+          .update({
+            ora: ora.value ? ora.value : null,
+            campo: campo.value.trim() || null,
+          })
+          .eq('id', incontro.id);
+        if (error) throw error;
+        showToast('Orario aggiornato.');
+        await ricaricaTorneo();
+      } catch (e) {
+        console.error(e);
+        errore.textContent = messaggioErrore(e, 'Impossibile salvare l\'orario.');
+        errore.classList.remove('hidden');
+        salva.disabled = false;
+        salva.textContent = 'Salva orario e campo';
+      }
+    });
+    form.appendChild(salva);
+
+    if (vicini.length > 1 && posizione >= 0) {
+      const spostamenti = document.createElement('div');
+      spostamenti.className = 'flex items-center gap-1.5';
+
+      [['Sposta su', -1], ['Sposta giu', 1]].forEach(([testo, passo]) => {
+        const vicino = vicini[posizione + passo];
+        const bottone = document.createElement('button');
+        bottone.type = 'button';
+        bottone.className = 'flex-1 py-1.5 rounded-lg border border-court-500 text-[11px] '
+          + 'font-semibold text-white/70 disabled:opacity-30';
+        bottone.textContent = testo;
+        bottone.disabled = !vicino;
+        bottone.addEventListener('click', async () => {
+          bottone.disabled = true;
+          try {
+            await scambiaOrdineIncontri(incontro, vicino);
+            showToast('Ordine di gioco aggiornato.');
+            await ricaricaTorneo();
+          } catch (e) {
+            console.error(e);
+            errore.textContent = messaggioErrore(e, 'Impossibile spostare l\'incontro.');
+            errore.classList.remove('hidden');
+            bottone.disabled = false;
+          }
+        });
+        spostamenti.appendChild(bottone);
+      });
+
+      form.appendChild(spostamenti);
+    }
+
+    box.appendChild(form);
+  });
+
+  return box;
+}
+
+/**
+ * Scambia il posto di due incontri. Il valore "ordine" e' unico solo per
+ * modo di dire, ma due righe con lo stesso numero si disegnerebbero in
+ * ordine casuale: si passa da un valore di appoggio negativo, che nessun
+ * calendario genera, per non averle mai uguali nemmeno per un istante.
+ */
+async function scambiaOrdineIncontri(a, b) {
+  const scrivi = async (id, ordine) => {
+    const { error } = await supabaseClient
+      .from('torneo_incontri').update({ ordine }).eq('id', id);
+    if (error) throw error;
+  };
+
+  await scrivi(a.id, -1);
+  await scrivi(b.id, a.ordine);
+  await scrivi(a.id, b.ordine);
 }
 
 /** Inserimento del punteggio, riservato a chi organizza. */
