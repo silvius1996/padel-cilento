@@ -5,7 +5,7 @@
   "description": "Trova e organizza partite di Padel nel Cilento",
   "scripts": {
     "dev": "vercel dev",
-    "deploy": "vercel build --prod && vercel deploy --prebuilt --prod",
+    "deploy": "vercel pull --yes --environment=production && npm run build:css && vercel deploy --prod",
     "build:css": "tailwindcss -c tailwind.config.js -i src/tailwind.css -o public/styles.css --minify",
     "test": "node test/db.test.mjs && node test/app.test.mjs",
     "test:db": "node test/db.test.mjs",

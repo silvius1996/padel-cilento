@@ -141,15 +141,26 @@ jobs:
         env:
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
 
-      # Tre comandi invece di uno perche' la compilazione avviene qui,
-      # non sui server di Vercel: si carica il risultato gia' pronto
-      # ("--prebuilt"). Cosi' se il foglio di stile non compila, il
-      # workflow si ferma e in produzione non arriva niente.
+      # LA BUILD LA FA VERCEL, NON QUESTO RUNNER
       #
-      #   pull    scarica le impostazioni del progetto (senza questo,
-      #           "build" non saprebbe che si sta preparando la produzione)
-      #   build   rigenera public/styles.css e prepara .vercel/output
-      #   deploy  carica e mette online
+      # Prima si compilava qui e si caricava il risultato pronto con
+      # "vercel build" + "deploy --prebuilt". Funzionava, ma un
+      # deployment prebuilt non passa dalla build della piattaforma, e
+      # con essa si perdono le rotte che Vercel aggiunge da se':
+      # /_vercel/insights/script.js e /_vercel/insights/view, cioe' il
+      # conteggio delle visite. Rispondevano 404 e Analytics restava a
+      # zero. Un deployment prebuilt, per lo stesso motivo, non si puo'
+      # nemmeno rifare dal pannello: non ha sorgenti da ricostruire.
+      #
+      # Ora si carica il codice e la compilazione avviene la', con
+      # l'installCommand e il buildCommand scritti in vercel.json.
+      #
+      # La garanzia che si voleva col prebuilt resta: "build:css" gira
+      # anche qui, un passo prima. Se il foglio di stile non compila il
+      # workflow si ferma e in produzione non arriva niente.
+      - name: Controlla che gli stili compilino
+        run: npm run build:css
+
       - name: Pubblica il sito
         env:
           TOKEN: ${{ secrets.VERCEL_TOKEN }}
@@ -159,5 +170,18 @@ jobs:
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
         run: |
           npx vercel pull --yes --environment=production --token="$TOKEN"
-          npx vercel build --prod --token="$TOKEN"
-          npx vercel deploy --prebuilt --prod --token="$TOKEN"
+          npx vercel deploy --prod --token="$TOKEN"
+
+      # Se il conteggio delle visite torna a mancare, meglio saperlo qui
+      # che scoprirlo fra un mese guardando un grafico vuoto. E' un
+      # avviso e non un errore: il sito a quel punto e' gia' online e
+      # funzionante, e far diventare rosso il workflow per un contatore
+      # spento vorrebbe dire non fidarsi piu' del segnale rosso.
+      - name: Il conteggio delle visite risponde
+        run: |
+          stato=$(curl -s -o /dev/null -w "%{http_code}" \
+            https://padel-cilento.vercel.app/_vercel/insights/script.js)
+          echo "/_vercel/insights/script.js -> $stato"
+          if [ "$stato" != "200" ]; then
+            echo "::warning::Sito pubblicato, ma Vercel non serve lo script delle visite (HTTP $stato). Controlla che Web Analytics sia acceso nel pannello del progetto."
+          fi
