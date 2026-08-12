@@ -256,7 +256,15 @@ i criteri di parità — ed è per questo che vanno definiti bene.
 3. **Differenza set** (set vinti meno set persi)
 4. **Differenza game**
 5. **Game fatti**
-6. **Decisione del circolo** (sorteggio), registrata e visibile
+6. **Decisione del circolo** dopo uno spareggio, registrata e visibile
+   (aggiornamento n.29: colonna `spareggio`, bollino **SP** in classifica)
+
+L'ultimo criterio è l'ultimo davvero: finché i numeri dicono qualcosa
+comandano loro, e una posizione assegnata a mano non ribalta mai un
+risultato del campo. Il caso in cui serve è il girone da tre a set
+unico, dove ognuna vince una partita: lì la differenza set è zero per
+tutte, la ridotta coincide con la classifica intera, e se anche i game
+sono pari non resta niente da contare.
 
 Il caso che rompe quasi tutte le classifiche fatte in casa: **con tre o più
 squadre a pari punti lo scontro diretto singolo non ha senso.** Si costruisce

@@ -39,6 +39,7 @@ const PARTITA_ADMIN = 'aaaaaaaa-0000-0000-0000-000000000005';      // moderazion
 const CIRCOLO_NOME = 'Padel Agropoli';
 const TORNEO = 'cccccccc-0000-0000-0000-000000000001';
 const TORNEO_PARITA = 'cccccccc-0000-0000-0000-000000000002';
+const TORNEO_SPAREGGIO = 'cccccccc-0000-0000-0000-000000000009';
 const TORNEO_FINALI = 'cccccccc-0000-0000-0000-000000000003';
 
 let db;
@@ -1998,6 +1999,118 @@ async function testParitaClassifica() {
 }
 
 /**
+ * Lo spareggio (aggiornamento n.29): il girone da tre a set unico in
+ * cui i numeri finiscono davvero, e decide il circolo.
+ */
+async function testSpareggio() {
+  console.log('\nSPAREGGIO DECISO DAL CIRCOLO');
+
+  await db.exec('reset role');
+  const { rows: c } = await db.query('select id from public.circoli where nome = $1', [CIRCOLO_NOME]);
+
+  await come(U.bea);
+  await db.exec('set role authenticated');
+  await db.query(
+    `insert into public.tornei (id, circolo_id, nome, creato_da, formato_punteggio)
+     values ($1, $2, 'Torneo spareggio', $3, 'set_unico')`,
+    [TORNEO_SPAREGGIO, c[0].id, U.bea],
+  );
+  await db.query(
+    `insert into public.tornei_gironi (torneo_id, nome, ordine) values ($1, 'A', 1)`,
+    [TORNEO_SPAREGGIO],
+  );
+  const { rows: g } = await db.query(
+    'select id from public.tornei_gironi where torneo_id = $1', [TORNEO_SPAREGGIO],
+  );
+  const girone = g[0].id;
+
+  const squadre = {};
+  for (const nome of ['Alfa', 'Emme', 'Zeta']) {
+    const { rows } = await db.query(
+      `insert into public.torneo_squadre (torneo_id, nome, giocatore_1, giocatore_2, girone_id)
+       values ($1, $2, $3, $4, $5) returning id`,
+      [TORNEO_SPAREGGIO, nome, `${nome} Uno`, `${nome} Due`, girone],
+    );
+    squadre[nome] = rows[0].id;
+  }
+
+  const incontro = async (casa, ospite, sets) => {
+    const { rows } = await db.query(
+      `insert into public.torneo_incontri
+         (torneo_id, girone_id, fase, turno, squadra_casa, squadra_ospite)
+       values ($1, $2, 'girone', 1, $3, $4) returning id`,
+      [TORNEO_SPAREGGIO, girone, squadre[casa], squadre[ospite]],
+    );
+    await db.query(`update public.torneo_incontri set sets = $2::jsonb where id = $1`,
+      [rows[0].id, sets]);
+  };
+
+  // Il cerchio perfetto: ognuna vince un set unico con lo stesso
+  // punteggio. Tre punti a testa, differenza set zero per tutte
+  // (a set unico chi vince ne prende uno e chi perde nessuno),
+  // dieci game fatti e dieci subiti ciascuna. Nessun numero separa
+  // piu' niente.
+  await db.exec('reset role');
+  await incontro('Alfa', 'Emme', '[[6,4]]');
+  await incontro('Emme', 'Zeta', '[[6,4]]');
+  await incontro('Zeta', 'Alfa', '[[6,4]]');
+
+  const { rows: prima } = await db.query('select * from public.classifica_girone($1)', [girone]);
+
+  esito('tre punti a testa', prima.every((r) => r.punti === 3),
+    JSON.stringify(prima.map((r) => [r.nome, r.punti])));
+  esito('e nessuna differenza a separarle',
+    prima.every((r) => r.game_fatti === 10 && r.game_subiti === 10
+      && r.set_vinti === 1 && r.set_persi === 1),
+    JSON.stringify(prima.map((r) => `${r.nome} ${r.game_fatti}-${r.game_subiti}`)));
+  uguale('senza spareggio decide l alfabeto', 'Alfa', prima[0].nome);
+  esito('e nessuna riga dichiara uno spareggio',
+    prima.every((r) => r.spareggio === null));
+
+  // Il circolo fa giocare lo spareggio e scrive l'ordine che ne esce.
+  await come(U.bea);
+  await db.exec('set role authenticated');
+  for (const [nome, posto] of [['Zeta', 1], ['Emme', 2], ['Alfa', 3]]) {
+    await db.query('update public.torneo_squadre set spareggio = $2 where id = $1',
+      [squadre[nome], posto]);
+  }
+
+  const { rows: dopo } = await db.query('select * from public.classifica_girone($1)', [girone]);
+  uguale('lo spareggio ribalta la parita', 'Zeta', dopo[0].nome);
+  uguale('e mette in fila anche le altre', 'Emme', dopo[1].nome);
+  uguale('fino all ultima', 'Alfa', dopo[2].nome);
+  esito('la classifica dice che la posizione viene da li',
+    dopo.every((r) => r.spareggio !== null),
+    JSON.stringify(dopo.map((r) => `${r.nome}:${r.spareggio}`)));
+
+  await deveFallire(
+    'due coppie non possono avere lo stesso posto da spareggio',
+    () => db.query('update public.torneo_squadre set spareggio = 1 where id = $1',
+      [squadre['Emme']]),
+    'duplicate key',
+  );
+
+  // La prova che conta: lo spareggio e' l'ultimo criterio, non il
+  // primo. Nel girone di testParitaClassifica le tre squadre hanno
+  // differenze game diverse, e li' il circolo non puo' ribaltare
+  // niente nemmeno volendo.
+  const { rows: gp } = await db.query(
+    'select id from public.tornei_gironi where torneo_id = $1', [TORNEO_PARITA],
+  );
+  await db.query(
+    `update public.torneo_squadre set spareggio = 1
+     where girone_id = $1 and nome = 'Beta'`, [gp[0].id],
+  );
+  const { rows: intatta } = await db.query(
+    'select * from public.classifica_girone($1)', [gp[0].id],
+  );
+  uguale('dove i numeri parlano lo spareggio non tocca il primo posto', 'Alfa', intatta[0].nome);
+  uguale('ne l ultimo', 'Beta', intatta[2].nome);
+
+  await db.exec('reset role');
+}
+
+/**
  * Il tabellone (aggiornamento n.16): dalle qualificate dei gironi
  * alla finale, con i vincitori che avanzano da soli.
  */
@@ -2924,6 +3037,7 @@ async function main() {
   await testCircoli();
   await testTornei();
   await testParitaClassifica();
+  await testSpareggio();
   await testTabellone();
   await testSetUnico();
   await testFormatoFinali();

@@ -3701,6 +3701,62 @@ function renderCollegamenti() {
     titolo.textContent = nomeSquadra(squadra);
     intestazione.appendChild(titolo);
 
+    // La posizione decisa dallo spareggio. Serve nel caso raro in cui
+    // due coppie restano pari fino ai game fatti: li' i numeri non
+    // dicono piu' niente e decide il circolo facendole giocare. Vuota
+    // com'e' di norma, non cambia nessuna classifica.
+    const spareggio = document.createElement('select');
+    spareggio.className = 'bg-court-900 border border-court-500 rounded-lg px-2 py-1 '
+      + 'text-[11px] text-white focus:border-lime-neon outline-none shrink-0';
+    spareggio.title = squadra.girone_id
+      ? 'Posizione decisa dallo spareggio, se il resto e pari'
+      : 'Prima assegna la coppia a un girone';
+    spareggio.disabled = !squadra.girone_id;
+
+    const senzaSpareggio = document.createElement('option');
+    senzaSpareggio.value = '';
+    senzaSpareggio.textContent = 'Sp —';
+    spareggio.appendChild(senzaSpareggio);
+
+    const nelGirone = squadra.girone_id
+      ? torneoDati.squadre.filter((s) => s.girone_id === squadra.girone_id).length
+      : 0;
+    for (let i = 1; i <= nelGirone; i += 1) {
+      const o = document.createElement('option');
+      o.value = String(i);
+      o.textContent = `Sp ${i}`;
+      if (squadra.spareggio === i) o.selected = true;
+      spareggio.appendChild(o);
+    }
+
+    spareggio.addEventListener('change', async () => {
+      spareggio.disabled = true;
+      try {
+        const { error } = await supabaseClient
+          .from('torneo_squadre')
+          .update({ spareggio: spareggio.value ? Number(spareggio.value) : null })
+          .eq('id', squadra.id)
+          .select('id');
+        if (error) throw error;
+        showToast(spareggio.value
+          ? 'Posizione da spareggio assegnata.'
+          : 'Posizione da spareggio tolta.');
+        await ricaricaTorneo();
+      } catch (e) {
+        console.error(e);
+        // Il numero e' gia' di un'altra coppia dello stesso girone:
+        // dirlo com'e', invece del generico "esiste gia' un elemento".
+        mostraErroreTorneo(
+          e.code === '23505' ? null : e,
+          e.code === '23505'
+            ? 'Un altra coppia di questo girone ha gia questa posizione da spareggio.'
+            : 'Impossibile assegnare la posizione da spareggio.',
+        );
+        spareggio.disabled = false;
+      }
+    });
+    intestazione.appendChild(spareggio);
+
     // Spostare di girone e cancellare si possono fare finche' nessuno ha
     // giocato. Da li' in poi il database rifiuta: qui si evita solo di
     // mostrare comandi che darebbero errore.
@@ -4485,8 +4541,24 @@ function creaTabellaClassifica(righe) {
     pos.textContent = String(r.posizione);
 
     const nome = document.createElement('span');
-    nome.className = 'flex-1 text-xs font-semibold truncate';
-    nome.textContent = r.nome;
+    nome.className = 'flex-1 min-w-0 flex items-center gap-1';
+
+    const testoNome = document.createElement('span');
+    testoNome.className = 'text-xs font-semibold truncate';
+    testoNome.textContent = r.nome;
+    nome.appendChild(testoNome);
+
+    // Una posizione decisa a tavolino va detta a chi guarda: e' la
+    // sola riga della classifica che non si spiega con i numeri
+    // scritti accanto.
+    if (r.spareggio != null) {
+      const segno = document.createElement('span');
+      segno.className = 'shrink-0 text-[9px] font-semibold text-lime-neon '
+        + 'border border-lime-neon/40 rounded px-1 py-0.5 leading-none';
+      segno.textContent = 'SP';
+      segno.title = 'Posizione decisa dallo spareggio, a parita totale';
+      nome.appendChild(segno);
+    }
 
     const g = document.createElement('span');
     g.className = 'w-6 text-center text-[11px] text-court-300';
