@@ -2140,6 +2140,14 @@ async function testTabellone() {
     gironi[nome] = rows[0].id;
   }
 
+  // Un girone in piu', creato per sbaglio e rimasto vuoto: non deve
+  // entrare nel conto delle qualificate (sarebbero sei, e il
+  // tabellone non nascerebbe).
+  const { rows: vuoto } = await db.query(
+    `insert into public.tornei_gironi (torneo_id, nome, ordine) values ($1, 'C', 3) returning id`,
+    [TORNEO_FINALI],
+  );
+
   const squadre = {};
   for (const [nome, girone] of [['A1', 'A'], ['A2', 'A'], ['B1', 'B'], ['B2', 'B']]) {
     const { rows } = await db.query(
@@ -2176,6 +2184,12 @@ async function testTabellone() {
   );
   // 2 semifinali + 1 finale + 1 finale terzo posto
   uguale('il tabellone ha 4 incontri', 4, creati[0].n);
+  esito('un girone vuoto non conta fra le qualificate', creati[0].n === 4);
+
+  // E il girone vuoto si puo' togliere anche a torneo avviato
+  await deveRiuscire('il girone vuoto si cancella', () => db.query(
+    'delete from public.tornei_gironi where id = $1', [vuoto[0].id],
+  ));
 
   await db.exec('reset role');
   const semifinali = async () => (await db.query(
