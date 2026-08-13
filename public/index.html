@@ -4537,6 +4537,11 @@ function creaBloccoGirone(girone) {
   // non tornano.
   const squadreDentro = torneoDati.squadre.filter((s) => s.girone_id === girone.id);
   if (gestisceTorneo(torneoCorrente) && squadreDentro.length === 0 && incontri.length === 0) {
+    const nota = document.createElement('p');
+    nota.className = 'mt-2 text-[11px] text-court-300';
+    nota.textContent = 'Girone vuoto: non conta per le finali. Se e stato creato per sbaglio, eliminalo.';
+    wrap.appendChild(nota);
+
     const elimina = document.createElement('button');
     elimina.type = 'button';
     elimina.className = 'mt-2 w-full py-2 rounded-xl border border-red-500/40 '
