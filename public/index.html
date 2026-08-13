@@ -66,13 +66,32 @@
       }
       return String(valore);
     };
+    // I guasti di rete non sono difetti dell'app: una richiesta che non
+    // parte perche' il telefono ha cambiato Wi-Fi, o perche' iOS ha
+    // stroncato la pagina passata in secondo piano, si risolve da se'
+    // ricaricando, e non c'e' niente da correggere nel codice.
+    //
+    // Restano in console, dove servono a chi sta guardando in quel
+    // momento, ma non arrivano a Sentry: con quaranta persone al circolo
+    // che aprono il tabellone sul 4G riempirebbero la casella di
+    // segnalazioni su cui non si puo' fare nulla, e il primo errore vero
+    // finirebbe in mezzo a quelle senza che nessuno lo veda.
+    //
+    // Ogni browser lo dice a modo suo: "Load failed" e' Safari,
+    // "Failed to fetch" Chrome, "NetworkError" Firefox.
+    const GUASTI_DI_RETE = /load failed|failed to fetch|networkerror|network request failed|the operation was aborted|aborterror|err_(internet_disconnected|network_changed|connection|name_not_resolved|timed_out)/i;
+
     console.error = (...args) => {
       consoleErrorOriginale(...args);
+
+      const testo = args.map(serializzaPerSentry).join(' ');
+      if (GUASTI_DI_RETE.test(testo)) return;
+
       const errore = args.find((a) => a instanceof Error);
       if (errore) {
         Sentry.captureException(errore);
       } else {
-        Sentry.captureMessage(args.map(serializzaPerSentry).join(' '), 'error');
+        Sentry.captureMessage(testo, 'error');
       }
     };
   }
