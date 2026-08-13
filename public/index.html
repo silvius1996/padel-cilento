@@ -4531,7 +4531,50 @@ function creaBloccoGirone(girone) {
     (i) => i.girone_id === girone.id && i.fase === 'girone');
   if (incontri.length > 0) wrap.appendChild(creaCalendarioGirone(incontri));
 
+  // Un girone creato per sbaglio si toglie finche' e' vuoto: nessuna
+  // coppia dentro e nessun incontro. Vale anche a torneo avviato,
+  // perche' e' li' che ci si accorge che i conti delle qualificate
+  // non tornano.
+  const squadreDentro = torneoDati.squadre.filter((s) => s.girone_id === girone.id);
+  if (gestisceTorneo(torneoCorrente) && squadreDentro.length === 0 && incontri.length === 0) {
+    const nota = document.createElement('p');
+    nota.className = 'mt-2 text-[11px] text-court-300';
+    nota.textContent = 'Girone vuoto: non conta per le finali. Se e stato creato per sbaglio, eliminalo.';
+    wrap.appendChild(nota);
+
+    const elimina = document.createElement('button');
+    elimina.type = 'button';
+    elimina.className = 'mt-2 w-full py-2 rounded-xl border border-red-500/40 '
+      + 'text-red-400 text-[12px] font-semibold';
+    elimina.textContent = 'Elimina il girone';
+    elimina.addEventListener('click', () => eliminaGirone(girone));
+    wrap.appendChild(elimina);
+  }
+
   return wrap;
+}
+
+/**
+ * Toglie un girone rimasto vuoto. Il database cancella comunque solo
+ * cio' che gli si chiede: qui si e' gia' verificato che dentro non ci
+ * sia niente.
+ */
+async function eliminaGirone(girone) {
+  if (!confirm(`Eliminare il girone ${girone.nome}? E' vuoto, non si perde nessun risultato.`)) return;
+
+  el.torneoDetailError.classList.add('hidden');
+  try {
+    const { error } = await supabaseClient
+      .from('tornei_gironi')
+      .delete()
+      .eq('id', girone.id);
+    if (error) throw error;
+    showToast(`Girone ${girone.nome} eliminato.`);
+    await ricaricaTorneo();
+  } catch (e) {
+    console.error(e);
+    mostraErroreTorneo(e, 'Impossibile eliminare il girone.');
+  }
 }
 
 function creaTabellaClassifica(righe) {
@@ -5262,13 +5305,20 @@ async function cambiaStatoTorneo(nuovo, etichetta) {
 
 el.btnAggiungiGirone.addEventListener('click', async () => {
   el.torneoDetailError.classList.add('hidden');
-  // I gironi si chiamano A, B, C... nell'ordine in cui nascono
-  const lettera = String.fromCharCode(65 + torneoDati.gironi.length);
+  // I gironi si chiamano A, B, C... e si prende la prima lettera
+  // libera: dopo aver cancellato un girone di mezzo, contare quelli
+  // rimasti darebbe un nome gia' in uso.
+  const usate = new Set(torneoDati.gironi.map((g) => g.nome));
+  let lettera = 'A';
+  for (let k = 0; k < 26; k += 1) {
+    lettera = String.fromCharCode(65 + k);
+    if (!usate.has(lettera)) break;
+  }
   try {
     const { error } = await supabaseClient.from('tornei_gironi').insert({
       torneo_id: torneoCorrente.id,
       nome: lettera,
-      ordine: torneoDati.gironi.length + 1,
+      ordine: torneoDati.gironi.reduce((m, g) => Math.max(m, g.ordine || 0), 0) + 1,
     });
     if (error) throw error;
     await ricaricaTorneo();

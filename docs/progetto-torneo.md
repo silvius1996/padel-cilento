@@ -320,6 +320,9 @@ Le regole:
 - se le qualificate non sono una potenza di due (6 squadre, per dire), le meglio
   piazzate saltano il primo turno. È la parte più noiosa: per la prima versione
   si accettano **solo 2, 4 o 8 qualificate** e i turni di riposo si rimandano;
+- nel conto delle qualificate entrano **solo i gironi con almeno una squadra**: un
+  girone creato per sbaglio e rimasto vuoto non manda nessuno alle finali, e si
+  cancella dalla pagina del torneo finché è vuoto;
 - finale per il terzo posto: facoltativa, scelta alla creazione.
 
 ---
