@@ -88,6 +88,15 @@ intervenire ovunque.
 Sono due colonne e un controllo, ed è il motivo per cui vanno messe subito:
 aggiungerle dopo significa rimettere le mani in ogni permesso.
 
+Le due colonne non si leggono dalla tabella: il permesso su `circoli` è concesso
+colonna per colonna e `abbonamento_scade_il` ne resta fuori, perché non è
+anagrafica ma il contratto. Le legge `stato_abbonamento()`, che risponde al
+gestore sul proprio circolo e all'amministratore su chiunque, ed è ciò che
+l'app usa per l'avviso in cima alla pagina Tornei. Un cancello che non dice
+perché è chiuso non è un cancello, è un guasto: per questo, oltre all'avviso,
+un trigger su `tornei` sostituisce il rifiuto muto delle policy con la frase
+che nomina la scadenza.
+
 Poi due collegamenti:
 
 - `profiles.circolo_id` → di quale circolo sono gestore

@@ -258,6 +258,40 @@ Il circolo e anche un **cliente**: `circoli.attivo` e
 `circoli.abbonamento_scade_il` decidono se puo ancora creare. Chi non rinnova
 resta visibile con i suoi tornei, ma non crea piu nulla.
 
+### Far pagare un circolo
+
+Il pagamento avviene **fuori dall'app** — bonifico, Satispay, quello che si
+preferisce. L'app non incassa: registra soltanto fino a quando un cliente e in
+regola. Incassato il dovuto, si sposta la data dall'Editor SQL di Supabase:
+
+```sql
+update public.circoli
+set attivo = true, abbonamento_scade_il = '2026-09-30'
+where lower(trim(nome)) = lower(trim('Nome del Circolo'));
+```
+
+Da quel momento in poi non serve fare altro: alla data indicata
+`circolo_utilizzabile()` smette di rispondere di si, e con lei
+`e_gestore_del_circolo()`, da cui dipendono tutti i permessi dei tornei.
+
+Il cliente **lo sa prima di sbatterci contro**. In cima alla pagina Tornei il
+gestore, e solo lui, legge lo stato del proprio abbonamento: la data quando c'e,
+un avviso quando mancano due settimane o meno, un riquadro rosso quando e
+scaduto — e allora il pulsante *Crea un torneo* non compare nemmeno. Se ci
+prova lo stesso da un'altra strada, il rifiuto lo dice a parole ("l'abbonamento
+del circolo e scaduto il ...") invece del generico "non hai i permessi": lo fa
+un trigger su `tornei`, che si esegue prima delle policy proprio per poter
+sostituire quel messaggio.
+
+Le due colonne commerciali **non sono pubbliche**: dall'aggiornamento n.31 il
+permesso di lettura su `circoli` e concesso colonna per colonna e
+`abbonamento_scade_il` ne resta fuori. L'unica porta e `stato_abbonamento()`,
+che risponde al gestore sul proprio circolo e all'amministratore su chiunque.
+
+> Aggiungendo una colonna a `circoli`, va aggiunta anche all'elenco dei permessi
+> in `20260822090000_abbonamento_visibile.sql`, altrimenti l'app non riuscira a
+> leggerla.
+
 ## Privacy
 
 - Le **partite** sono pubbliche: orario, circolo, livello e posti liberi si vedono
