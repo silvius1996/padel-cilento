@@ -158,7 +158,7 @@ function rispostaPer(url, torneoId) {
 
   // Il torneo aperto viene letto con .single(): una riga sola, non
   // un elenco. Vale sia all'apertura sia a ogni ricarica.
-  if (via.endsWith('/tornei')) return torneoId === null ? [] : TORNEI[torneoId];
+  if (via.endsWith('/tornei')) return torneoId === null ? ELENCO_TORNEI : TORNEI[torneoId];
 
   if (via.endsWith('/tornei_gironi')) return GIRONI.map((g) => ({ ...g, torneo_id: torneoId }));
   if (via.endsWith('/torneo_squadre')) return SQUADRE.map((s) => ({ ...s, torneo_id: torneoId }));
@@ -178,6 +178,21 @@ let torneoAperto = 't_secco';
 
 /** Cosa risponde stato_abbonamento(): lo decide il test di turno. */
 let abbonamento = [];
+
+/**
+ * L'elenco della pagina Tornei. Non e' un dettaglio del banco di
+ * prova: con l'elenco vuoto apriTornei() esce a meta', e la meta'
+ * che salta e' proprio quella che rimetteva il pulsante "Crea un
+ * torneo" davanti a un circolo scaduto. Un circolo che ha gia'
+ * organizzato qualcosa e' il caso normale, ed e' quello che va
+ * provato.
+ */
+const ELENCO_TORNEI = [
+  { id: 't_gold', nome: 'Torneo Gold Village', stato: 'concluso',
+    livello: 'avanzato', data_inizio: '2026-08-13', circoli: { nome: 'Padel Village Agropoli' } },
+  { id: 't_bronze', nome: 'Torneo Bronze', stato: 'concluso',
+    livello: 'intermedio', data_inizio: '2026-08-11', circoli: { nome: 'Padel Village Agropoli' } },
+];
 
 async function intercetta(context) {
   await context.route(/fonts\.(googleapis|gstatic)\.com|sentry/, (route) => route.abort());
