@@ -151,9 +151,14 @@ function rispostaPer(url, torneoId) {
   if (via.endsWith('/rpc/statistiche_giocatore')) return [];
   if (via.endsWith('/rpc/classifica')) return [];
 
+  // Lo stato commerciale del circolo. Vuoto per quasi tutti i test:
+  // un circolo senza scadenza non ha niente da farsi dire.
+  if (via.endsWith('/rpc/stato_abbonamento')) return abbonamento;
+  if (via.endsWith('/rpc/albo_tornei')) return [];
+
   // Il torneo aperto viene letto con .single(): una riga sola, non
   // un elenco. Vale sia all'apertura sia a ogni ricarica.
-  if (via.endsWith('/tornei')) return TORNEI[torneoId];
+  if (via.endsWith('/tornei')) return torneoId === null ? [] : TORNEI[torneoId];
 
   if (via.endsWith('/tornei_gironi')) return GIRONI.map((g) => ({ ...g, torneo_id: torneoId }));
   if (via.endsWith('/torneo_squadre')) return SQUADRE.map((s) => ({ ...s, torneo_id: torneoId }));
@@ -170,6 +175,9 @@ function rispostaPer(url, torneoId) {
  */
 const salvataggi = [];
 let torneoAperto = 't_secco';
+
+/** Cosa risponde stato_abbonamento(): lo decide il test di turno. */
+let abbonamento = [];
 
 async function intercetta(context) {
   await context.route(/fonts\.(googleapis|gstatic)\.com|sentry/, (route) => route.abort());
@@ -538,6 +546,91 @@ async function testCampoDaGioco(page) {
   esito('ma vede i posti liberi', estraneo.posti[1].cliccabile && estraneo.posti[3].cliccabile);
 }
 
+/**
+ * L'avviso di abbonamento (aggiornamento n.31).
+ *
+ * Il circolo scaduto non deve trovarsi davanti "Crea un torneo" per
+ * poi scoprire dal rifiuto che non puo': deve leggerlo prima, in
+ * cima alla pagina. Il profilo di questi test e' gia' quello di un
+ * gestore, quindi cambia solo cosa risponde il database.
+ */
+async function testAvvisoAbbonamento(page) {
+  titolo('L avviso di abbonamento in cima ai tornei');
+
+  // Il test precedente ha lasciato in pagina il profilo di un
+  // giocatore qualunque: qui serve il gestore del circolo, che e'
+  // l'unico a cui l'avviso parla.
+  await page.evaluate((circolo) => {
+    currentProfile = {
+      id: 'io', nome: 'Andrea', cognome: 'Costa',
+      role: 'gestore', circolo_id: circolo,
+    };
+  }, CIRCOLO);
+
+  const apriElenco = async (stato) => {
+    abbonamento = stato ? [stato] : [];
+    torneoAperto = null;
+    await page.evaluate(() => apriTornei());
+    await page.waitForFunction(
+      () => document.getElementById('tornei-loading')?.classList.contains('hidden'),
+      { timeout: 15000 },
+    );
+  };
+
+  const avviso = page.locator('#abbonamento-avviso');
+  const bottone = page.locator('#btn-nuovo-torneo');
+
+  // ----- Senza scadenza non si dice niente -----
+  await apriElenco({
+    circolo_id: CIRCOLO, nome: 'Padel Arena', attivo: true,
+    scade_il: null, giorni_rimasti: null, utilizzabile: true,
+  });
+  esito('senza scadenza l avviso non compare', !(await avviso.isVisible()));
+  esito('e il circolo crea come sempre', await bottone.isVisible());
+
+  // ----- In regola, ma con una data -----
+  await apriElenco({
+    circolo_id: CIRCOLO, nome: 'Padel Arena', attivo: true,
+    scade_il: '2026-12-31', giorni_rimasti: 131, utilizzabile: true,
+  });
+  esito('con una scadenza lontana lo dice e basta',
+    (await avviso.textContent() || '').includes('Abbonamento attivo'),
+    await avviso.textContent());
+  esito('e il pulsante resta', await bottone.isVisible());
+
+  // ----- Sotto le due settimane -----
+  await apriElenco({
+    circolo_id: CIRCOLO, nome: 'Padel Arena', attivo: true,
+    scade_il: '2026-08-25', giorni_rimasti: 3, utilizzabile: true,
+  });
+  const inScadenza = await avviso.textContent() || '';
+  esito('vicino alla scadenza avvisa', inScadenza.includes('Abbonamento in scadenza'), inScadenza);
+  esito('e dice quanto manca', inScadenza.includes('tra 3 giorni'), inScadenza);
+  esito('ma non blocca niente', await bottone.isVisible());
+
+  // ----- Scaduto -----
+  await apriElenco({
+    circolo_id: CIRCOLO, nome: 'Padel Arena', attivo: true,
+    scade_il: '2026-08-01', giorni_rimasti: -21, utilizzabile: false,
+  });
+  const scaduto = await avviso.textContent() || '';
+  esito('scaduto lo dice', scaduto.includes('Abbonamento scaduto'), scaduto);
+  esito('e rassicura su cio che resta online', /restano online/i.test(scaduto), scaduto);
+  esito('il pulsante per creare sparisce', !(await bottone.isVisible()));
+
+  // ----- Sospeso: un altra cosa, un altra frase -----
+  await apriElenco({
+    circolo_id: CIRCOLO, nome: 'Padel Arena', attivo: false,
+    scade_il: null, giorni_rimasti: null, utilizzabile: false,
+  });
+  const sospeso = await avviso.textContent() || '';
+  esito('un circolo sospeso non legge di scadenze',
+    sospeso.includes('Circolo sospeso') && !sospeso.includes('Scaduto il'), sospeso);
+  esito('e nemmeno lui crea', !(await bottone.isVisible()));
+
+  abbonamento = [];
+}
+
 async function main() {
   const server = await avviaServer();
   const browser = await chromium.launch(avvioBrowser);
@@ -583,6 +676,7 @@ async function main() {
     await testFasiConFormatiDiversi(page);
     await testPunteggioIncompleto(page);
     await testCampoDaGioco(page);
+    await testAvvisoAbbonamento(page);
   } finally {
     titolo('Errori JavaScript');
     esito('l app non ha sollevato eccezioni', erroriPagina.length === 0,

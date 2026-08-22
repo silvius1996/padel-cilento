@@ -3012,6 +3012,148 @@ async function testBacheca() {
   await db.exec('reset role');
 }
 
+/**
+ * L'abbonamento smette di essere muto (aggiornamento n.31).
+ *
+ * Il cancello commerciale esisteva gia' ed e' verificato in
+ * testCircoli. Qui si verifica cio' che il gestore riesce a SAPERE:
+ * che la scadenza non e' un dato pubblico, che se la puo' leggere
+ * solo lui (e l'amministratore), e che quando il cancello si chiude
+ * il rifiuto dice perche' invece di sembrare un guasto.
+ */
+async function testAvvisoAbbonamento() {
+  console.log('\nL AVVISO DI ABBONAMENTO');
+
+  await db.exec('reset role');
+  const { rows: c } = await db.query('select id from public.circoli where nome = $1', [CIRCOLO_NOME]);
+  const idCircolo = c[0].id;
+
+  await db.query(
+    `update public.circoli set attivo = true, abbonamento_scade_il = current_date + 10 where id = $1`,
+    [idCircolo],
+  );
+
+  // ----- La scadenza non e' piu' un dato pubblico -----
+  await come(null);
+  await db.exec('set role anon');
+  await deveFallire(
+    'la scadenza non si legge dalla tabella',
+    () => db.query('select abbonamento_scade_il from public.circoli'),
+    'permission denied',
+  );
+  await deveRiuscire(
+    'il resto del circolo resta pubblico',
+    () => db.query('select nome, zona from public.circoli'),
+  );
+
+  // ----- Il gestore la legge sul proprio circolo -----
+  await db.exec('reset role');
+  await come(U.bea);
+  await db.exec('set role authenticated');
+  const { rows: mio } = await db.query('select * from public.stato_abbonamento()');
+  uguale('il gestore legge il proprio abbonamento', 1, mio.length);
+  uguale('ed e il suo circolo', CIRCOLO_NOME, mio[0]?.nome);
+  uguale('con i giorni che mancano', 10, mio[0]?.giorni_rimasti);
+  uguale('ed e in regola', true, mio[0]?.utilizzabile);
+
+  await deveRiuscire(
+    'ma non su un circolo scelto da lui',
+    async () => {
+      const { rows } = await db.query('select * from public.stato_abbonamento($1)', [idCircolo]);
+      if (rows.length !== 0) throw new Error(`ha risposto con ${rows.length} righe`);
+    },
+  );
+
+  // ----- Un giocatore non e' cliente di niente -----
+  await db.exec('reset role');
+  await come(U.aldo);
+  await db.exec('set role authenticated');
+  const { rows: nessuno } = await db.query('select * from public.stato_abbonamento()');
+  uguale('un giocatore non ha nessun abbonamento', 0, nessuno.length);
+
+  // ----- L'amministratore vede quello di chiunque -----
+  // Carlo torna amministratore per il tempo di questo blocco: alla
+  // fine viene rimesso giocatore, come in testCircoli.
+  await db.exec('reset role');
+  await db.query(`update public.profiles set role = 'admin' where id = $1`, [U.carlo]);
+  await come(U.carlo);
+  await db.exec('set role authenticated');
+  const { rows: visto } = await db.query('select * from public.stato_abbonamento($1)', [idCircolo]);
+  uguale('l amministratore legge l abbonamento altrui', CIRCOLO_NOME, visto[0]?.nome);
+
+  // ----- Scaduto: il rifiuto dice perche' -----
+  await db.exec('reset role');
+  await db.query(
+    `update public.circoli set abbonamento_scade_il = current_date - 1 where id = $1`,
+    [idCircolo],
+  );
+
+  await come(U.bea);
+  await db.exec('set role authenticated');
+  await deveFallire(
+    'con l abbonamento scaduto il torneo non parte, e si capisce perche',
+    () => db.query(
+      `insert into public.tornei (circolo_id, nome, creato_da) values ($1, 'Torneo di prova', $2)`,
+      [idCircolo, U.bea],
+    ),
+    'abbonamento del circolo',
+  );
+
+  // Il gestore lo legge anche prima di provarci
+  const { rows: scaduto } = await db.query('select * from public.stato_abbonamento()');
+  uguale('e l avviso lo diceva gia', false, scaduto[0]?.utilizzabile);
+  uguale('con i giorni in negativo', -1, scaduto[0]?.giorni_rimasti);
+
+  // ----- Sospeso: un'altra frase, perche' e' un'altra cosa -----
+  await db.exec('reset role');
+  await db.query(`update public.circoli set attivo = false where id = $1`, [idCircolo]);
+  await come(U.bea);
+  await db.exec('set role authenticated');
+  await deveFallire(
+    'un circolo sospeso lo dice invece di parlare di scadenze',
+    () => db.query(
+      `insert into public.tornei (circolo_id, nome, creato_da) values ($1, 'Torneo di prova', $2)`,
+      [idCircolo, U.bea],
+    ),
+    'sospeso',
+  );
+
+  // ----- A un estraneo il trigger non racconta niente -----
+  await db.exec('reset role');
+  await come(U.aldo);
+  await db.exec('set role authenticated');
+  await deveFallire(
+    'a un estraneo il rifiuto resta quello delle policy',
+    () => db.query(
+      `insert into public.tornei (circolo_id, nome, creato_da) values ($1, 'Torneo abusivo', $2)`,
+      [idCircolo, U.aldo],
+    ),
+    'row-level security',
+  );
+
+  // ----- L'amministratore interviene lo stesso -----
+  await db.exec('reset role');
+  await come(U.carlo);
+  await db.exec('set role authenticated');
+  await deveRiuscire(
+    'l amministratore crea anche per un circolo non in regola',
+    () => db.query(
+      `insert into public.tornei (circolo_id, nome, creato_da) values ($1, 'Torneo amministratore', $2)`,
+      [idCircolo, U.carlo],
+    ),
+  );
+
+  // Si rimette tutto com'era: i test che seguono usano questo circolo.
+  await db.exec('reset role');
+  await db.query(`delete from public.tornei where nome = 'Torneo amministratore'`);
+  await db.query(`update public.profiles set role = 'giocatore' where id = $1`, [U.carlo]);
+  await db.query(
+    `update public.circoli set attivo = true, abbonamento_scade_il = current_date + 365 where id = $1`,
+    [idCircolo],
+  );
+  await come(null);
+}
+
 // ---------------------------------------------------------
 // Avvio
 // ---------------------------------------------------------
@@ -3061,6 +3203,7 @@ async function main() {
   await testCollegamentoGiocatori();
   await testBacheca();
   await testPartiteDelCircolo();
+  await testAvvisoAbbonamento();
   await testEliminaAccount();
 
   console.log('\n' + '='.repeat(60));

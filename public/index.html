@@ -865,6 +865,17 @@
       </button>
     </div>
 
+    <!-- Lo stato commerciale del circolo, e lo vede solo il circolo.
+         Il database sa da sempre fino a quando un cliente e' in
+         regola (circoli.abbonamento_scade_il), ma finche' non era
+         scritto da nessuna parte il gestore scopriva la scadenza
+         solo sbattendoci contro, sotto forma di un rifiuto che
+         sembrava un guasto. Qui si legge prima. -->
+    <div id="abbonamento-avviso" class="hidden mb-4 rounded-xl border p-3">
+      <p id="abbonamento-titolo" class="font-display font-700 text-sm"></p>
+      <p id="abbonamento-testo" class="text-xs mt-1 leading-relaxed"></p>
+    </div>
+
     <button type="button" id="btn-nuovo-torneo"
             class="hidden w-full mb-4 bg-lime-neon text-court-900 font-display font-700 py-3 rounded-xl shadow-neon">
       + Crea un torneo
@@ -1313,6 +1324,9 @@ const el = {
   btnTorneiIndietro: document.getElementById('btn-tornei-indietro'),
   torneoSuggerimento: document.getElementById('torneo-suggerimento'),
   btnNuovoTorneo: document.getElementById('btn-nuovo-torneo'),
+  abbonamentoAvviso: document.getElementById('abbonamento-avviso'),
+  abbonamentoTitolo: document.getElementById('abbonamento-titolo'),
+  abbonamentoTesto: document.getElementById('abbonamento-testo'),
   torneiLoading: document.getElementById('tornei-loading'),
   torneiEmpty: document.getElementById('tornei-empty'),
   torneiEmptyText: document.getElementById('tornei-empty-text'),
@@ -3942,6 +3956,82 @@ async function caricaDatiTorneo(torneoId) {
   };
 }
 
+/**
+ * L'avviso di abbonamento in cima alla pagina Tornei.
+ *
+ * Riguarda un gestore e basta: l'amministratore organizza per conto
+ * di chiunque e non ha un abbonamento suo, un giocatore non e'
+ * cliente di niente. Per loro l'avviso non compare.
+ *
+ * Il dato arriva da stato_abbonamento(): le due colonne commerciali
+ * di "circoli" non sono piu' leggibili dalla tabella, e quella
+ * funzione e' l'unica porta — risponde al gestore sul proprio
+ * circolo e all'amministratore su chiunque.
+ *
+ * Restituisce se il circolo puo' ancora creare tornei. In caso di
+ * errore di lettura risponde di si' e non blocca niente: a decidere
+ * davvero e' il database, questo e' solo l'avviso che lo anticipa.
+ */
+async function aggiornaAvvisoAbbonamento() {
+  el.abbonamentoAvviso.classList.add('hidden');
+
+  if (sonoAmministratore()) return true;
+  if (currentProfile?.role !== 'gestore' || !currentProfile?.circolo_id) return true;
+
+  const { data, error } = await supabaseClient.rpc('stato_abbonamento');
+  if (error) {
+    console.error('Errore lettura abbonamento:', error);
+    return true;
+  }
+
+  const stato = (data || [])[0];
+  if (!stato) return true;
+
+  const quando = stato.scade_il
+    ? new Date(`${stato.scade_il}T12:00:00`)
+        .toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' })
+    : '';
+
+  const mostra = (bordo, titolo, testo) => {
+    el.abbonamentoAvviso.className = `mb-4 rounded-xl border p-3 ${bordo}`;
+    el.abbonamentoTitolo.textContent = titolo;
+    el.abbonamentoTesto.textContent = testo;
+    el.abbonamentoAvviso.classList.remove('hidden');
+  };
+
+  if (!stato.utilizzabile) {
+    mostra(
+      'border-red-500/40 bg-red-500/5 text-red-400',
+      stato.attivo ? 'Abbonamento scaduto' : 'Circolo sospeso',
+      stato.attivo
+        ? `Scaduto il ${quando}. I tornei gia' pubblicati restano online e `
+          + 'continuano a vedersi: per crearne di nuovi serve il rinnovo.'
+        : 'Il circolo e\' sospeso. I tornei gia\' pubblicati restano online, '
+          + 'ma non se ne possono creare di nuovi.',
+    );
+    return false;
+  }
+
+  // Nessuna scadenza: non c'e' niente da avvisare.
+  if (stato.scade_il === null) return true;
+
+  // Due settimane: il tempo che serve a un circolo per accorgersene,
+  // decidere e pagare, senza che l'avviso diventi arredamento.
+  if (stato.giorni_rimasti <= 14) {
+    const giorni = stato.giorni_rimasti;
+    mostra(
+      'border-amber-400/40 bg-amber-400/5 text-amber-300',
+      'Abbonamento in scadenza',
+      (giorni <= 0 ? 'Scade oggi' : giorni === 1 ? 'Scade domani' : `Scade tra ${giorni} giorni`)
+        + ` (${quando}). Dopo quella data i tornei restano online, ma non se ne creano di nuovi.`,
+    );
+    return true;
+  }
+
+  mostra('border-court-500 text-court-300', 'Abbonamento attivo', `Fino al ${quando}.`);
+  return true;
+}
+
 // ----- Elenco dei tornei -----
 async function apriTornei() {
   mostraPagina('paginaTornei');
@@ -3951,8 +4041,13 @@ async function apriTornei() {
   el.torneiList.innerHTML = '';
   mostraSchedaTornei('tornei');
 
+  // L'avviso va letto prima di decidere il pulsante: un circolo
+  // scaduto non deve trovarsi davanti "Crea un torneo" per poi
+  // scoprire dal rifiuto che non puo'.
+  const inRegola = await aggiornaAvvisoAbbonamento();
   const puoCreare = Boolean(currentProfile)
-    && (sonoAmministratore() || (currentProfile.role === 'gestore' && currentProfile.circolo_id));
+    && (sonoAmministratore() || (currentProfile.role === 'gestore' && currentProfile.circolo_id))
+    && inRegola;
   el.btnNuovoTorneo.classList.toggle('hidden', !puoCreare);
 
   try {
