@@ -3957,6 +3957,28 @@ async function caricaDatiTorneo(torneoId) {
 }
 
 /**
+ * Chi puo' creare un torneo: l'amministratore sempre, un gestore
+ * solo se il suo circolo e' in regola.
+ *
+ * La risposta serve in due punti — all'apertura della pagina e a
+ * ogni cambio di scheda — e va data in un posto solo. La prima
+ * versione la calcolava due volte, e mostraSchedaTornei() lo faceva
+ * senza guardare l'abbonamento: a un circolo scaduto il pulsante
+ * spariva e poi ricompariva, perche' quella funzione viene richiamata
+ * in fondo a apriTornei() e rimetteva la sua risposta sopra l'altra.
+ * Non si vedeva con l'elenco vuoto — li' apriTornei() esce prima.
+ */
+let circoloInRegola = true;
+
+function puoCreareTornei() {
+  if (!currentProfile) return false;
+  if (sonoAmministratore()) return true;
+  return currentProfile.role === 'gestore'
+    && Boolean(currentProfile.circolo_id)
+    && circoloInRegola;
+}
+
+/**
  * L'avviso di abbonamento in cima alla pagina Tornei.
  *
  * Riguarda un gestore e basta: l'amministratore organizza per conto
@@ -4044,10 +4066,8 @@ async function apriTornei() {
   // L'avviso va letto prima di decidere il pulsante: un circolo
   // scaduto non deve trovarsi davanti "Crea un torneo" per poi
   // scoprire dal rifiuto che non puo'.
-  const inRegola = await aggiornaAvvisoAbbonamento();
-  const puoCreare = Boolean(currentProfile)
-    && (sonoAmministratore() || (currentProfile.role === 'gestore' && currentProfile.circolo_id))
-    && inRegola;
+  circoloInRegola = await aggiornaAvvisoAbbonamento();
+  const puoCreare = puoCreareTornei();
   el.btnNuovoTorneo.classList.toggle('hidden', !puoCreare);
 
   try {
@@ -4091,9 +4111,7 @@ function mostraSchedaTornei(quale) {
   el.torneiList.classList.toggle('hidden', suAlbo);
   el.alboDoro.classList.toggle('hidden', !suAlbo);
 
-  const puoCreare = Boolean(currentProfile)
-    && (sonoAmministratore() || (currentProfile.role === 'gestore' && currentProfile.circolo_id));
-  el.btnNuovoTorneo.classList.toggle('hidden', suAlbo || !puoCreare);
+  el.btnNuovoTorneo.classList.toggle('hidden', suAlbo || !puoCreareTornei());
 
   for (const b of el.torneiTabs.querySelectorAll('button')) {
     const attiva = b.dataset.scheda === quale;
